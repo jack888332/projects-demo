@@ -1,0 +1,434 @@
+@import "./src/shared/styles/module-pages.css";
+
+:root {
+  --el-font-family: var(--font-family-ui);
+  --el-font-size-base: var(--content-font-size);
+  --el-font-size-small: var(--control-font-size);
+  --el-font-size-large: var(--control-font-size);
+  --el-color-primary: var(--primary);
+  --el-color-primary-light-3: #8380c2;
+  --el-color-primary-light-5: #a7a4d3;
+  --el-color-primary-light-7: #cbc9e5;
+  --el-color-primary-light-8: #dddcf0;
+  --el-color-primary-light-9: #eeeef8;
+  --el-color-primary-dark-2: var(--primary-strong);
+}
+
+.billing-content .app-shell.is-embedded {
+  display: block;
+  min-height: 0;
+  color: var(--ink);
+  background: transparent;
+}
+.billing-content .is-embedded > .sidebar,
+.billing-content .is-embedded > .workspace > .topbar {
+  display: none;
+}
+.billing-content .is-embedded > .workspace {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+.billing-content .is-embedded .page-main {
+  min-width: 0;
+  padding: 0;
+}
+.billing-content .module-toolbar-actions,
+.billing-content .filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.el-button.el-button:not(.is-circle) {
+  min-height: var(--action-button-height);
+  height: var(--action-button-height);
+  padding: 0 var(--space-3);
+  border-radius: var(--action-button-radius);
+  transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.el-button.el-button--small:not(.is-circle) {
+  min-height: var(--action-button-small-height);
+  height: var(--action-button-small-height);
+  padding: 0 var(--space-2);
+}
+.el-button.el-button--primary:not(.is-plain):not(.is-link):not(.is-text) {
+  --el-button-text-color: #fff;
+  --el-button-bg-color: var(--primary);
+  --el-button-border-color: var(--primary);
+  --el-button-outline-color: var(--primary-focus-ring);
+  --el-button-hover-bg-color: var(--primary-strong);
+  --el-button-hover-border-color: var(--primary-strong);
+  --el-button-hover-text-color: #fff;
+  --el-button-active-bg-color: var(--primary-active);
+  --el-button-active-border-color: var(--primary-active);
+  --el-button-active-text-color: #fff;
+  --el-button-disabled-bg-color: var(--primary-disabled);
+  --el-button-disabled-border-color: var(--primary-disabled);
+  --el-button-disabled-text-color: rgba(255,255,255,.82);
+  font-weight: var(--font-weight-medium);
+}
+.el-button.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):focus-visible {
+  outline: 2px solid var(--primary-border);
+  outline-offset: 2px;
+}
+
+/* Page-level actions share one compact treatment; the back control stays separate. */
+.route-export-actions .el-button {
+  --el-button-bg-color: #fff;
+  --el-button-border-color: var(--border);
+  --el-button-text-color: #3c4350;
+  --el-button-hover-bg-color: var(--primary-soft);
+  --el-button-hover-border-color: var(--primary);
+  --el-button-hover-text-color: var(--primary-strong);
+  --el-button-active-bg-color: #f2f3f5;
+  --el-button-active-border-color: var(--primary);
+  --el-button-active-text-color: var(--primary-strong);
+  --el-button-disabled-bg-color: #fff;
+  --el-button-disabled-border-color: var(--border);
+  --el-button-disabled-text-color: #a6acb8;
+  height: var(--action-button-height);
+  min-height: var(--action-button-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--action-button-radius);
+  color: #3c4350;
+  background: #fff;
+  box-shadow: none;
+  font-weight: var(--font-weight-regular);
+}
+.route-export-actions .el-button:hover:not(:disabled) {
+  color: var(--primary-strong);
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+.route-export-actions .el-button--primary:not(.is-link):not(.is-text) {
+  color: #3c4350;
+  border-color: var(--border);
+  background: #fff;
+  box-shadow: none;
+}
+.route-export-actions .el-button--primary:not(.is-link):not(.is-text):hover:not(:disabled) {
+  color: var(--primary-strong);
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+.billing-content .el-input__wrapper,
+.billing-content .el-select__wrapper,
+.billing-content .el-textarea__inner {
+  border-radius: 2px !important;
+}
+.billing-content .panel,
+.billing-content .module-panel,
+.billing-content .module-kpi {
+  border-radius: 0;
+  box-shadow: none;
+}
+.billing-content .module-kpi {
+  min-height: 94px;
+  padding: var(--space-4);
+  border-radius: 7px;
+  box-shadow: 0 1px 2px rgba(21,31,48,.03);
+}
+.billing-content .module-kpi strong {
+  font-size: var(--font-size-2xl);
+}
+.billing-content .module-segmented {
+  padding: 0 var(--space-1);
+  border-radius: 0;
+  background: transparent;
+}
+.billing-content .module-segmented button {
+  height: 40px;
+  border-radius: 0;
+}
+.billing-content .module-segmented button.active {
+  border-color: transparent;
+  color: var(--primary);
+  background: transparent;
+}
+.billing-content .sub-tab.active,
+.billing-content .fee-view-switch button.active {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.billing-content .task-board {
+  min-width: 0;
+}
+.billing-content .work-panel {
+  min-height: 620px;
+  overflow: hidden;
+}
+.billing-content .task-list-panel,
+.task-list-panel {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  overflow: visible;
+  border: 0;
+  background: transparent;
+}
+.billing-content .task-list-panel > .task-filter-toolbar,
+.task-list-panel > .task-filter-toolbar {
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.billing-content .task-list-panel > .module-kpis,
+.task-list-panel > .module-kpis {
+  margin: 0;
+}
+.billing-content .task-filter-actions {
+  width: auto;
+  flex-basis: auto;
+}
+.billing-content .task-filter-actions .advanced-filter-toggle {
+  width: auto;
+  white-space: nowrap;
+}
+.billing-content .task-list-panel > .el-table {
+  border-right: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  background: #fff;
+}
+.billing-content .task-list-panel > .table-pagination {
+  border: 1px solid var(--border);
+  border-top: 0;
+  background: #fff;
+}
+.billing-content .filter-toolbar {
+  min-height: 60px;
+  padding: var(--space-3) var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.billing-content .filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.billing-content .filter-group > .el-select { width: 150px; }
+.billing-content .keyword-input { width: 230px; }
+.billing-content .keyword-input.wide { width: 310px; }
+.billing-content .primary-filters { flex: 1; }
+.billing-content .clean-table {
+  width: 100%;
+  --el-table-header-bg-color: #f7f8fa;
+  --el-table-header-text-color: #596170;
+  --el-table-text-color: #414957;
+  --el-table-border-color: var(--border-soft);
+  --el-table-row-hover-bg-color: #faf8fb;
+}
+.content .el-table,
+.el-overlay .el-table {
+  width: 100%;
+  --current-table-row-height: var(--table-row-height-default) !important;
+  --el-table-header-bg-color: #f7f8fa;
+  --el-table-header-text-color: #596170;
+  --el-table-text-color: #414957;
+  --el-table-border-color: var(--border-soft);
+  --el-table-row-hover-bg-color: #faf8fb;
+  font-family: var(--font-family-ui);
+  font-size: var(--table-font-size);
+  line-height: var(--table-line-height);
+}
+.content .el-table .el-table__header tr,
+.content .el-table .el-table__header th,
+.el-overlay .el-table .el-table__header tr,
+.el-overlay .el-table .el-table__header th { height: var(--table-header-height); }
+.content .el-table .el-table__body tr,
+.content .el-table .el-table__body td,
+.el-overlay .el-table .el-table__body tr,
+.el-overlay .el-table .el-table__body td { height: var(--current-table-row-height); }
+.content .el-table .el-table__cell,
+.el-overlay .el-table .el-table__cell { padding: 0; }
+.content .el-table .el-table__cell .cell,
+.el-overlay .el-table .el-table__cell .cell {
+  padding: var(--space-2) var(--space-3);
+  text-align: left !important;
+}
+.content .el-table .el-table__header th,
+.el-overlay .el-table .el-table__header th { font-family: inherit; font-size: inherit; font-weight: var(--font-weight-semibold); line-height: inherit; }
+.content .el-table .el-table__header th.is-sortable > .cell,
+.el-overlay .el-table .el-table__header th.is-sortable > .cell {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.content .el-table .el-table__header th.is-sortable .prototype-table-header-label,
+.el-overlay .el-table .el-table__header th.is-sortable .prototype-table-header-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.content .el-table .el-table__header th.is-sortable .caret-wrapper,
+.el-overlay .el-table .el-table__header th.is-sortable .caret-wrapper {
+  flex: 0 0 auto;
+  margin-left: var(--space-1);
+}
+.prototype-table-header-tooltip {
+  max-width: min(420px, calc(100vw - 32px));
+  overflow-wrap: anywhere;
+}
+.content .el-table .el-table__body td,
+.el-overlay .el-table .el-table__body td { font-family: inherit; font-size: inherit; font-weight: var(--font-weight-regular); line-height: inherit; }
+.content .el-table .el-table__body td .cell,
+.content .el-table .el-table__body td :where(a, button, input, select, textarea, span, strong, small, b, em),
+.el-overlay .el-table .el-table__body td .cell,
+.el-overlay .el-table .el-table__body td :where(a, button, input, select, textarea, span, strong, small, b, em) { font-family: inherit; font-size: inherit; line-height: inherit; }
+.content .el-table .el-table__body td :where(a, button, strong, b),
+.el-overlay .el-table .el-table__body td :where(a, button, strong, b) { font-weight: var(--font-weight-regular); }
+.content .el-table .el-table__body td :where(small, .secondary),
+.el-overlay .el-table .el-table__body td :where(small, .secondary) { font-size: var(--table-secondary-font-size); font-weight: var(--font-weight-regular); }
+.content .el-table .el-table__body td .main-cell strong,
+.el-overlay .el-table .el-table__body td .main-cell strong { font-size: var(--table-font-size); font-weight: var(--font-weight-regular); }
+.content .el-table .el-table__body td .main-cell small,
+.el-overlay .el-table .el-table__body td .main-cell small { font-size: var(--table-secondary-font-size); font-weight: var(--font-weight-regular); }
+.content .el-table .el-table__body td .amount-lines,
+.el-overlay .el-table .el-table__body td .amount-lines { font-size: var(--table-secondary-font-size); font-weight: var(--font-weight-regular); }
+.content .el-table .el-table__body td .amount-lines b,
+.el-overlay .el-table .el-table__body td .amount-lines b { font-size: var(--table-font-size); font-weight: var(--font-weight-regular); }
+.billing-content .row-action-cell { display: inline-flex; align-items: center; gap: var(--table-operation-gap); }
+.billing-content .el-table .table-operation-column > .cell {
+  padding-inline: var(--table-operation-padding-inline) !important;
+  overflow: visible;
+  text-overflow: clip;
+}
+.billing-content .row-action-cell .el-button + .el-button,
+.billing-content .row-action-cell .el-button + .el-dropdown { margin-left: 0; }
+.billing-content .table-detail-button.el-button { width: 28px; min-width: 28px; height: 28px; min-height: 28px; margin: 0; padding: 0 !important; font-size: var(--font-size-lg) !important; }
+.billing-content .table-detail-button.el-button:hover,
+.billing-content .table-detail-button.el-button:focus-visible { color: var(--primary-strong); background: var(--primary-soft); outline: 0; }
+.billing-content .row-more-button,
+.row-more-button.el-button { width: 26px; min-width: 26px; height: 28px; min-height: 28px; margin: 0; padding: 0 !important; font-size: var(--font-size-xl); }
+.billing-content .row-more-button:hover,
+.billing-content .row-more-button:focus,
+.billing-content .row-more-button:focus-visible {
+  border-color: transparent !important;
+  background: transparent !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.row-action-popper .el-dropdown-menu__item { min-width: 124px; min-height: 34px; font-size: var(--control-font-size); }
+.row-action-popper .el-dropdown-menu__item > .el-icon { display: none; }
+.row-action-popper .el-dropdown-menu__item.danger-action { color: var(--danger); }
+.billing-content .main-cell { display: flex; flex-direction: column; gap: 2px; }
+.billing-content .main-cell strong { color: #303746; }
+.billing-content .main-cell small { color: #8a919e; }
+.table-pagination {
+  min-height: var(--table-pagination-height);
+  height: var(--table-pagination-height);
+  color: var(--muted);
+  background: #fff;
+  font-size: 13px;
+}
+.table-pagination-inner {
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--table-bar-padding-inline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  box-sizing: border-box;
+  background: #fff;
+}
+.table-pagination-inner.is-docked { position: fixed; z-index: 30; bottom: 0; height: var(--table-pagination-height); border: 1px solid var(--border); }
+.billing-content .table-reference-toolbar { top: 0; }
+.table-pagination-left { min-width: 0; display: flex; align-items: center; gap: var(--space-3); }
+.table-pagination-summary { flex: 0 0 auto; white-space: nowrap; font-size: 13px; }
+.table-pagination-pager { flex: 0 0 auto; margin: 0; }
+.table-pagination-size { --el-select-width: 92px; flex: 0 0 92px; width: 92px !important; min-width: 0; margin: 0; }
+.table-pagination .el-pagination { --el-pagination-bg-color: transparent; --el-pagination-button-bg-color: transparent; --el-pagination-hover-color: var(--primary); display: flex; align-items: center; gap: 4px; }
+.table-pagination .el-pagination .btn-prev,
+.table-pagination .el-pagination .btn-next,
+.table-pagination .el-pagination .el-pager li { min-width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 3px; color: #657187; background: #fff; }
+.table-pagination .el-pagination .el-pager li { display: inline-flex; align-items: center; justify-content: center; }
+.table-pagination .el-pagination .el-pager li.is-active { border-color: var(--primary); color: #fff; background: var(--primary); }
+.table-pagination .el-pagination .btn-prev:hover,
+.table-pagination .el-pagination .btn-next:hover,
+.table-pagination .el-pagination .el-pager li:not(.is-active):hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+.table-pagination-size .el-select__wrapper,
+.table-pagination-size .el-input__wrapper { min-height: 32px; padding: 0 var(--space-2); border: 1px solid var(--border) !important; border-radius: 3px; box-shadow: none !important; background: #fff; }
+.table-pagination-size .el-select__wrapper.is-focused { border-color: var(--primary) !important; box-shadow: 0 0 0 2px var(--primary-focus-ring) !important; }
+
+.detail-drawer .el-drawer__header,
+.billing-config-drawer .el-drawer__header {
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+}
+.el-overlay .el-drawer.detail-drawer,
+.el-overlay .el-drawer.billing-config-drawer {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(1120px, calc(100vw - 48px)) !important;
+  height: min(90vh, 920px);
+  max-height: calc(100vh - 48px);
+  margin: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 4px;
+  box-shadow: 0 14px 42px rgba(20,24,35,.24);
+  overflow: hidden;
+}
+.el-overlay .el-drawer.detail-drawer .el-drawer__body,
+.el-overlay .el-drawer.billing-config-drawer .el-drawer__body { overflow: auto; }
+.el-overlay-dialog { display: flex; align-items: center; justify-content: center; }
+.el-overlay-dialog .el-dialog:not(.module-dialog) {
+  width: min(960px, calc(100vw - 48px)) !important;
+  max-height: calc(100vh - 48px);
+  margin: 0 !important;
+  border-radius: 4px;
+  overflow: auto;
+}
+.el-message-box {
+  width: min(640px, calc(100vw - 32px));
+  max-width: none;
+  border-radius: 4px;
+}
+.detail-drawer .el-drawer__body,
+.billing-config-drawer .el-drawer__body {
+  padding: var(--space-4) var(--space-5);
+}
+.detail-drawer .drawer-title,
+.billing-config-drawer .drawer-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--ink);
+}
+.detail-drawer .drawer-title span,
+.billing-config-drawer .drawer-title span { font-size: var(--panel-title-font-size); font-weight: var(--font-weight-bold); }
+.detail-drawer .drawer-title small,
+.billing-config-drawer .drawer-title small { color: var(--muted); font-size: var(--secondary-font-size); }
+.detail-drawer .detail-grid { margin: 0; display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); border-left: 1px solid var(--border); }
+.detail-drawer .detail-grid div { min-height: 62px; padding: var(--space-2) var(--space-3); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.detail-drawer .detail-grid dt { margin-bottom: var(--space-1); color: #8a919e; font-size: var(--secondary-font-size); }
+.detail-drawer .detail-grid dd { margin: 0; color: #354052; font-size: var(--content-font-size); }
+
+@media (max-width: 720px) {
+  .billing-content .filter-toolbar { align-items: stretch; flex-direction: column; }
+  .billing-content .filter-group,
+  .billing-content .filter-group > *,
+  .billing-content .filter-group > .el-select,
+  .billing-content .keyword-input,
+  .billing-content .keyword-input.wide,
+  .billing-content .filter-actions { width: 100% !important; }
+  .table-pagination { height: auto; min-height: var(--table-pagination-height); }
+  .table-pagination-inner { height: auto; min-height: var(--table-pagination-height); flex-wrap: wrap; gap: 8px 12px; padding: var(--space-2) var(--table-bar-padding-inline); }
+  .table-pagination-inner.is-docked { height: auto; min-height: var(--table-pagination-height); }
+  .table-pagination-left { flex-wrap: wrap; }
+  .table-pagination-size { margin-left: auto; }
+  .detail-drawer .detail-grid { grid-template-columns: 1fr; }
+  .el-overlay .el-drawer.detail-drawer,
+  .el-overlay .el-drawer.billing-config-drawer,
+  .el-overlay-dialog .el-dialog:not(.module-dialog) { width: calc(100vw - 16px) !important; max-height: calc(100vh - 16px); }
+}

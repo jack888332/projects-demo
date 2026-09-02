@@ -1,0 +1,35 @@
+html,
+body {
+  font-family: var(--font-family-ui);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-base);
+  letter-spacing: 0;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: var(--ui-minimum-viewport-width, 320px); color: var(--ink); background: var(--canvas); }
+button, input, select, textarea { font: inherit; letter-spacing: 0; }
+button { box-shadow: none !important; }
+
+:where(
+  .el-button,
+  .el-input__inner,
+  .el-textarea__inner,
+  .el-select__selected-item,
+  .el-select__placeholder,
+  .el-select-dropdown__item,
+  .el-cascader-node__label,
+  .el-date-picker__header-label,
+  .el-form-item__label,
+  .el-radio__label,
+  .el-checkbox__label,
+  .el-tabs__item,
+  .el-dropdown-menu__item,
+  .el-pagination button,
+  .el-pager li
+) { font-size: var(--control-font-size) !important; }

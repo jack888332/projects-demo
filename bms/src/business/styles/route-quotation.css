@@ -1,0 +1,43 @@
+.route-quotation-page { min-width: 0; }
+.route-quote-detail-panel { margin-bottom: var(--space-3); overflow: visible; }
+.route-quote-detail-titlebar { min-height: 64px; padding: var(--space-3) var(--space-4); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); border-bottom: 1px solid var(--border); }
+.route-quote-detail-titlebar h1, .route-quote-detail-titlebar h2 { margin: 0; color: var(--text-strong); font-size: var(--section-title-font-size); }
+.route-quote-detail-titlebar > div { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: var(--font-size-sm); }
+.route-quote-detail-form { padding: var(--space-4) var(--space-5); }
+.route-quote-form-grid { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 0 16px; }
+.route-quote-form-grid-three { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
+.route-quote-form-grid .el-select, .route-quote-form-grid .el-input-number { width: 100%; }
+.route-quote-form-grid .span-all { grid-column: 1 / -1; }
+.route-quote-form-grid .span-2 { grid-column: span 2; }
+.route-quote-detail-form :deep(.el-form-item__content) { min-width: 0; }
+.route-quote-detail-form :deep(.el-date-editor) { width: 100%; }
+.route-quote-rule-panel { overflow: hidden; }
+.route-quote-rule-table :deep(.el-input-number) { width: 100%; }
+.route-quote-price-matrix-scroll { width: 100%; overflow-x: auto; padding: 16px 20px 20px; }
+.route-quote-price-matrix { width: max-content; min-width: 100%; border-collapse: collapse; table-layout: auto; color: var(--text); font-size: var(--font-size-base); }
+.route-quote-price-matrix th, .route-quote-price-matrix td { height: 56px; padding: 8px 16px; border: 1px solid var(--border); text-align: left; white-space: nowrap; background: #fff; }
+.route-quote-price-matrix th { height: 44px; background: #f7f8fa; color: var(--text-strong); font-weight: 600; }
+.route-quote-price-matrix-label { width: 136px; }
+.route-quote-price-matrix-operation { width: 88px; text-align: center !important; }
+.route-quote-rule-trigger { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+.route-quote-rule-trigger span { margin-left: 4px; color: var(--muted); }
+.route-quote-rule-popover { display: grid; gap: 12px; }
+.route-quote-rule-popover label { display: grid; grid-template-columns: 118px minmax(0, 1fr); align-items: center; gap: 8px; color: var(--text); }
+.route-quote-rule-popover .el-input-number { width: 100%; }
+.route-quote-rule-popover .el-button { justify-self: end; }
+.route-quote-price-cell { display: flex; align-items: center; gap: 8px; }
+.route-quote-price-cell .el-input-number { width: 140px; }
+.route-quote-price-cell span { color: var(--muted); }
+.route-quote-detail-footer { position: sticky; bottom: 0; z-index: 5; min-height: 64px; padding: var(--space-3) var(--space-4); display: flex; justify-content: center; gap: 8px; border: 1px solid var(--border); border-radius: 7px; background: #fff; box-shadow: 0 -3px 14px rgba(32, 36, 49, .05); }
+.route-quote-detail-footer .el-button + .el-button { margin-left: 0; }
+@media (max-width: 1280px) {
+  .route-quote-form-grid { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+  .route-quote-form-grid-three { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+}
+:root[data-ui-layout="narrow"] .route-quote-form-grid,
+:root[data-ui-layout="narrow"] .route-quote-form-grid-three { grid-template-columns: 1fr; }
+:root[data-ui-layout="narrow"] .route-quote-form-grid .span-all,
+:root[data-ui-layout="narrow"] .route-quote-form-grid .span-2 { grid-column: auto; }
+:root[data-ui-layout="narrow"] .route-quote-detail-form { padding: var(--space-3); }
+:root[data-ui-layout="narrow"] .route-quote-detail-titlebar { align-items: flex-start; flex-direction: column; }
+:root[data-ui-layout="narrow"] .route-quote-detail-titlebar > div { width: 100%; justify-content: space-between; }

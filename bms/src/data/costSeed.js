@@ -1,0 +1,58 @@
+export const costSeed = {
+  sampleFiles: [
+    { id: 'df-delivery', name: '台湾端派送（东风）.xlsx', supplier: '东风', board: '派送成本', sheets: 24, size: '19.8 MB', defaultSheet: '黑貓' },
+    { id: 'zpt-delivery', name: '台湾端派送（宅配通）.xlsx', supplier: '宅配通', board: '派送成本', sheets: 1, size: '5.6 MB', defaultSheet: '5月明細' },
+    { id: 'df-clearance', name: '海快清关（东风）.xls', supplier: '东风', board: '清关成本', sheets: 12, size: '22.7 MB', defaultSheet: '清關費' },
+    { id: 'fg-clearance', name: '海快清关（福广）.xlsx', supplier: '福广', board: '清关成本', sheets: 9, size: '4.9 MB', defaultSheet: '稅金明細' },
+    { id: 'ld-sea', name: '海快船公司（联多）.xlsx', supplier: '联多', board: '海运成本', sheets: 2, size: '110 KB', defaultSheet: 'sheet1' },
+    { id: 'lb-air', name: '空运头程（力宝）.xls', supplier: '力宝', board: '空运成本', sheets: 3, size: '89 KB', defaultSheet: '对帐单' },
+    { id: 'truck', name: '海快租车（仓库送船公司）.xlsx', supplier: '仓库送船公司', board: '租车成本', sheets: 1, size: '5.1 MB', defaultSheet: '租车' },
+    { id: 'mover', name: '海快（深圳搬运工）.xlsx', supplier: '深圳搬运工', board: '租车成本', sheets: 1, size: '813 KB', defaultSheet: 'Sheet1' },
+  ],
+  suppliers: [
+    ['SUP-DF', '东风', ['派送', '清关'], 'TWD', '半月'], ['SUP-ZPT', '宅配通', ['派送'], 'TWD', '35 自然天'],
+    ['SUP-SS', '顺盛', ['派送'], 'TWD', '38 自然天'], ['SUP-FG', '福广', ['清关'], 'TWD', '半月'],
+    ['SUP-LD', '联多', ['海运'], 'CNY', '半月'], ['SUP-LB', '力宝', ['空运'], 'CNY', '9 自然天'],
+    ['SUP-TRK', '仓库送船公司', ['租车'], 'CNY', '月'], ['SUP-BY', '深圳搬运工', ['租车'], 'CNY', '月'],
+  ].map(([code, name, boards, currency, cycle]) => ({ code, name, boards, currency, bills: 1, pending: `0.000 ${currency}`, settled: `0.000 ${currency}`, state: '启用', updated: '2026-07-01', periodConfigs: boards.map((board) => ({ board, cycle, effectiveStart: '2026-01-01', effectiveEnd: '' })) })),
+  bills: [
+    ['APB-SUP-DF-20260516-08D115', '东风', '派送成本', '218,636.000', 'TWD', 9, 8, 1, '台湾端派送（东风）.xlsx'],
+    ['APB-SUP-DF-20260622-573E3D', '东风', '清关成本', '938,733.000', 'TWD', 7, 7, 0, '海快清关（东风）.xls'],
+    ['APB-SUP-ZPT-20260421-867589', '宅配通', '派送成本', '4,219,280.000', 'TWD', 62530, 62530, 0, '台湾端派送（宅配通）.xlsx'],
+    ['APB-SUP-SS-20260508-9C215C', '顺盛', '派送成本', '921,472.000', 'TWD', 18668, 18668, 0, '台湾端派送（顺盛）.xlsx'],
+    ['APB-SUP-FG-20260617-316624', '福广', '清关成本', '4,017,539.000', 'TWD', 2, 2, 0, '海快清关（福广）.xlsx'],
+    ['APB-SUP-LD-20260616-CDB8CE', '联多', '海运成本', '664,594.120', 'CNY', 121, 0, 121, '海快船公司（联多）.xlsx'],
+    ['APB-SUP-LB-20260622-CBCAA3', '力宝', '空运成本', '3,882.400', 'CNY', 10, 10, 0, '空运头程（力宝）.xls'],
+    ['APB-SUP-TRK-20260501-D88392', '仓库送船公司', '租车成本', '234,500.000', 'CNY', 7, 0, 7, '海快租车（仓库送船公司）.xlsx'],
+    ['APB-SUP-BY-20260501-76F5F0', '深圳搬运工', '租车成本', '17,500.000', 'CNY', 3, 0, 3, '海快（深圳搬运工）.xlsx'],
+  ].map(([id, supplier, board, amount, currency, rows, direct, indirect, file]) => ({ id, supplier, board, period: '2026-05-01 至 2026-06-30', amount, currency, settled: '0.000', state: '待结清', rows, direct, indirect, unresolved: 0, file, created: '2026-07-01' })),
+  costs: [
+    ['COST-DF-001', 'APB-SUP-DF-20260516-08D115', '东风', '派送', '黑貓派件費', '派送费', '402,343.000', 'TWD', '直接成本', '已归属'],
+    ['COST-DF-002', 'APB-SUP-DF-20260516-08D115', '东风', '派送', '拖櫃專車', '车趟费', '132,625.000', 'TWD', '间接成本', '待分摊'],
+    ['COST-LD-001', 'APB-SUP-LD-20260616-CDB8CE', '联多', '海运', '海運費', '海运费', '629,000.000', 'CNY', '间接成本', '待分摊'],
+    ['COST-LB-001', 'APB-SUP-LB-20260622-CBCAA3', '力宝', '空运', '重量 × 单价', '空运费', '1,742.400', 'CNY', '直接成本', '已归属'],
+    ['COST-TRK-001', 'APB-SUP-TRK-20260501-D88392', '仓库送船公司', '租车', '9.6米车', '租车费', '234,500.000', 'CNY', '间接成本', '待分摊'],
+  ].map(([id, bill, supplier, board, raw, fee, amount, currency, type, status]) => ({ id, bill, supplier, board, raw, fee, keyType: '账期', key: '2026-05-01 至 2026-06-30', amount, currency, detailCount: 1, type, target: type === '直接成本' ? '业务订单' : '-', status })),
+  pools: [
+    { id: 'SET-DEL-202605-01', bill: 'APB-SUP-DF-20260516-08D115', supplier: '东风', board: '派送成本', fee: '车趟费', currency: 'TWD', detailCount: 1, scope: '当前账期拖柜专车费用', amount: '132,625.000 TWD', orders: 0, ruleId: 'RULE-SP-DF-001', factor: '订单占用体积', fallback: '订单计费重', status: '待分摊', version: '-' },
+    { id: 'SET-SEA-FREIGHT-01', bill: 'APB-SUP-LD-20260616-CDB8CE', supplier: '联多', board: '海运成本', fee: '海运费', currency: 'CNY', detailCount: 63, scope: '同一提单或货柜', amount: '629,000.000 CNY', orders: 0, ruleId: 'RULE-SEA-001', factor: '订单计费吨', fallback: '订单体积', status: '待分摊', version: '-' },
+    { id: 'SET-TRK-202605-01', bill: 'APB-SUP-TRK-20260501-D88392', supplier: '仓库送船公司', board: '租车成本', fee: '租车费', currency: 'CNY', detailCount: 7, scope: '当前账期租车费用', amount: '234,500.000 CNY', orders: 0, ruleId: 'RULE-TRK-001', factor: '订单计费重', fallback: '订单数', status: '待人工确认', version: '-' },
+  ],
+  allocationRules: [
+    ['RULE-DEL-001', '派送成本', '车趟费', '全部供应商', '订单计费重', '订单包裹数'],
+    ['RULE-CLR-001', '清关成本', '仓租', '全部供应商', '占用量 × 仓储天数', '订单计费重'],
+    ['RULE-SEA-001', '海运成本', '海运费', '全部供应商', '订单计费吨', '订单体积'],
+    ['RULE-AIR-001', '空运成本', '中港运输费', '全部供应商', '空运计费重', '订单实重'],
+    ['RULE-TRK-001', '租车成本', '租车费', '全部供应商', '订单计费重', '订单数'],
+    ['RULE-SP-DF-001', '派送成本', '车趟费', '东风', '订单占用体积', '订单计费重'],
+  ].map(([id, board, fee, supplier, factor, fallback]) => ({ id, board, fee, supplier, scope: '同一成本账期内的候选业务订单', factor, fallback, rounding: '最大余数法', effective: '2026-01-01 起', status: '启用' })),
+  fees: [
+    ['COST-DEL-001', '派送费', '派送成本'], ['COST-DEL-007', '车趟费', '派送成本'],
+    ['COST-CLR-001', '清关费', '清关成本'], ['COST-CLR-002', '进口税费', '清关成本'],
+    ['COST-SEA-001', '海运费', '海运成本'], ['COST-SEA-002', '拖柜费', '海运成本'],
+    ['COST-AIR-001', '空运费', '空运成本'], ['COST-AIR-003', '中港段费', '空运成本'],
+    ['COST-TRK-001', '租车费', '租车成本'], ['COST-TRK-002', '搬运费', '租车成本'],
+  ].map(([code, name, board]) => ({ code, name, board, definition: `${name}的统一成本口径。`, remark: '', rules: 1, references: 1, status: '启用', updatedAt: '2026-07-01 10:00' })),
+  feeAliases: [],
+}
+
