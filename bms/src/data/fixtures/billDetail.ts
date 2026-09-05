@@ -20,6 +20,13 @@ export const refundDetailFixtures = [
   { billNo: 'PCB-OG0370-20260721-0a19', waybill: 'YT682941566TW', order: 'SO-260721-004221', signedAt: '2026/07/21 11:08', sourceCurrency: 'CNY', sourceAmount: 91640, codSurcharge: 0, payableRefund: 91640, specifiedDeduction: 3020, provisionalRefund: 88620, refundRate: 1, settlementCurrency: 'CNY', actualRefund: 88620, returned: 0, pending: 88620, state: '待核销' },
 ]
 
+export const refundRecoveryFixtures = [
+  { billNo: 'PCB-OG0347-20260526-0a19', waybill: 'YT682941503GB', order: 'SO-260526-003952', customer: '测试1', signStatus: '正常签收', signedAt: '2026/05/25 16:42', carrier: 'DHL eCommerce', recoveryStatus: '已回款', recoveredAt: '2026/05/28 10:12', recoveryCurrency: 'TWD', recoveryAmount: 9780, actualRecoveredAmount: 9780, method: '银行转账', serialNo: 'RC-20260528-0136', recoveryRate: '1.000000', exchangeGainLoss: 0 },
+  { billNo: 'PCB-OG0347-20260526-0a19', waybill: 'YT682941504GB', order: 'SO-260526-003952', customer: '测试1', signStatus: '正常签收', signedAt: '2026/05/25 18:03', carrier: 'DHL eCommerce', recoveryStatus: '待回款', recoveredAt: '-', recoveryCurrency: '-', recoveryAmount: null, actualRecoveredAmount: null, method: '-', serialNo: '-', recoveryRate: '-', exchangeGainLoss: null },
+  { billNo: 'PCB-OG0370-20260721-0a19', waybill: 'YT682941566TW', order: 'SO-260721-004221', customer: 'JYK-深圳立杰海快', signStatus: '正常签收', signedAt: '2026/07/21 11:08', carrier: 'DHL eCommerce', recoveryStatus: '已回款', recoveredAt: '2026/07/24 09:42', recoveryCurrency: 'CNY', recoveryAmount: 91640, actualRecoveredAmount: 91640, method: '银行转账', serialNo: 'RC-20260724-0091', recoveryRate: '1.000000', exchangeGainLoss: 0 },
+  { billNo: 'PCB-OG0370-20260721-0a19', waybill: 'YT682941568TW', order: 'SO-260721-004221', customer: 'JYK-深圳立杰海快', signStatus: '拒收', signedAt: '-', carrier: 'DHL eCommerce', recoveryStatus: '异常不回款', recoveredAt: '-', recoveryCurrency: '-', recoveryAmount: null, actualRecoveredAmount: null, method: '-', serialNo: '-', recoveryRate: '-', exchangeGainLoss: null },
+]
+
 export const deductionDetailFixtures = [
   { billNo: 'PCB-OG0370-20260721-0a19', feeNo: 'FEE-COD-20260721-001', fee: '代收货款手续费', order: 'SO-260721-004221', waybill: 'YT682941566TW', originalCurrency: 'CNY', originalAmount: 3020, conversionRate: 1, sourceCurrency: 'CNY', deductionAmount: 3020, state: '已计入返款账单' },
 ]

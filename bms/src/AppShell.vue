@@ -23,7 +23,6 @@ const billingNavigation = [
     { key: 'receivableSummary', label: '营收总览', path: BILLING_PATHS.receivableSummary, icon: DataAnalysis },
     { key: 'receivable', label: '应收账单', path: BILLING_PATHS.receivable, icon: Files },
     { key: 'refund', label: '返款账单', path: BILLING_PATHS.refund, icon: Tickets },
-    { key: 'remittance', label: '回款管理', path: BILLING_PATHS.remittance, icon: Money },
     { key: 'adjustments', label: '调账中心', path: BILLING_PATHS.adjustments, icon: Operation },
   ] },
   { group: '核心配置', items: [

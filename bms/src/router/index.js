@@ -36,7 +36,6 @@ export const router = createRouter({
     { path: `${BILLING_PATHS.receivable}/:billNo`, component: () => import('../billing/views/BillDetailView.vue'), props: (route) => ({ billType: 'AR', billNo: route.params.billNo }), meta: routeMeta('billing', 'receivable', '应收账单详情', BILLING_PATHS.receivable) },
     billingRoute(BILLING_PATHS.refund, 'refund', '返款账单', () => import('../billing/views/BillsView.vue'), { billType: 'RF' }),
     { path: `${BILLING_PATHS.refund}/:billNo`, component: () => import('../billing/views/BillDetailView.vue'), props: (route) => ({ billType: 'RF', billNo: route.params.billNo }), meta: routeMeta('billing', 'refund', '返款账单详情', BILLING_PATHS.refund) },
-    billingRoute(BILLING_PATHS.remittance, 'remittance', '回款管理', () => import('../billing/views/RemittanceView.vue')),
     billingRoute(BILLING_PATHS.adjustments, 'adjustments', '调账中心', () => import('../billing/views/AdjustmentView.vue')),
     billingRoute(BILLING_PATHS.config, 'config', '账单配置', () => import('../billing/views/BillingConfigView.vue')),
     billingRoute(BILLING_PATHS.rates, 'rates', '汇率配置', () => import('../billing/views/RateConfigView.vue')),

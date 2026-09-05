@@ -2,7 +2,6 @@ export const BILLING_PATHS = {
   receivableSummary: '/billing/revenue-overview',
   receivable: '/billing/receivable-bills',
   refund: '/billing/refund-bills',
-  remittance: '/billing/remittance',
   adjustments: '/billing/adjustments',
   config: '/billing/config',
   rates: '/billing/rates',
