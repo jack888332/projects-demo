@@ -18,7 +18,7 @@ const candidateFeeRows = useDemoDataset('billingGenerationCandidateFees', [
   { id: 'GF-AR-001', billType: 'AR', selected: true, fee: '派送附加费', businessNo: 'PF607701342355197952', sourceAt: '2026-08-02 08:42', currency: 'CNY', amount: 18, reason: '期末补录' },
   { id: 'GF-AR-002', billType: 'AR', selected: true, fee: '仓储费', businessNo: 'PF607701343168892928', sourceAt: '2026-08-02 09:15', currency: 'CNY', amount: 22, reason: '延迟同步' },
   { id: 'GF-AR-003', billType: 'AR', selected: false, fee: '操作费', businessNo: 'PF607701344225857536', sourceAt: '2026-08-02 09:32', currency: 'CNY', amount: 18, reason: '待财务确认' },
-  { id: 'GF-RF-001', billType: 'RF', selected: true, fee: '应返货款', businessNo: 'SO-260721-004326', sourceAt: '2026-08-02 08:56', currency: 'CNY', amount: 1260, reason: '新增签收包裹' },
+  { id: 'GF-RF-001', billType: 'RF', selected: true, fee: '应付返款', businessNo: 'SO-260721-004326', sourceAt: '2026-08-02 08:56', currency: 'CNY', amount: 1260, reason: '新增签收包裹' },
   { id: 'GF-RF-002', billType: 'RF', selected: true, fee: '代收服务费', businessNo: 'SO-260721-004326', sourceAt: '2026-08-02 08:56', currency: 'CNY', amount: -42, reason: '随包裹归集' },
 ])
 const replacementOptions = useDemoDataset('billingReplacementOptions', [

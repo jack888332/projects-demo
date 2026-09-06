@@ -1,8 +1,8 @@
 export const receivableOrderFeeFixtures = [
-  { businessNo: 'PF607701341575057408', lastMileNo: 'LJ00006908-1', firstMileNo: 'LJ00006908-1', freight: 126.36, deliverySurcharge: null, warehouseFee: 8.5, operationFee: null },
-  { businessNo: 'PF607701341755412480', lastMileNo: 'LJ00006904-2', firstMileNo: 'LJ00006904-2', freight: 143.07, deliverySurcharge: null, warehouseFee: null, operationFee: 12 },
-  { businessNo: 'PF607701342111928320', lastMileNo: 'LJ00006905', firstMileNo: 'LJ00006905', freight: 340.41, deliverySurcharge: null, warehouseFee: 16, operationFee: null },
-  { businessNo: 'PF607701342355197952', lastMileNo: '1051653540', firstMileNo: '1051653540', freight: 30.75, deliverySurcharge: 18, warehouseFee: null, operationFee: null },
+  { businessNo: 'PF607701341575057408', lastMileNo: 'LJ00006908-1', firstMileNo: 'LJ00006908-1', freight: 126.36, deliverySurcharge: null, warehouseFee: 8.5, operationFee: null, marketingDiscount: -12.5, couponDiscount: null, integralDiscount: null, claimFee: null },
+  { businessNo: 'PF607701341755412480', lastMileNo: 'LJ00006904-2', firstMileNo: 'LJ00006904-2', freight: 143.07, deliverySurcharge: null, warehouseFee: null, operationFee: 12, marketingDiscount: null, couponDiscount: -8, integralDiscount: null, claimFee: null },
+  { businessNo: 'PF607701342111928320', lastMileNo: 'LJ00006905', firstMileNo: 'LJ00006905', freight: 340.41, deliverySurcharge: null, warehouseFee: 16, operationFee: null, marketingDiscount: null, couponDiscount: null, integralDiscount: -6.5, claimFee: null },
+  { businessNo: 'PF607701342355197952', lastMileNo: '1051653540', firstMileNo: '1051653540', freight: 30.75, deliverySurcharge: 18, warehouseFee: null, operationFee: null, marketingDiscount: null, couponDiscount: null, integralDiscount: null, claimFee: -18 },
   { businessNo: 'PF607701342648799232', lastMileNo: '1051653562', firstMileNo: '1051653562', freight: 85.35, deliverySurcharge: null, warehouseFee: null, operationFee: 10 },
   { businessNo: 'PF607701342871097344', lastMileNo: '1051653573', firstMileNo: '1051653573', freight: 50.7, deliverySurcharge: 18, warehouseFee: 8.5, operationFee: null },
   { businessNo: 'PF607701343030480896', lastMileNo: '1051653455', firstMileNo: '1051653455', freight: 9.23, deliverySurcharge: 18, warehouseFee: null, operationFee: null },

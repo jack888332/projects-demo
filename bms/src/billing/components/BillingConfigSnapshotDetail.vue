@@ -11,7 +11,7 @@ const warehouseLabels = { SZ:'深圳集运仓', DG:'东莞集运仓', YW:'义乌
 const nodeLabels = { WEIGHT_OUTBOUND:'出库时间', ORDER_COMPLETED:'订单完结' }
 const feeLabels = {
   ...Object.fromEntries(billingProcessFixtures.fees.map(item => [item.code, item.name])),
-  FREIGHT:'运输费', OVERSIZE_FEE:'超材费', REISSUE_FEE:'重出费', COD_SERVICE_FEE:'代收货款手续费', OTHER_RECEIVABLE_FEE:'其他应收费项', FEE0024:'必要归集金额', FALLBACK:'其他费项',
+  FREIGHT:'运输费', OVERSIZE_FEE:'超材费', REISSUE_FEE:'重出费', COD_SERVICE_FEE:'代收服务费', OTHER_RECEIVABLE_FEE:'其他应收费项', FEE0024:'必要归集金额', FALLBACK:'其他费项',
 }
 const refundModeLabels = { RECEIVED:'回款返款', SIGNED:'签收返款' }
 const negativePolicyLabels = { NEXT_REFUND_BILL:'顺延到下期返款账单', CURRENT_AR_BILL:'反向计入本期应收账单' }
@@ -94,8 +94,8 @@ const overdueFeeText = computed(() => terms.value.overdueFee === undefined ? '�
           <el-descriptions-item label="条款生效周期" :span="3">{{ effectText(refund.effectPeriod) }}</el-descriptions-item>
         </el-descriptions>
         <el-table :data="refund.currencyRules || []" border class="snapshot-rule-table">
-          <el-table-column label="货款原始币种" min-width="140"><template #default="scope">{{ scope.row.fallback ? '其他币种（兜底）' : scope.row.sourceCurrency || '未记录' }}</template></el-table-column>
-          <el-table-column prop="settlementCurrency" label="货款结算币种" min-width="140" />
+          <el-table-column label="返款原始币种" min-width="140"><template #default="scope">{{ scope.row.fallback ? '其他币种（兜底）' : scope.row.sourceCurrency || '未记录' }}</template></el-table-column>
+          <el-table-column prop="settlementCurrency" label="返款结算币种" min-width="140" />
           <el-table-column prop="accountName" label="客户收款账户" min-width="160" />
           <el-table-column prop="accountNo" label="账户号码" min-width="150" />
         </el-table>

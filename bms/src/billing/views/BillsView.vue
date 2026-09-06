@@ -13,10 +13,13 @@ import StackedCell from '../../shared/components/StackedCell.vue'
 import StatusTag from '../../shared/components/StatusTag.vue'
 import ConfigVersionTag from '../../shared/components/ConfigVersionTag.vue'
 import DataTableFrame from '../../shared/components/DataTableFrame.vue'
+import BillAmountCell from '../components/BillAmountCell.vue'
 import { useStagedQuery } from '../../shared/composables/useStagedQuery.js'
 import { createBillListSchema } from '../schemas/billListSchema.js'
+import { billingAdjustmentFixtures, billingAdjustmentSeedVersion } from '../../data/fixtures/billingAdjustments.js'
 import { billingBillFixtures, billingBillSeedVersion } from '../../data/fixtures/billingBills.js'
 import { useDemoDataset } from '../data/useDemoDataset.js'
+import { adjustmentImpactByCurrency } from '../data/adjustmentRecords.js'
 import { BILLING_PATHS } from '../../domain/constants.js'
 
 const props = defineProps({ billType: { type: String, required: true } })
@@ -46,6 +49,7 @@ const configSourceMeta = {
 }
 
 const bills = useDemoDataset('billingBills', billingBillFixtures, billingBillSeedVersion)
+const adjustmentRows = useDemoDataset('billingAdjustments', billingAdjustmentFixtures, billingAdjustmentSeedVersion)
 
 const statuses = computed(() => isReceivable.value
   ? ['待审核', '待结清', '逾期未结清', '已结清', '已作废', '全部']
@@ -104,7 +108,6 @@ const summary = computed(() => isReceivable.value ? [
   { label: '已结清', value: countStatus('已结清'), tone: 'green' },
 ])
 
-function money(value) { return Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 function refundListAmount(row) {
   const currency = row.settlementCurrency || row.currency || 'CNY'
   const actual = Number(row.actualRefund ?? row.amount ?? 0)
@@ -112,26 +115,83 @@ function refundListAmount(row) {
   return { currency, actual, returned, pending: Math.max(actual - returned, 0) }
 }
 function refundListBuckets(row) {
+  const impacts = new Map(adjustmentImpactByCurrency(adjustmentRows.value, row.billNo).map(item => [item.currency, item]))
   if (Array.isArray(row.refundCurrencyBuckets) && row.refundCurrencyBuckets.length) {
-    return row.refundCurrencyBuckets.map(bucket => ({
-      currency: bucket.currency,
-      payable: Number(bucket.payable ?? 0),
-      deduction: Number(bucket.deduction ?? 0),
-      actual: Number(bucket.actual ?? 0),
-      paid: Number(bucket.paid ?? 0),
-      pending: Number(bucket.pending ?? Math.max(Number(bucket.actual ?? 0) - Number(bucket.paid ?? 0), 0)),
-    }))
+    return row.refundCurrencyBuckets.map((bucket) => {
+      const impact = impacts.get(bucket.currency)
+      return {
+        currency: bucket.currency,
+        payable: Number(bucket.payable ?? 0),
+        deduction: Number(bucket.deduction ?? 0),
+        currentAdjustment: impact?.current ?? null,
+        previousAdjustment: impact?.prior ?? null,
+        actual: Number(bucket.actual ?? 0),
+        paid: Number(bucket.paid ?? 0),
+        pending: Number(bucket.pending ?? Math.max(Number(bucket.actual ?? 0) - Number(bucket.paid ?? 0), 0)),
+      }
+    })
   }
   const amount = refundListAmount(row)
   const refundRate = Number(row.refundRate ?? 1)
+  const impact = impacts.get(amount.currency)
   return [{
     currency: amount.currency,
     payable: Number(row.payableRefund ?? row.original ?? 0) * refundRate,
     deduction: Number(row.specifiedDeduction ?? row.deduction ?? 0) * refundRate,
+    currentAdjustment: impact?.current ?? null,
+    previousAdjustment: impact?.prior ?? null,
     actual: amount.actual,
     paid: amount.returned,
     pending: amount.pending,
   }]
+}
+function receivableListBuckets(row) {
+  const impacts = new Map(adjustmentImpactByCurrency(adjustmentRows.value, row.billNo).map(item => [item.currency, item]))
+  const buckets = [{
+    currency: row.currency || 'CNY',
+    receivable: Number(row.amount ?? 0),
+    written: Number(row.paid ?? 0),
+  }]
+  if (row.secondCurrency) {
+    buckets.push({
+      currency: row.secondCurrency,
+      receivable: Number(row.secondAmount ?? 0),
+      written: Number(row.secondPaid ?? 0),
+    })
+  }
+  return buckets.map(bucket => ({
+    ...bucket,
+    currentAdjustment: impacts.get(bucket.currency)?.current ?? null,
+    previousAdjustment: impacts.get(bucket.currency)?.prior ?? null,
+    pending: bucket.receivable - bucket.written,
+  }))
+}
+function billAmountRows(row) {
+  const buckets = isReceivable.value ? receivableListBuckets(row) : refundListBuckets(row)
+  const definitions = isReceivable.value
+    ? [
+        { key: 'receivable', label: '应收金额' },
+        { key: 'currentAdjustment', label: '本期账单金额冲正', signed: true, displayEmpty: true },
+        { key: 'previousAdjustment', label: '往期账单金额冲正', signed: true, displayEmpty: true },
+        { key: 'written', label: '已收金额' },
+        { key: 'pending', label: '待收金额', tone: 'pending' },
+      ]
+    : [
+        { key: 'payable', label: '应付返款' },
+        { key: 'deduction', label: '扣减费项' },
+        { key: 'currentAdjustment', label: '本期账单金额冲正', signed: true, displayEmpty: true },
+        { key: 'previousAdjustment', label: '往期账单金额冲正', signed: true, displayEmpty: true },
+        { key: 'actual', label: '实付返款' },
+        { key: 'paid', label: '已付返款' },
+        { key: 'pending', label: '待付返款', tone: 'pending' },
+      ]
+  return definitions.map(definition => ({
+    ...definition,
+    values: buckets.map(bucket => ({
+      currency: bucket.currency,
+      amount: bucket[definition.key],
+    })),
+  }))
 }
 function resetQuery() { resetStagedQuery(); activeStatus.value = '待审核' }
 function openDetail(row) {
@@ -188,7 +248,7 @@ function confirmExport() {
         <el-table-column prop="closeStatus" label="账期收口" width="90"><template #default="scope"><StatusTag :label="scope.row.closeStatus" /></template></el-table-column>
         <el-table-column prop="processingState" label="处理状态" width="125"><template #default="scope">{{ scope.row.processingState || '--' }}</template></el-table-column>
         <el-table-column v-if="!isReceivable" prop="refundMode" label="返款模式" width="100" />
-        <el-table-column :label="isReceivable ? '费项结算币种金额' : '返款结算币金额'" :width="isReceivable ? 250 : 620"><template #default="scope"><div v-if="isReceivable" class="amount-lines"><span>应收 <b>{{ money(scope.row.amount) }} {{ scope.row.currency }}</b></span><span>已核销 {{ money(scope.row.paid) }} {{ scope.row.currency }}</span><span>未核销 <b>{{ money(scope.row.amount - scope.row.paid) }} {{ scope.row.currency }}</b></span></div><div v-else class="refund-list-buckets"><div v-for="bucket in refundListBuckets(scope.row)" :key="bucket.currency" class="amount-lines refund-list-bucket"><strong>{{ bucket.currency }}</strong><span>应付返款 <b>{{ money(bucket.payable) }}</b></span><span>扣减费项 {{ money(bucket.deduction) }}</span><span>实付返款 <b>{{ money(bucket.actual) }}</b></span><span>已付返款 {{ money(bucket.paid) }}</span><span>待付返款 <b>{{ money(bucket.pending) }}</b></span></div></div></template></el-table-column>
+        <el-table-column :label="isReceivable ? '费项结算币种金额' : '返款结算币金额'" :width="isReceivable ? 380 : 620"><template #default="scope"><BillAmountCell :rows="billAmountRows(scope.row)" /></template></el-table-column>
         <el-table-column prop="periodType" label="账期类型" width="90" /><el-table-column prop="periodStart" label="账期起始日" width="112" /><el-table-column prop="periodEnd" label="账期结束日" width="112" />
         <el-table-column v-if="isReceivable" prop="sector" label="业务板块" width="125" /><el-table-column prop="country" :label="isReceivable ? '运抵国' : '目的国'" width="100" /><el-table-column prop="customer" label="客户名称" width="160" show-overflow-tooltip /><el-table-column prop="shop" label="所属店铺" width="155" show-overflow-tooltip /><el-table-column prop="group" label="所属客户组" width="130" show-overflow-tooltip /><el-table-column prop="batchNo" label="生成批次编号" width="210" show-overflow-tooltip /><el-table-column prop="taskNo" label="任务编号" width="200" show-overflow-tooltip />
         <el-table-column label="配置编号" min-width="210"><template #default="scope"><StackedCell :primary="scope.row.configNo" :secondary="configSourceMeta[scope.row.configSource] || scope.row.configSource" /></template></el-table-column>

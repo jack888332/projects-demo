@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { deductionDetailFixtures, refundDetailFixtures } from '../src/data/fixtures/billDetail.ts'
+import { deductionDetailFixtures, refundDetailFixtures, refundNegativeCarryFixtures } from '../src/data/fixtures/billDetail.ts'
 import { billingBillFixtures } from '../src/data/fixtures/billingBills.ts'
+import { billingAdjustmentFixtures } from '../src/data/fixtures/billingAdjustments.ts'
+import { adjustmentImpactByCurrency } from '../src/billing/data/adjustmentRecords.js'
 
 describe('refund detail demonstration data', () => {
   const billNo = 'PCB-OG0370-20260721-0a19'
@@ -9,6 +11,7 @@ describe('refund detail demonstration data', () => {
   const deductions = deductionDetailFixtures.filter(item => item.billNo === billNo)
   const sum = (read: (row: typeof rows[number]) => number | null | undefined) => rows.reduce((total, row) => total + Number(read(row) || 0), 0)
   const buckets = bill?.refundCurrencyBuckets ?? []
+  const adjustmentImpacts = new Map(adjustmentImpactByCurrency(billingAdjustmentFixtures, billNo).map(item => [item.currency, item]))
 
   it('provides at least six order-level refund rows', () => {
     expect(rows.length).toBeGreaterThanOrEqual(6)
@@ -34,7 +37,9 @@ describe('refund detail demonstration data', () => {
       const bucketRows = rows.filter(row => row.settlementCurrency === bucket.currency)
       expect(bucketRows.reduce((total, row) => total + row.payableRefund * row.refundRate, 0)).toBeCloseTo(bucket.payable, 6)
       expect(bucketRows.reduce((total, row) => total + row.specifiedDeduction * row.refundRate, 0)).toBeCloseTo(bucket.deduction, 6)
-      expect(bucketRows.reduce((total, row) => total + Number(row.actualRefund || 0), 0)).toBeCloseTo(bucket.actual, 6)
+      const baseActual = bucketRows.reduce((total, row) => total + Number(row.actualRefund || 0), 0)
+      const impact = adjustmentImpacts.get(bucket.currency)
+      expect(baseActual + Number(impact?.current || 0) + Number(impact?.prior || 0)).toBeCloseTo(bucket.actual, 6)
     })
   })
 
@@ -46,5 +51,20 @@ describe('refund detail demonstration data', () => {
 
   it('contains multiple named deduction fee columns', () => {
     expect(new Set(deductions.map(item => item.fee))).toEqual(new Set(['代收货款手续费', '超材费', '重出费']))
+  })
+})
+
+describe('refund negative-carry offset demonstration data', () => {
+  const billNo = 'PCB-OG0347-20260810-0a19'
+  const bill = billingBillFixtures.find(item => item.billNo === billNo)
+  const orderRow = refundDetailFixtures.find(item => item.billNo === billNo)
+  const offset = refundNegativeCarryFixtures.find(item => item.billNo === billNo && item.kind === '负数承接冲抵')
+  const impact = adjustmentImpactByCurrency(billingAdjustmentFixtures, billNo).find(item => item.currency === 'TWD')
+
+  it('keeps the order provisional refund separate from reversals and negative-carry offset', () => {
+    expect(orderRow?.provisionalRefund).toBe(7800)
+    expect(bill?.provisionalRefund).toBe(orderRow?.provisionalRefund)
+    expect(Number(orderRow?.actualRefund) + Number(impact?.current) + Number(impact?.prior) + Number(offset?.amount)).toBe(bill?.actualRefund)
+    expect(bill?.actualRefund).toBe(5640)
   })
 })

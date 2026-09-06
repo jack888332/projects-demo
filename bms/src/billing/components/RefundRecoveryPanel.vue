@@ -33,7 +33,7 @@ const exchangeText = (order) => {
     return `按回款汇率 ${rateText(recovered.recoveryRate)} 与标准化返款汇率 ${rateText(normalizedRefundRate)}（${detail.sourceCurrency} → ${props.baseCurrency}）折算差额`
   }
   if (recovered && Number.isFinite(normalizedRefundRate)) return `回款汇率与标准化返款汇率均为 ${rateText(normalizedRefundRate)}（${detail.sourceCurrency} → ${props.baseCurrency}），汇兑损益为 0`
-  if (recovered) return '缺少货款结算币到财务本位币的必要换算汇率'
+  if (recovered) return '缺少返款结算币到财务本位币的必要换算汇率'
   return '缺少回款汇率或必要换算汇率'
 }
 

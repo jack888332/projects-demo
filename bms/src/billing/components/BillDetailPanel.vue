@@ -1,15 +1,20 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { EditPen } from '@element-plus/icons-vue'
 import BillGenerationDialog from './BillGenerationDialog.vue'
+import BillAdjustmentRecordsPanel from './BillAdjustmentRecordsPanel.vue'
+import BillRateTables from './BillRateTables.vue'
+import DeductionFeeLabel from './DeductionFeeLabel.vue'
 import RefundRecoveryPanel from './RefundRecoveryPanel.vue'
 import RefundOrderRowsPanel from './RefundOrderRowsPanel.vue'
 import ConditionFilter from '../../shared/components/ConditionFilter.vue'
 import DataTableFrame from '../../shared/components/DataTableFrame.vue'
 import DownloadButton from '../../shared/components/DownloadButton.vue'
 import StatusTag from '../../shared/components/StatusTag.vue'
-import { billAdjustmentLinkFixtures, billWriteoffFixtures, deductionDetailFixtures, receivableOrderFeeFixtures, refundDetailFixtures, refundNegativeCarryFixtures, refundRecoveryFixtures } from '../../data/fixtures/billDetail.js'
+import { billWriteoffFixtures, deductionDetailFixtures, receivableOrderFeeFixtures, refundDetailFixtures, refundNegativeCarryFixtures, refundRecoveryFixtures } from '../../data/fixtures/billDetail.js'
+import { billingAdjustmentFixtures, billingAdjustmentSeedVersion } from '../../data/fixtures/billingAdjustments.js'
 import { useDemoDataset } from '../data/useDemoDataset.js'
+import { adjustmentImpactByCurrency } from '../data/adjustmentRecords.js'
+import { deductionFeeDisplayName, isZeroFeeAmount } from '../data/feeDisplayLabels.js'
 
 const props = defineProps({
   bill: { type: Object, required: true },
@@ -24,8 +29,6 @@ const feeBusinessNo = ref('')
 const showUnboundFees = ref(false)
 const previewVisible = ref(false)
 const previewAction = ref('')
-const rateEditorVisible = ref(false)
-const editableRates = ref([])
 const generationDialog = ref(null)
 
 watch(() => [props.bill.billNo, props.isReceivable], () => {
@@ -38,25 +41,65 @@ watch(() => [props.bill.billNo, props.isReceivable], () => {
 })
 
 const money = (value) => Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const feeAmountText = (value, currency = 'CNY') => value === null || value === undefined || isZeroFeeAmount(value) ? '--' : `${money(value)} ${currency}`
+const signedAmountText = (value, currency) => value === null || value === undefined
+  ? '--'
+  : `${Number(value) > 0 ? '+' : ''}${money(value)} ${currency}`
 const statusClass = computed(() => props.bill.status === '已结清' ? 'success' : props.bill.status === '待结清' ? 'running' : 'warning')
+const adjustmentRows = useDemoDataset('billingAdjustments', billingAdjustmentFixtures, billingAdjustmentSeedVersion)
+const linkedAmountReversals = computed(() => adjustmentRows.value.filter((row) => (
+  row.billType === (props.isReceivable ? 'AR' : 'RF')
+  && (row.assignedBill || row.billNo) === props.bill.billNo
+)))
+const adjustmentImpacts = computed(() => new Map(
+  adjustmentImpactByCurrency(adjustmentRows.value, props.bill.billNo).map(item => [item.currency, item]),
+))
+function reversalAmount(currency, period) {
+  const impact = adjustmentImpacts.value.get(currency)
+  return period === 'CURRENT' ? impact?.current ?? null : impact?.prior ?? null
+}
 const arCurrencyBuckets = computed(() => {
-  const rows = [{ currency: props.bill.currency, state: '待收款', due: props.bill.amount, settled: props.bill.paid, pending: props.bill.amount - props.bill.paid }]
-  if (props.bill.secondCurrency) rows.push({ currency: props.bill.secondCurrency, state: '已核销', due: props.bill.secondAmount, settled: 0, pending: props.bill.secondAmount })
-  return rows
+  const rows = [{ currency: props.bill.currency, state: '待收款', due: props.bill.amount, settled: props.bill.paid }]
+  if (props.bill.secondCurrency) rows.push({ currency: props.bill.secondCurrency, state: '已核销', due: props.bill.secondAmount, settled: props.bill.secondPaid || 0 })
+  return rows.map((row) => ({
+    ...row,
+    currentAdjustment: reversalAmount(row.currency, 'CURRENT'),
+    previousAdjustment: reversalAmount(row.currency, 'PRIOR'),
+    pending: Number(row.due || 0) - Number(row.settled || 0),
+  }))
 })
 const arRates = computed(() => [
   { settlement: props.bill.currency, target: 'TWD', direction: `${props.bill.currency} → TWD`, rate: '1.000000' },
   ...(props.bill.secondCurrency ? [{ settlement: props.bill.secondCurrency, target: 'CNY', direction: `CNY → ${props.bill.secondCurrency}`, rate: '1.000000' }] : []),
 ])
-const arFeeSummary = computed(() => [
-  { fee: '基础运费', currency: props.bill.currency, amount: props.bill.amount, written: props.bill.paid, pending: props.bill.amount - props.bill.paid },
-  ...(props.bill.secondCurrency ? [{ fee: '往期账单冲正', currency: props.bill.secondCurrency, amount: props.bill.secondAmount, written: 0, pending: props.bill.secondAmount }] : []),
-])
-const arOrderFeeRows = useDemoDataset('billingReceivableOrderFees', receivableOrderFeeFixtures)
+const arFeeSummary = computed(() => arCurrencyBuckets.value.map((bucket) => {
+  const current = Number(bucket.currentAdjustment || 0)
+  const previous = Number(bucket.previousAdjustment || 0)
+  const baseAmount = Number(bucket.due || 0) - current - previous
+  return {
+    fee: '费项合计（冲正前）',
+    currency: bucket.currency,
+    amount: baseAmount,
+    written: bucket.settled,
+    pending: Number(bucket.pending || 0) - current - previous,
+  }
+}))
+const arOrderFeeRows = useDemoDataset('billingReceivableOrderFees', receivableOrderFeeFixtures, 2)
 const filteredArOrderFeeRows = computed(() => arOrderFeeRows.value.filter((row) => !feeBusinessNo.value || row.businessNo.includes(feeBusinessNo.value.trim())))
-const arVerticalFeeRows = computed(() => filteredArOrderFeeRows.value.flatMap((row) => [
-  ['运费', row.freight], ['派送附加费', row.deliverySurcharge], ['仓储费', row.warehouseFee], ['操作费', row.operationFee],
-].filter(([, amount]) => amount !== null).map(([fee, amount], index) => ({ feeNo: `FEE-${row.businessNo.slice(-8)}-${index + 1}`, businessNo: row.businessNo, lastMileNo: row.lastMileNo, fee, currency: 'CNY', amount }))))
+const arFeeColumns = [
+  { key: 'freight', label: '运费', minWidth: 170 },
+  { key: 'deliverySurcharge', label: '派送附加费', minWidth: 170 },
+  { key: 'warehouseFee', label: '仓储费', minWidth: 150 },
+  { key: 'operationFee', label: '操作费', minWidth: 150 },
+  { key: 'marketingDiscount', label: deductionFeeDisplayName('满减活动优惠金额'), minWidth: 260, deduction: true },
+  { key: 'couponDiscount', label: deductionFeeDisplayName('优惠券优惠金额'), minWidth: 260, deduction: true },
+  { key: 'integralDiscount', label: deductionFeeDisplayName('积分优惠金额'), minWidth: 235, deduction: true },
+  { key: 'claimFee', label: deductionFeeDisplayName('理赔费'), minWidth: 170, deduction: true },
+]
+const arVerticalFeeRows = computed(() => filteredArOrderFeeRows.value.flatMap((row) => arFeeColumns
+  .map(column => ({ column, amount: row[column.key] }))
+  .filter(({ amount }) => amount !== null && amount !== undefined)
+  .map(({ column, amount }, index) => ({ feeNo: `FEE-${row.businessNo.slice(-8)}-${index + 1}`, businessNo: row.businessNo, lastMileNo: row.lastMileNo, fee: column.label, isDeduction: column.deduction, currency: 'CNY', amount }))))
 const refundSummary = computed(() => {
   const bill = props.bill
   const sourceCurrency = bill.sourceCurrency || bill.currency
@@ -86,6 +129,8 @@ const refundSummary = computed(() => {
         actual: Number(bucket.actual ?? 0),
         paid: Number(bucket.paid ?? 0),
         pending: Number(bucket.pending ?? Math.max(Number(bucket.actual ?? 0) - Number(bucket.paid ?? 0), 0)),
+        currentAdjustment: reversalAmount(bucket.currency, 'CURRENT'),
+        previousAdjustment: reversalAmount(bucket.currency, 'PRIOR'),
       }))
     : [{
         sourceCurrency,
@@ -97,6 +142,8 @@ const refundSummary = computed(() => {
         actual: actualRefund,
         paid: returned,
         pending: Math.max(actualRefund - returned, 0),
+        currentAdjustment: reversalAmount(settlementCurrency, 'CURRENT'),
+        previousAdjustment: reversalAmount(settlementCurrency, 'PRIOR'),
       }]
   const baseBucket = settlementBuckets.reduce((total, bucket) => ({
     currency: baseCurrency,
@@ -105,7 +152,13 @@ const refundSummary = computed(() => {
     actual: total.actual + bucket.actual * bucket.baseRate,
     paid: total.paid + bucket.paid * bucket.baseRate,
     pending: total.pending + bucket.pending * bucket.baseRate,
-  }), { currency: baseCurrency, payable: 0, deduction: 0, actual: 0, paid: 0, pending: 0 })
+    currentAdjustment: bucket.currentAdjustment === null
+      ? total.currentAdjustment
+      : Number(total.currentAdjustment || 0) + bucket.currentAdjustment * bucket.baseRate,
+    previousAdjustment: bucket.previousAdjustment === null
+      ? total.previousAdjustment
+      : Number(total.previousAdjustment || 0) + bucket.previousAdjustment * bucket.baseRate,
+  }), { currency: baseCurrency, payable: 0, deduction: 0, actual: 0, paid: 0, pending: 0, currentAdjustment: null, previousAdjustment: null })
   return {
     sourceCurrency,
     settlementCurrency,
@@ -140,70 +193,38 @@ const selectedRefundSummaries = computed(() => {
   const summary = refundSummary.value
   return refundSummaryDimension.value === 'base' ? [summary.baseBucket] : summary.settlementBuckets
 })
-const refundRates = computed(() => {
+const refundSettlementRates = computed(() => {
   const summary = refundSummary.value
-  const rows = summary.settlementBuckets.flatMap((bucket) => {
-    const bucketRates = [{
-      source: bucket.sourceCurrency,
-      target: bucket.currency,
-      direction: `${bucket.sourceCurrency} → ${bucket.currency}`,
-      sourceName: '返款币种配置快照',
-      rate: rateText(bucket.refundRate),
-      state: '已锁定',
-    }]
-    if (bucket.currency !== summary.baseCurrency) bucketRates.push({
-      source: bucket.currency,
-      target: summary.baseCurrency,
-      direction: `${bucket.currency} → ${summary.baseCurrency}`,
-      sourceName: '财务本位币汇率快照',
-      rate: rateText(bucket.baseRate),
-      state: '已锁定',
-    })
-    return bucketRates
-  })
+  const rows = summary.settlementBuckets.map(bucket => ({
+    settlement: bucket.currency,
+    target: summary.baseCurrency,
+    direction: `${bucket.currency} → ${summary.baseCurrency}`,
+    rate: rateText(bucket.baseRate),
+  }))
+  return rows.filter((row, index) => rows.findIndex(candidate => candidate.direction === row.direction && candidate.rate === row.rate) === index)
+})
+const refundOriginalRates = computed(() => {
+  const rows = refundSummary.value.settlementBuckets.map(bucket => ({
+    settlement: bucket.currency,
+    target: bucket.sourceCurrency,
+    direction: `${bucket.sourceCurrency} → ${bucket.currency}`,
+    rate: rateText(bucket.refundRate),
+  }))
   return rows.filter((row, index) => rows.findIndex(candidate => candidate.direction === row.direction && candidate.rate === row.rate) === index)
 })
 const refundDetailRows = useDemoDataset('billingRefundDetails', refundDetailFixtures, 6)
 const deductionDetailRows = useDemoDataset('billingDeductionDetails', deductionDetailFixtures, 5)
 const writeoffRows = useDemoDataset('billingWriteoffs', billWriteoffFixtures, 2)
-const adjustmentRows = useDemoDataset('billingBillAdjustmentLinks', billAdjustmentLinkFixtures)
 const recoveryRows = useDemoDataset('billingRefundRecoveries', refundRecoveryFixtures, 5)
 const negativeCarryRows = useDemoDataset('billingRefundNegativeCarries', refundNegativeCarryFixtures, 2)
 const refundDetails = computed(() => refundDetailRows.value.filter((row) => row.billNo === props.bill.billNo))
 const deductionDetails = computed(() => deductionDetailRows.value.filter((row) => row.billNo === props.bill.billNo))
 const writeoffs = computed(() => writeoffRows.value.filter((row) => row.billNo === props.bill.billNo))
-const adjustments = computed(() => adjustmentRows.value.filter((row) => row.billNo === props.bill.billNo))
+const adjustments = computed(() => linkedAmountReversals.value)
 const recoveries = computed(() => recoveryRows.value.filter((row) => row.billNo === props.bill.billNo))
 const negativeCarryRecords = computed(() => negativeCarryRows.value.filter((row) => row.billNo === props.bill.billNo))
-const refundAdjustmentRecords = computed(() => [
-  ...adjustments.value.map((row) => ({
-    recordNo: row.no,
-    recordType: row.type || '返款调账',
-    recordStatus: row.status,
-    objectNo: row.objectNo || '--',
-    sourceText: row.fee || '--',
-    currency: row.currency,
-    amount: row.delta,
-    time: row.adjustedAt,
-    operator: row.operator || '财务管理员',
-  })),
-  ...negativeCarryRecords.value.map((row) => ({
-    recordNo: row.recordNo,
-    recordType: row.kind,
-    recordStatus: row.kind === '负数承接记录' ? '已结转' : '系统自动',
-    objectNo: row.sourceOrder === '不挂业务订单' ? '--' : row.sourceOrder,
-    sourceText: `${row.note}；来源账单 ${row.sourceBillNo}（${row.sourcePeriod}）`,
-    currency: row.currency,
-    amount: row.amount,
-    time: row.createdAt,
-    operator: '系统自动',
-  })),
-])
-
 function openPreview(action) { previewAction.value = action; previewVisible.value = true }
 function confirmPreview() { previewVisible.value = false; emit('action', previewAction.value) }
-function openRateEditor() { editableRates.value = arRates.value.map((row) => ({ ...row })); rateEditorVisible.value = true }
-function saveRates() { rateEditorVisible.value = false; emit('action', '保存账单特调汇率') }
 function openGeneration() { generationDialog.value?.open() }
 </script>
 
@@ -247,7 +268,13 @@ function openGeneration() { generationDialog.value?.open() }
       <div class="currency-bucket-grid">
         <article v-for="bucket in arCurrencyBuckets" :key="bucket.currency" class="currency-bucket">
           <div class="currency-bucket-head"><strong>{{ bucket.currency }}</strong><StatusTag :label="bucket.state" :tone="bucket.state === '已核销' ? 'success' : 'neutral'" /></div>
-          <dl><div><dt>应收金额</dt><dd>{{ money(bucket.due) }}</dd></div><div><dt>实收金额</dt><dd>{{ money(bucket.settled) }}</dd></div><div><dt>待收金额</dt><dd>{{ money(bucket.pending) }}</dd></div></dl>
+          <dl>
+            <div><dt>应收金额</dt><dd>{{ amountText(bucket.due, bucket.currency) }}</dd></div>
+            <div><dt>本期账单金额冲正</dt><dd>{{ signedAmountText(bucket.currentAdjustment, bucket.currency) }}</dd></div>
+            <div><dt>往期账单金额冲正</dt><dd>{{ signedAmountText(bucket.previousAdjustment, bucket.currency) }}</dd></div>
+            <div><dt>已收金额</dt><dd>{{ amountText(bucket.settled, bucket.currency) }}</dd></div>
+            <div><dt>待收金额</dt><dd>{{ amountText(bucket.pending, bucket.currency) }}</dd></div>
+          </dl>
           <el-button type="primary" plain :disabled="Boolean(bill.processingState)" @click="emit('action', `${bucket.currency}费用核销`)">费用核销</el-button>
         </article>
       </div>
@@ -272,12 +299,14 @@ function openGeneration() { generationDialog.value?.open() }
             v-if="refundSummaryDimension === 'settlement'"
             type="primary"
             :disabled="Boolean(bill.processingState)"
-            @click="emit('action', `${bucket.currency}货款核销`)"
+            @click="emit('action', `${bucket.currency}返款核销`)"
           >核销</el-button>
         </div>
         <dl class="money-metrics">
           <div><dt>应付返款</dt><dd>{{ amountText(bucket.payable, bucket.currency) }}</dd></div>
           <div><dt>扣减费项</dt><dd>{{ amountText(bucket.deduction, bucket.currency) }}</dd></div>
+          <div><dt>本期账单金额冲正</dt><dd>{{ signedAmountText(bucket.currentAdjustment, bucket.currency) }}</dd></div>
+          <div><dt>往期账单金额冲正</dt><dd>{{ signedAmountText(bucket.previousAdjustment, bucket.currency) }}</dd></div>
           <div><dt>实付返款</dt><dd>{{ amountText(bucket.actual, bucket.currency) }}</dd></div>
           <div><dt>已付返款</dt><dd>{{ amountText(bucket.paid, bucket.currency) }}</dd></div>
           <div><dt>待付返款</dt><dd>{{ amountText(bucket.pending, bucket.currency) }}</dd></div>
@@ -287,13 +316,16 @@ function openGeneration() { generationDialog.value?.open() }
 
     <el-tabs v-if="isReceivable" v-model="activeTab" class="bill-detail-tabs">
       <el-tab-pane label="账单汇率" name="rates">
-       <div class="bill-detail-table-block"><h4>费项结算币种折算</h4>
-<DataTableFrame :total="arRates.length" :page-size="20"><template #actions><el-button :icon="EditPen" :disabled="!['待审核'].includes(bill.status)" @click="openRateEditor">编辑特调汇率</el-button></template><el-table :data="arRates" border class="clean-table"><el-table-column prop="settlement" label="费项结算币种" /><el-table-column prop="target" label="财务本位币种" /><el-table-column prop="direction" label="汇兑方向" /><el-table-column prop="rate" label="锁定汇率" /></el-table></DataTableFrame></div>
-        <div class="bill-detail-table-block"><h4>费项原始币种折算</h4>
-<DataTableFrame :total="arRates.length" :page-size="20"><el-table :data="arRates" border class="clean-table"><el-table-column prop="settlement" label="费项结算币种" /><el-table-column prop="target" label="费项原始币种" /><el-table-column prop="direction" label="汇兑方向" /><el-table-column prop="rate" label="锁定汇率" /></el-table></DataTableFrame></div>
+        <BillRateTables
+          subject="费项"
+          :settlement-rates="arRates"
+          :original-rates="arRates"
+          :can-edit="bill.status === '待审核'"
+          @save="emit('action', '保存账单特调汇率')"
+        />
       </el-tab-pane>
       <el-tab-pane label="费用汇总" name="summary">
-<DataTableFrame :total="arFeeSummary.length" :page-size="20"><el-table :data="arFeeSummary" border class="clean-table"><el-table-column prop="fee" label="费项" /><el-table-column prop="currency" label="结算币种" /><el-table-column label="应收金额"><template #default="scope">{{ money(scope.row.amount) }}</template></el-table-column><el-table-column label="已核销金额"><template #default="scope">{{ money(scope.row.written) }}</template></el-table-column><el-table-column label="待核销金额"><template #default="scope">{{ money(scope.row.pending) }}</template></el-table-column></el-table></DataTableFrame></el-tab-pane>
+<DataTableFrame :total="arFeeSummary.length" :page-size="20"><el-table :data="arFeeSummary" border class="clean-table"><el-table-column prop="fee" label="费项" /><el-table-column prop="currency" label="结算币种" /><el-table-column label="应收金额"><template #default="scope">{{ scope.row.displayEmpty ? signedAmountText(scope.row.amount, scope.row.currency) : amountText(scope.row.amount, scope.row.currency) }}</template></el-table-column><el-table-column label="已收金额"><template #default="scope">{{ amountText(scope.row.written, scope.row.currency) }}</template></el-table-column><el-table-column label="待收金额"><template #default="scope">{{ amountText(scope.row.pending, scope.row.currency) }}</template></el-table-column></el-table></DataTableFrame></el-tab-pane>
       <el-tab-pane label="费用明细" name="details">
         <div class="fee-detail-workbench">
           <div class="fee-detail-viewbar">
@@ -311,19 +343,20 @@ function openGeneration() { generationDialog.value?.open() }
             <el-table-column prop="businessNo" label="业务单号" width="245" fixed />
             <el-table-column prop="lastMileNo" label="尾程运单号" width="215" />
             <el-table-column prop="firstMileNo" label="首程运单号" width="215" />
-            <el-table-column label="运费" min-width="170"><template #default="scope">{{ scope.row.freight === null ? '--' : `${money(scope.row.freight)} CNY` }}</template></el-table-column>
-            <el-table-column label="派送附加费" min-width="170"><template #default="scope">{{ scope.row.deliverySurcharge === null ? '--' : `${money(scope.row.deliverySurcharge)} CNY` }}</template></el-table-column>
-            <el-table-column label="仓储费" min-width="150"><template #default="scope">{{ scope.row.warehouseFee === null ? '--' : `${money(scope.row.warehouseFee)} CNY` }}</template></el-table-column>
-            <el-table-column label="操作费" min-width="150"><template #default="scope">{{ scope.row.operationFee === null ? '--' : `${money(scope.row.operationFee)} CNY` }}</template></el-table-column>
+            <el-table-column v-for="column in arFeeColumns" :key="column.key" :min-width="column.minWidth">
+              <template #header><DeductionFeeLabel v-if="column.deduction" :name="column.label" /><span v-else>{{ column.label }}</span></template>
+              <template #default="scope">{{ feeAmountText(scope.row[column.key]) }}</template>
+            </el-table-column>
           </el-table>
 <el-table v-else :data="arVerticalFeeRows" border class="clean-table fee-vertical-table">
-            <el-table-column prop="feeNo" label="费用编号" width="190" /><el-table-column prop="businessNo" label="业务单号" width="220" /><el-table-column prop="lastMileNo" label="尾程运单号" width="180" /><el-table-column prop="fee" label="费项" /><el-table-column prop="currency" label="币种" width="90" /><el-table-column label="结算金额"><template #default="scope">{{ money(scope.row.amount) }} {{ scope.row.currency }}</template></el-table-column>
+            <el-table-column prop="feeNo" label="费用编号" width="190" /><el-table-column prop="businessNo" label="业务单号" width="220" /><el-table-column prop="lastMileNo" label="尾程运单号" width="180" /><el-table-column label="费项" min-width="230"><template #default="scope"><DeductionFeeLabel v-if="scope.row.isDeduction" :name="scope.row.fee" /><span v-else>{{ scope.row.fee }}</span></template></el-table-column><el-table-column prop="currency" label="币种" width="90" /><el-table-column label="结算金额"><template #default="scope">{{ feeAmountText(scope.row.amount, scope.row.currency) }}</template></el-table-column>
           </el-table>
           </DataTableFrame>
         </div>
       </el-tab-pane>
-     <el-tab-pane label="调账记录" name="adjustments">
-<DataTableFrame :total="adjustments.length" :page-size="20"><el-table :data="adjustments" border class="clean-table"><el-table-column prop="no" label="调账单号" width="180" /><el-table-column prop="status" label="审核状态" /><el-table-column prop="fee" label="费项" /><el-table-column prop="objectNo" label="挂靠对象编号" width="220" /><el-table-column prop="currency" label="币种" /><el-table-column label="金额变幅"><template #default="scope">{{ money(scope.row.delta) }}</template></el-table-column><el-table-column prop="adjustedAt" label="调账时间" width="155" /></el-table></DataTableFrame></el-tab-pane>
+     <el-tab-pane label="调整记录" name="adjustments">
+       <BillAdjustmentRecordsPanel :records="adjustments" :assigned-bill-no="bill.billNo" />
+     </el-tab-pane>
       <el-tab-pane label="核销记录" name="writeoffs">
 <DataTableFrame :total="writeoffs.length" :page-size="20"><el-table :data="writeoffs" border class="clean-table"><el-table-column prop="no" label="核销编号" /><el-table-column prop="type" label="核销类型" /><el-table-column prop="currency" label="币种" /><el-table-column label="核销金额"><template #default="scope">{{ money(scope.row.amount) }}</template></el-table-column><el-table-column prop="time" label="核销时间" /><el-table-column prop="operator" label="操作人" /></el-table></DataTableFrame></el-tab-pane>
     </el-tabs>
@@ -331,7 +364,14 @@ function openGeneration() { generationDialog.value?.open() }
     <el-tabs v-else v-model="activeTab" class="bill-detail-tabs">
       <el-tab-pane label="账单概况" name="info"><dl class="bill-info-grid"><div><dt>账单编号</dt><dd>{{ bill.billNo }}</dd></div><div><dt>账单状态</dt><dd>{{ bill.status }}</dd></div><div><dt>账期收口状态</dt><dd>{{ bill.closeStatus }}</dd></div><div><dt>客户</dt><dd>{{ bill.customer }}</dd></div><div><dt>会员编码</dt><dd>{{ bill.memberCode || bill.customerNo }}</dd></div><div><dt>所属店铺快照</dt><dd>{{ bill.shopCode ? `${bill.shopCode} / ${bill.shop}` : bill.shop }}</dd></div><div><dt>目的国</dt><dd>{{ bill.country }}</dd></div><div><dt>账期类型</dt><dd>{{ bill.periodType }}</dd></div><div><dt>实际账期起止日</dt><dd>{{ bill.periodStart }} ~ {{ bill.periodEnd }}</dd></div><div><dt>截断账期标记</dt><dd>{{ bill.truncatedPeriod || '否' }}</dd></div><div><dt>数据截止点</dt><dd>{{ bill.dataCutoffAt || `${bill.periodEnd} 23:59:59` }}</dd></div></dl></el-tab-pane>
       <el-tab-pane label="账单汇率" name="rates">
-<DataTableFrame :total="refundRates.length" :page-size="20"><el-table :data="refundRates" border class="clean-table"><el-table-column prop="source" label="左侧币种" /><el-table-column prop="target" label="右侧币种" /><el-table-column prop="direction" label="汇兑方向" /><el-table-column prop="sourceName" label="汇率来源" min-width="170" /><el-table-column prop="rate" label="锁定汇率" /><el-table-column prop="state" label="汇率状态" /></el-table></DataTableFrame></el-tab-pane>
+        <BillRateTables
+          subject="返款"
+          :settlement-rates="refundSettlementRates"
+          :original-rates="refundOriginalRates"
+          :can-edit="bill.status === '待审核'"
+          @save="emit('action', '保存账单特调汇率')"
+        />
+      </el-tab-pane>
       <el-tab-pane label="返款明细" name="refunds">
         <RefundOrderRowsPanel
           :rows="refundDetails"
@@ -344,19 +384,11 @@ function openGeneration() { generationDialog.value?.open() }
         <RefundRecoveryPanel :bill-no="bill.billNo" :base-currency="refundSummary.baseCurrency" />
       </el-tab-pane>
       <el-tab-pane label="调整记录" name="adjustment-records">
-        <DataTableFrame :total="refundAdjustmentRecords.length" :page-size="20">
-          <el-table :data="refundAdjustmentRecords" border class="clean-table">
-            <el-table-column prop="recordNo" label="记录编号" min-width="200" />
-            <el-table-column prop="recordType" label="记录类型" min-width="150" />
-            <el-table-column prop="recordStatus" label="状态" min-width="100" />
-            <el-table-column prop="objectNo" label="挂靠对象" min-width="190" />
-            <el-table-column prop="currency" label="币种" min-width="90" />
-            <el-table-column label="金额" min-width="140"><template #default="scope"><span :class="{ 'amount-negative': Number(scope.row.amount) < 0 }">{{ amountText(scope.row.amount, scope.row.currency) }}</span></template></el-table-column>
-            <el-table-column label="来源说明" min-width="280" show-overflow-tooltip><template #default="scope">{{ scope.row.sourceText }}</template></el-table-column>
-            <el-table-column prop="time" label="时间" min-width="165" />
-            <el-table-column prop="operator" label="操作人" min-width="120" />
-          </el-table>
-        </DataTableFrame>
+        <BillAdjustmentRecordsPanel
+          :records="adjustments"
+          :negative-records="negativeCarryRecords"
+          :assigned-bill-no="bill.billNo"
+        />
       </el-tab-pane>
       <el-tab-pane label="核销记录" name="writeoff-records">
         <DataTableFrame :total="writeoffs.length" :page-size="20">
@@ -379,11 +411,6 @@ function openGeneration() { generationDialog.value?.open() }
       <template #footer><el-button @click="previewVisible=false">取消</el-button><el-button type="primary" @click="confirmPreview">确认执行</el-button></template>
     </el-dialog>
 
-    <el-dialog v-model="rateEditorVisible" title="编辑账单特调汇率" class="module-dialog" align-center append-to-body destroy-on-close>
-      <el-alert title="仅修改当前待审核账单的锁定汇率，不回写汇率配置。" type="info" :closable="false" />
-<DataTableFrame class="rate-editor-table" :total="editableRates.length" :page-size="20" :sticky-toolbar="false" :sticky-pagination="false"><el-table :data="editableRates" border class="clean-table"><el-table-column prop="settlement" label="费项结算币种" /><el-table-column prop="target" label="财务本位币种" /><el-table-column prop="direction" label="汇兑方向" /><el-table-column label="锁定汇率"><template #default="scope"><el-input-number v-model="scope.row.rate" :precision="6" :step="0.000001" :min="0.000001" controls-position="right" /></template></el-table-column></el-table></DataTableFrame>
-      <template #footer><el-button @click="rateEditorVisible=false">取消</el-button><el-button type="primary" @click="saveRates">保存特调汇率</el-button></template>
-    </el-dialog>
   </div>
 </template>
 

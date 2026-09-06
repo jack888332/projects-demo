@@ -251,13 +251,7 @@
   flex: 0 0 15px;
 }
 .table-reference-actions .el-button > .el-icon + span { margin-left: var(--button-icon-gap); }
-.amount-lines { display: flex; flex-direction: column; gap: 3px; color: #707b8d; font-size: var(--font-size-sm); line-height: var(--line-height-base); }
-.amount-lines b { color: #2b3850; font-weight: var(--font-weight-semibold); }
-.amount-lines .amount-negative,
 .amount-negative { color: #d5484f; }
-.refund-list-buckets { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 12px; }
-.refund-list-bucket { min-width: 0; padding-left: 9px; border-left: 3px solid var(--primary); }
-.refund-list-bucket > strong { color: var(--primary); font-size: var(--font-size-sm); }
 .recovery-status-line { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .detail-hero { min-height: 82px; margin-bottom: var(--space-3); padding: var(--space-3) var(--space-4); display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid #dfe4eb; border-radius: 6px; background: #f8fafb; }
 .detail-hero > div:first-child { min-width: 0; display: grid; grid-template-columns: max-content 1fr; align-items: center; gap: 5px 10px; }

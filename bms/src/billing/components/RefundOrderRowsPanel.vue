@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 import DataTableFrame from '../../shared/components/DataTableFrame.vue'
+import DeductionFeeLabel from './DeductionFeeLabel.vue'
+import { deductionFeeDisplayName, isZeroFeeAmount } from '../data/feeDisplayLabels.js'
 
 const props = defineProps({
   rows: { type: Array, default: () => [] },
@@ -42,7 +44,7 @@ const deductionFeeColumns = computed(() => {
     const key = item.feeCode || item.fee
     if (!seen.has(key)) {
       seen.add(key)
-      columns.push({ key, label: item.fee })
+      columns.push({ key, label: deductionFeeDisplayName(item.fee) })
     }
     return columns
   }, [])
@@ -51,6 +53,10 @@ function deductionAmountForOrder(order, feeKey) {
   return deductionsForOrder(order)
     .filter(item => (item.feeCode || item.fee) === feeKey)
     .reduce((total, item) => total + Number(item.deductionAmount || 0), 0)
+}
+function deductionAmountText(order, feeKey, row) {
+  const amount = deductionAmountForOrder(order, feeKey)
+  return isZeroFeeAmount(amount) ? '--' : sourceAmountText(amount, row)
 }
 function isNegativeRow(row) {
   return Number(row.provisionalRefund) < 0
@@ -61,22 +67,22 @@ function isNegativeRow(row) {
   <div class="fee-detail-viewbar refund-amount-viewbar">
     <span class="fee-dimension-label">金额币种</span>
     <el-select v-model="amountDimension" class="fee-amount-dimension" aria-label="金额币种">
-      <el-option label="货款结算币种金额" value="settlement" />
-      <el-option label="货款原始币种金额" value="original" />
+      <el-option label="返款结算币种金额" value="settlement" />
+      <el-option label="返款原始币种金额" value="original" />
       <el-option label="财务本位币金额" value="base" />
     </el-select>
   </div>
   <DataTableFrame :total="rows.length" :page-size="20" :auto-content-width="true" :auto-width-rows="rows">
     <el-table :data="rows" row-key="order" border class="clean-table">
       <el-table-column prop="order" label="业务订单号" width="170" />
-      <el-table-column label="应付返款（即代收货款）" min-width="200"><template #default="scope">{{ sourceAmountText(scope.row.payableRefund, scope.row) }}</template></el-table-column>
+      <el-table-column label="应付返款" min-width="160"><template #default="scope">{{ sourceAmountText(scope.row.payableRefund, scope.row) }}</template></el-table-column>
       <el-table-column
         v-for="feeColumn in deductionFeeColumns"
         :key="feeColumn.key"
-        :label="feeColumn.label"
-        min-width="155"
+        min-width="190"
       >
-        <template #default="scope">{{ sourceAmountText(deductionAmountForOrder(scope.row.order, feeColumn.key), scope.row) }}</template>
+        <template #header><DeductionFeeLabel :name="feeColumn.label" /></template>
+        <template #default="scope">{{ deductionAmountText(scope.row.order, feeColumn.key, scope.row) }}</template>
       </el-table-column>
       <el-table-column label="实付返款（准）" min-width="160"><template #default="scope"><span :class="{ 'amount-negative': isNegativeRow(scope.row) }">{{ sourceAmountText(scope.row.provisionalRefund, scope.row) }}</span></template></el-table-column>
       <el-table-column label="实付返款" min-width="145"><template #default="scope">{{ isNegativeRow(scope.row) ? '--' : settlementAmountText(scope.row.actualRefund, scope.row) }}</template></el-table-column>

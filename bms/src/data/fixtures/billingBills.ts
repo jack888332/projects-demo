@@ -18,7 +18,7 @@ const configTrace = (input: Omit<BillingBillTraceability, 'configSource'>): Bill
   ...input,
 })
 
-export const billingBillSeedVersion = 2026090603
+export const billingBillSeedVersion = 2026090702
 
 export const billingBillFixtures = [
   {
@@ -91,7 +91,8 @@ export const billingBillFixtures = [
     customer: 'JYK-深圳立杰海快', customerNo: 'OG0370', memberCode: '20260701-009', shop: '星际中转2', group: '台湾大客户组',
     ...configTrace({ batchNo: '-', taskNo: 'BMS-20260707-0012', configNo: 'ARB-SCHEME-20260701-02', configVersion: 'V11', customerReferenceNo: 'AR-REF-OG0370-0011', schemeKey: 'DEFAULT', schemeName: '默认方案', schemeType: '默认方案' }),
     country: '台湾', sector: '默认业务板块', periodType: '7天', periodStart: '2026/07/07', periodEnd: '2026/07/13',
-    sentAt: '-', dueAt: '2026/07/20', overdueDays: 0, notice: '-', currency: 'CNY', amount: 3096.09, paid: 0,
+    sentAt: '-', dueAt: '2026/07/20', overdueDays: 0, notice: '-', currency: 'CNY', amount: 3072.09, paid: 0,
+    amountBeforeReversal: 3096.09, currentAdjustment: 18, previousAdjustment: -42,
   },
   {
     type: 'AR', billNo: 'ARB-OG0360-20260601-81FF', status: '待结清', closeStatus: '已收口', issued: true,
@@ -135,11 +136,11 @@ export const billingBillFixtures = [
     dataCutoffAt: '2026/07/27 23:59:59', sentAt: '-', notice: '-', refundMode: '签收返款', sourceCurrency: 'TWD',
     settlementCurrency: 'CNY', baseCurrency: 'CNY', currency: 'CNY', original: 16500, codSurcharge: 1500,
     payableRefund: 15000, specifiedDeduction: 2400, deduction: 2400, provisionalRefund: 12600, refundRate: 0.21,
-    actualRefund: 2646, amount: 2646, paid: 0, baseRate: 1, baseRefundable: 2791.734, exchangeGainLoss: -19.734,
+    actualRefund: 2646, amount: 2646, paid: 0, baseRate: 1, baseRefundable: 2809.086, exchangeGainLoss: -19.734,
     refundCurrencyBuckets: [
-      { sourceCurrency: 'TWD', currency: 'CNY', refundRate: 0.21, baseRate: 1, payable: 1155, deduction: 172.2, actual: 982.8, paid: 0, pending: 982.8 },
-      { sourceCurrency: 'TWD', currency: 'USD', refundRate: 0.032, baseRate: 7.2, payable: 164.8, deduction: 32, actual: 132.8, paid: 0, pending: 132.8 },
-      { sourceCurrency: 'TWD', currency: 'EUR', refundRate: 0.029, baseRate: 7.8, payable: 126.15, deduction: 16.82, actual: 109.33, paid: 0, pending: 109.33 },
+      { sourceCurrency: 'TWD', currency: 'CNY', refundRate: 0.21, baseRate: 1, payable: 1155, deduction: 172.2, currentAdjustment: 18, previousAdjustment: -9, actual: 991.8, paid: 0, pending: 991.8 },
+      { sourceCurrency: 'TWD', currency: 'USD', refundRate: 0.032, baseRate: 7.2, payable: 164.8, deduction: 32, currentAdjustment: null, previousAdjustment: 4.8, actual: 137.6, paid: 0, pending: 137.6 },
+      { sourceCurrency: 'TWD', currency: 'EUR', refundRate: 0.029, baseRate: 7.8, payable: 126.15, deduction: 16.82, currentAdjustment: -3.36, previousAdjustment: null, actual: 105.97, paid: 0, pending: 105.97 },
     ],
   },
   {
@@ -160,8 +161,9 @@ export const billingBillFixtures = [
     country: '台湾', periodType: '周', periodStart: '2026/08/10', periodEnd: '2026/08/16', truncatedPeriod: '否',
     dataCutoffAt: '2026/08/16 23:59:59', sentAt: '-', notice: '-', refundMode: '回款返款',
     sourceCurrency: 'TWD', settlementCurrency: 'TWD', baseCurrency: 'CNY', currency: 'TWD', original: 8200,
-    codSurcharge: 400, payableRefund: 7800, specifiedDeduction: 0, deduction: 0, provisionalRefund: 5600,
-    refundRate: 1, actualRefund: 5600, amount: 5600, paid: 0, baseRate: 0.2381, exchangeGainLoss: null,
+    codSurcharge: 400, payableRefund: 7800, specifiedDeduction: 0, deduction: 0, provisionalRefund: 7800,
+    refundRate: 1, actualRefund: 5640, amount: 5640, paid: 0, baseRate: 0.2381, exchangeGainLoss: null,
+    currentAdjustment: 120, previousAdjustment: -80,
     negativeOffsetAmount: -2200, negativeOffsetRecordNo: 'NC-OFFSET-20260810-0001',
     negativeOffsetSourceBillNo: 'PCB-OG0347-20260703-0a19', negativeOffsetSourcePeriod: '2026/06/29 ~ 2026/07/03',
   },
