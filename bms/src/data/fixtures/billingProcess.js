@@ -1,10 +1,9 @@
+import { oisCustomerFeeItemFixtures } from './oisCustomerFeeItems.js'
+
+export const billingFeeItemSeedVersion = 3
+
 export const billingProcessFixtures = {
-  fees: [
-    { code: 'FREIGHT_BASE', name: '基础运费', type: '应收类', scenes: '集运订单、同行订单', object: '业务订单', sources: 'OFP订单费项', status: '启用', references: 8, integrity: '完整' },
-    { code: 'COD_RETURN', name: '应返货款', type: '代付类', scenes: 'COD返款', object: '尾程包裹', sources: '订单费项报表', status: '启用', references: 4, integrity: '完整' },
-    { code: 'COD_SERVICE', name: '代收服务费', type: '应收扣减类', scenes: 'COD返款', object: '尾程包裹', sources: 'OFP包裹费', status: '启用', references: 3, integrity: '完整' },
-    { code: 'CLAIM_REFERENCE', name: '理赔参考金额', type: '非费项', scenes: '理赔核对', object: '业务订单', sources: '理赔单', status: '停用', references: 1, integrity: '待完善' },
-  ],
+  fees: oisCustomerFeeItemFixtures,
   scenes: [
     { scene: '集运订单', fee: '基础运费', dataset: 'OFP_ORDER_FEE', table: 'sale_order_fee_detail', amountField: 'base_freight', currencyField: 'currency', timing: '跟随账单配置', priority: 10, status: '启用', integrity: '完整' },
     { scene: 'COD返款', fee: '应返货款', dataset: 'OFP_PACKAGE_FEE', table: 'sale_order_package_fee', amountField: 'recovery_money', currencyField: 'cod_currency', timing: '签收时间', priority: 10, status: '启用', integrity: '完整' },

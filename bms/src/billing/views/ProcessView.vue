@@ -14,7 +14,7 @@ import ExportTaskDialogs from '../components/ExportTaskDialogs.vue'
 import { useStagedQuery } from '../../shared/composables/useStagedQuery.js'
 import { useDemoDataset } from '../data/useDemoDataset.js'
 import { downloadRows } from '../../shared/files/downloadRows.js'
-import { billingProcessFixtures } from '../../data/fixtures/billingProcess.js'
+import { billingFeeItemSeedVersion, billingProcessFixtures } from '../../data/fixtures/billingProcess.js'
 
 const props = defineProps({
   mode: { type: String, required: true },
@@ -39,7 +39,7 @@ const comparisonTimeField = ref('出库时间')
 
 watch(() => props.mode, resetQuery)
 
-const feeRows = useDemoDataset('billingFeeItems', billingProcessFixtures.fees)
+const feeRows = useDemoDataset('billingFeeItems', billingProcessFixtures.fees, billingFeeItemSeedVersion)
 const sceneRows = useDemoDataset('billingScenes', billingProcessFixtures.scenes)
 const sourceRows = useDemoDataset('billingSources', billingProcessFixtures.sources)
 const templateRows = useDemoDataset('billingCurrencyTemplates', billingProcessFixtures.templates)

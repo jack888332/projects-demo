@@ -43,13 +43,13 @@ const makeRefundSnapshot = (mode = 'RECEIVED', period = 'WEEK', currency = 'CNY'
   startDays:period === 'HALF_WEEK' ? ['2', '5'] : [],
   sendAfterDays:1,
   requiredFees:['FEE0024'],
-  directDeductFees:['COD_SERVICE_FEE', 'OVERSIZE_FEE', 'REISSUE_FEE'],
+  directDeductFees:['COD_SERVICE', 'OVERSIZE_FEE', 'REISSUE_FEE'],
   currencyRules:[{ fallback:true, sourceCurrency:'', settlementCurrency:currency, accountName:'客户默认账户', accountNo:'**** 6208' }],
   negativePolicy:'NEXT_REFUND_BILL',
   effectPeriod:[effectStart, '2027-07-31'],
 })
 
-export const billingConfigSeedVersion = 2026083103
+export const billingConfigSeedVersion = 2026090602
 
 const customerRelationDirectory: Record<string, Record<string, string>[]> = {
   OG0271: [

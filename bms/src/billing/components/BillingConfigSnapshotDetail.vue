@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import StatusTag from '../../shared/components/StatusTag.vue'
+import { billingProcessFixtures } from '../../data/fixtures/billingProcess.js'
 
 const props = defineProps({ config: { type:Object, required:true } })
 const periodLabels = { DAY_1:'1 自然天', DAY_7:'7 自然天', DAY_10:'10 自然天', DAY_15:'15 自然天', HALF_WEEK:'半周', WEEK:'周', HALF_MONTH:'半月', MONTH:'月' }
@@ -8,9 +9,12 @@ const businessLabels = { PEER:'同行订单', CONSOLIDATION:'集运订单', ECOM
 const countryLabels = { TW:'中国台湾', JP:'日本', US:'美国', VN:'越南', MY:'马来西亚' }
 const warehouseLabels = { SZ:'深圳集运仓', DG:'东莞集运仓', YW:'义乌集运仓' }
 const nodeLabels = { WEIGHT_OUTBOUND:'出库时间', ORDER_COMPLETED:'订单完结' }
-const feeLabels = { FREIGHT:'运输费', OVERSIZE_FEE:'超材费', REISSUE_FEE:'重出费', COD_SERVICE_FEE:'代收货款手续费', OTHER_RECEIVABLE_FEE:'其他应收费项', FEE0024:'必要归集金额', FALLBACK:'其他费项' }
+const feeLabels = {
+  ...Object.fromEntries(billingProcessFixtures.fees.map(item => [item.code, item.name])),
+  FREIGHT:'运输费', OVERSIZE_FEE:'超材费', REISSUE_FEE:'重出费', COD_SERVICE_FEE:'代收货款手续费', OTHER_RECEIVABLE_FEE:'其他应收费项', FEE0024:'必要归集金额', FALLBACK:'其他费项',
+}
 const refundModeLabels = { RECEIVED:'回款返款', SIGNED:'签收返款' }
-const negativePolicyLabels = { NEXT_REFUND_BILL:'转入下期返款账单', MANUAL_PROCESS:'转人工处理' }
+const negativePolicyLabels = { NEXT_REFUND_BILL:'顺延到下期返款账单', CURRENT_AR_BILL:'反向计入本期应收账单' }
 const listText = (values, labels = {}) => values?.length ? values.map(value => labels[value] || value).join('、') : '无'
 const effectText = value => value?.length ? `${value[0]} 至 ${value[1]}` : '未记录'
 const settlementCurrency = value => value === 'SOURCE_CURRENCY' ? '随原始币种' : value || '未记录'
@@ -84,7 +88,7 @@ const overdueFeeText = computed(() => terms.value.overdueFee === undefined ? '�
           <el-descriptions-item label="账期类型">{{ periodLabels[refund.billingPeriodType] || refund.billingPeriodType || '未记录' }}</el-descriptions-item>
           <el-descriptions-item label="半周起始日">{{ refund.billingPeriodType === 'HALF_WEEK' ? listText(refund.startDays) : '不适用' }}</el-descriptions-item>
           <el-descriptions-item label="账单发出时间">账期结束后 {{ refund.sendAfterDays ?? '未记录' }} 天</el-descriptions-item>
-          <el-descriptions-item label="负数金额处理">{{ negativePolicyLabels[refund.negativePolicy] || refund.negativePolicy || '未记录' }}</el-descriptions-item>
+          <el-descriptions-item label="负数金额处理方式">{{ negativePolicyLabels[refund.negativePolicy] || refund.negativePolicy || '未记录' }}</el-descriptions-item>
           <el-descriptions-item label="必要归集金额" :span="3">{{ listText(refund.requiredFees, feeLabels) }}</el-descriptions-item>
           <el-descriptions-item label="直接扣减费项" :span="3">{{ listText(refund.directDeductFees, feeLabels) }}</el-descriptions-item>
           <el-descriptions-item label="条款生效周期" :span="3">{{ effectText(refund.effectPeriod) }}</el-descriptions-item>

@@ -4,24 +4,37 @@ import { ElMessage } from 'element-plus/es/components/message/index.mjs'
 import { ArrowDown, Delete, Plus, QuestionFilled } from '@element-plus/icons-vue'
 import DataTableFrame from '../../shared/components/DataTableFrame.vue'
 import HoverActionMenu from '../../shared/components/HoverActionMenu.vue'
+import { billingFeeItemSeedVersion, billingProcessFixtures } from '../../data/fixtures/billingProcess.js'
+import { useDemoDataset } from '../data/useDemoDataset.js'
 
 const props = defineProps({ config: { type: Object, required: true } })
 const weekdays = [{ label: '周一', value: '1' }, { label: '周二', value: '2' }, { label: '周三', value: '3' }, { label: '周四', value: '4' }, { label: '周五', value: '5' }, { label: '周六', value: '6' }, { label: '周日', value: '7' }]
 const sourceCurrencies = [{ label: '美元', value: 'USD' }, { label: '日元', value: 'JPY' }, { label: '台币', value: 'TWD' }]
 const settlementCurrencies = [{ label: '人民币', value: 'CNY' }, ...sourceCurrencies]
-const deductFees = [{ label: '代收货款手续费', value: 'COD_SERVICE_FEE' }, { label: '超材费', value: 'OVERSIZE_FEE' }, { label: '重出费', value: 'REISSUE_FEE' }, { label: '其他应收费项', value: 'OTHER_RECEIVABLE_FEE' }]
+const feeRows = useDemoDataset('billingFeeItems', billingProcessFixtures.fees, billingFeeItemSeedVersion)
+const excludedFeeNames = new Set(['代收货款', '应返货款'])
+const excludedFeeCodes = new Set(['COD_RETURN', 'COLLECTION_PRICE'])
+const deductFees = computed(() => feeRows.value
+  .filter(item => item.type !== '非费项' && !excludedFeeCodes.has(item.code) && !excludedFeeNames.has(item.name))
+  .map(item => ({ label: item.name, value: item.code })))
+const legacyFeeCodeMap = { COD_SERVICE_FEE:'COD_SERVICE' }
+const normalizeDirectDeductFees = values => {
+  const availableCodes = new Set(deductFees.value.map(item => item.value))
+  return [...new Set((values || []).map(value => legacyFeeCodeMap[value] || value).filter(value => availableCodes.has(value)))]
+}
 const createRule = (fallback = true) => ({ fallback, sourceCurrency: '', settlementCurrency: fallback ? 'CNY' : '', accountName: '', accountNo: '', accountEditorOpen: false })
 const snapshot = props.config.refundSnapshot || {}
 const refundModeFromLabel = value => value === '签收返款' ? 'SIGNED' : 'RECEIVED'
 const form = reactive({
   enabled: snapshot.enabled ?? props.config.status !== '停用', refundMode: snapshot.refundMode || refundModeFromLabel(props.config.mode), billingPeriodType: snapshot.billingPeriodType || (props.config.cycle?.includes('半周') ? 'HALF_WEEK' : 'WEEK'),
   startDays: [...(snapshot.startDays || (props.config.cycle?.includes('半周') ? ['2', '5'] : []))], sendAfterDays: snapshot.sendAfterDays ?? (Number.parseInt(props.config.sentRule) || 2),
-  requiredFees: [...(snapshot.requiredFees || ['FEE0024'])], directDeductFees: [...(snapshot.directDeductFees || ['COD_SERVICE_FEE', 'OVERSIZE_FEE', 'REISSUE_FEE'])],
+  requiredFees: [...(snapshot.requiredFees || ['FEE0024'])], directDeductFees: [...(snapshot.directDeductFees || ['COD_SERVICE'])],
   currencyRules: snapshot.currencyRules?.length ? snapshot.currencyRules.map(row => ({ ...row, accountEditorOpen:false })) : [createRule()], negativePolicy: snapshot.negativePolicy || 'NEXT_REFUND_BILL', effectPeriod: [...(snapshot.effectPeriod || [props.config.effectStart || '2026-08-01', props.config.effectEnd === '长期' ? '2027-07-31' : props.config.effectEnd || '2027-07-31'])],
 })
 const previewNo = computed(() => props.config.no && props.config.no !== '新配置' ? props.config.no : '保存后自动生成')
 const fallbackLabel = computed(() => form.currencyRules.length === 1 ? '全部' : '其他')
 watch(() => form.billingPeriodType, value => { if (value !== 'HALF_WEEK') form.startDays = [] })
+watch(feeRows, () => { form.directDeductFees = normalizeDirectDeductFees(form.directDeductFees) })
 
 function addRule() { form.currencyRules.splice(form.currencyRules.length - 1, 0, createRule(false)) }
 function removeRule(index) { if (!form.currencyRules[index].fallback) form.currencyRules.splice(index, 1) }
@@ -81,9 +94,9 @@ defineExpose({ validate, getRefundSnapshot })
       <div class="setting-row"><div class="setting-meta"><b>账期起始日 <i v-if="form.billingPeriodType==='HALF_WEEK'">*</i></b><small>半周账期需选择每周两个起始日，两个独立账期均不得少于 3 天</small></div><el-select v-model="form.startDays" multiple :multiple-limit="2" :disabled="form.billingPeriodType!=='HALF_WEEK'" :placeholder="form.billingPeriodType==='HALF_WEEK'?'请选择两个起始日':'仅半周账期需要配置'"><el-option v-for="item in weekdays" :key="item.value" :label="item.label" :value="item.value" /></el-select></div>
       <div class="setting-row"><div class="setting-meta"><b>账单发出时间是账期结束后第...天 <i>*</i></b><small>预计在该天完成账单复核，旨在错峰复核账单</small></div><el-input-number v-model="form.sendAfterDays" :min="0" controls-position="right" /></div>
       <div class="setting-row"><div class="setting-meta"><b>返款账单必要归集金额</b><small>这些费项不在应收账单中出现</small></div><el-select v-model="form.requiredFees" multiple disabled><el-option label="代收货款" value="FEE0024" /></el-select></div>
-      <div class="setting-row"><div class="setting-meta"><b class="deduct-title">在<el-tooltip placement="left"><template #content><div class="refund-tip"><strong>准返款说明</strong><p>实收回款 = 到付金额 × 回款汇率</p><p>准返款 = 到付金额 × 返款汇率</p><p>准返款币种跟随实收回款；两者与到付金额非同币种时才会产生两类汇率。</p></div></template><span>准返款 <el-icon><QuestionFilled /></el-icon></span></el-tooltip>中直接扣减的应收费项</b><small>这些费用只在返款账单中核销，但仍会在应收账单呈现</small></div><el-select v-model="form.directDeductFees" multiple filterable clearable collapse-tags placeholder="请输入费项名称搜索"><el-option v-for="item in deductFees" :key="item.value" :label="item.label" :value="item.value" /></el-select></div>
+      <div class="setting-row"><div class="setting-meta"><b class="deduct-title">在<el-tooltip placement="left"><template #content><div class="refund-tip"><strong>实付返款（准）说明</strong><p>应付返款（代收货款）= 到付金额 - 到付附加费总额（货款原始币种）</p><p>实付返款（准）= 应付返款 - 返款账单指定扣减费项</p><p>实付返款 = 实付返款（准） × 返款汇率（货款原始币种 → 货款结算币种）</p><p>回款链路与返款链路相互独立：回款汇率只描述回款事实，不参与返款计算。</p></div></template><span>实付返款（准） <el-icon><QuestionFilled /></el-icon></span></el-tooltip>中直接扣减的应收费项</b><small>只有被指定为返款扣减的费用才从实付返款（准）中扣除，并在返款账单中核销；应收账单仅保留来源关联，不重复核销。</small></div><el-select v-model="form.directDeductFees" multiple filterable clearable collapse-tags placeholder="请输入费项名称搜索"><el-option v-for="item in deductFees" :key="item.value" :label="item.label" :value="item.value" /></el-select></div>
       <div class="setting-row matrix-row"><div class="setting-meta"><b>货款结算币种 <i>*</i></b><small>一份账单支持多个货款结算币种</small></div><div class="matrix-wrap"><DataTableFrame :total="form.currencyRules.length" :page-size="10" :column-sort="false" :column-data-sort="false"><template #actions><el-button :icon="Plus" @click="addRule">添加</el-button></template><el-table :data="form.currencyRules" border><el-table-column label="货款原始币种" min-width="150"><template #default="{row}"><el-input v-if="row.fallback" :model-value="fallbackLabel" disabled /><el-select v-else v-model="row.sourceCurrency" placeholder="请选择" @change="syncSettlementCurrency(row, $event)"><el-option v-for="item in sourceCurrencies" :key="item.value" :label="item.label" :value="item.value" /></el-select></template></el-table-column><el-table-column label="货款结算币种" min-width="150"><template #default="{row}"><el-select :model-value="settlementCurrencyValue(row)" :disabled="!row.fallback && !row.sourceCurrency" placeholder="请选择" @update:model-value="updateSettlementCurrency(row, $event)"><el-option v-for="item in settlementCurrencies" :key="item.value" :label="item.label" :value="item.value" /></el-select></template></el-table-column><el-table-column label="客户收款账户" min-width="240" :show-overflow-tooltip="false"><template #default="{row}"><el-popover v-model:visible="row.accountEditorOpen" placement="bottom-start" :width="320" trigger="click" :show-after="0" :hide-after="0" transition="" popper-class="account-editor-popper"><template #reference><div class="account-select"><span class="account-select__value" :class="{ 'is-placeholder': !hasAccount(row) }">{{ accountDisplay(row) || '请填入' }}</span><el-icon class="account-select__arrow"><ArrowDown /></el-icon></div></template><div class="account-editor"><el-input v-model="row.accountName" placeholder="账户名称" clearable autofocus @keyup.enter="row.accountEditorOpen = false" /><el-input v-model="row.accountNo" placeholder="收款账号" clearable @keyup.enter="row.accountEditorOpen = false" /></div></el-popover></template></el-table-column><TableActionColumn compact><template #default="{row,$index}"><HoverActionMenu v-if="!row.fallback"><el-dropdown-item class="danger-action" :icon="Delete" @click="removeRule($index)">删除</el-dropdown-item></HoverActionMenu></template></TableActionColumn></el-table></DataTableFrame></div></div>
-      <div class="setting-row"><div class="setting-meta"><b>当已返货款金额为负数时的应对措施</b><small>即应返货款不足以扣减应收费项时的处理方式</small></div><el-select v-model="form.negativePolicy"><el-option label="负数金额计入下期返款账单" value="NEXT_REFUND_BILL" /><el-option label="负数金额反向计入本期应收账单" value="CURRENT_AR_BILL" /></el-select></div>
+      <div class="setting-row"><div class="setting-meta"><b>负数金额处理方式</b><small>应付返款不足以覆盖返款账单指定扣减费项，使实付返款（准）小于零时的处理方式</small></div><el-select v-model="form.negativePolicy"><el-option label="顺延到下期返款账单（默认）" value="NEXT_REFUND_BILL" /><el-option label="反向计入本期应收账单" value="CURRENT_AR_BILL" /></el-select></div>
       <div class="setting-row"><div class="setting-meta"><b>条款生效周期 <i>*</i></b></div><el-date-picker v-model="form.effectPeriod" type="daterange" value-format="YYYY-MM-DD" range-separator="~" start-placeholder="开始日期" end-placeholder="结束日期" /></div>
     </section>
   </div>

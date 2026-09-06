@@ -105,6 +105,34 @@ const summary = computed(() => isReceivable.value ? [
 ])
 
 function money(value) { return Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+function refundListAmount(row) {
+  const currency = row.settlementCurrency || row.currency || 'CNY'
+  const actual = Number(row.actualRefund ?? row.amount ?? 0)
+  const returned = Number(row.paid ?? row.returned ?? 0)
+  return { currency, actual, returned, pending: Math.max(actual - returned, 0) }
+}
+function refundListBuckets(row) {
+  if (Array.isArray(row.refundCurrencyBuckets) && row.refundCurrencyBuckets.length) {
+    return row.refundCurrencyBuckets.map(bucket => ({
+      currency: bucket.currency,
+      payable: Number(bucket.payable ?? 0),
+      deduction: Number(bucket.deduction ?? 0),
+      actual: Number(bucket.actual ?? 0),
+      paid: Number(bucket.paid ?? 0),
+      pending: Number(bucket.pending ?? Math.max(Number(bucket.actual ?? 0) - Number(bucket.paid ?? 0), 0)),
+    }))
+  }
+  const amount = refundListAmount(row)
+  const refundRate = Number(row.refundRate ?? 1)
+  return [{
+    currency: amount.currency,
+    payable: Number(row.payableRefund ?? row.original ?? 0) * refundRate,
+    deduction: Number(row.specifiedDeduction ?? row.deduction ?? 0) * refundRate,
+    actual: amount.actual,
+    paid: amount.returned,
+    pending: amount.pending,
+  }]
+}
 function resetQuery() { resetStagedQuery(); activeStatus.value = '待审核' }
 function openDetail(row) {
   const parentPath = isReceivable.value ? BILLING_PATHS.receivable : BILLING_PATHS.refund
@@ -160,7 +188,7 @@ function confirmExport() {
         <el-table-column prop="closeStatus" label="账期收口" width="90"><template #default="scope"><StatusTag :label="scope.row.closeStatus" /></template></el-table-column>
         <el-table-column prop="processingState" label="处理状态" width="125"><template #default="scope">{{ scope.row.processingState || '--' }}</template></el-table-column>
         <el-table-column v-if="!isReceivable" prop="refundMode" label="返款模式" width="100" />
-        <el-table-column :label="isReceivable ? '费项结算币种金额' : '货款结算币种金额'" width="250"><template #default="scope"><div class="amount-lines"><span>{{ isReceivable ? '应收' : '原始货款' }} <b>{{ money(isReceivable ? scope.row.amount : scope.row.original) }} {{ scope.row.currency }}</b></span><span>{{ isReceivable ? '已核销' : '扣除费项' }} {{ money(isReceivable ? scope.row.paid : scope.row.deduction) }} {{ scope.row.currency }}</span><span>{{ isReceivable ? '未核销' : '待返货款' }} <b>{{ money(scope.row.amount - scope.row.paid) }} {{ scope.row.currency }}</b></span></div></template></el-table-column>
+        <el-table-column :label="isReceivable ? '费项结算币种金额' : '返款结算币金额'" :width="isReceivable ? 250 : 620"><template #default="scope"><div v-if="isReceivable" class="amount-lines"><span>应收 <b>{{ money(scope.row.amount) }} {{ scope.row.currency }}</b></span><span>已核销 {{ money(scope.row.paid) }} {{ scope.row.currency }}</span><span>未核销 <b>{{ money(scope.row.amount - scope.row.paid) }} {{ scope.row.currency }}</b></span></div><div v-else class="refund-list-buckets"><div v-for="bucket in refundListBuckets(scope.row)" :key="bucket.currency" class="amount-lines refund-list-bucket"><strong>{{ bucket.currency }}</strong><span>应付返款 <b>{{ money(bucket.payable) }}</b></span><span>扣减费项 {{ money(bucket.deduction) }}</span><span>实付返款 <b>{{ money(bucket.actual) }}</b></span><span>已付返款 {{ money(bucket.paid) }}</span><span>待付返款 <b>{{ money(bucket.pending) }}</b></span></div></div></template></el-table-column>
         <el-table-column prop="periodType" label="账期类型" width="90" /><el-table-column prop="periodStart" label="账期起始日" width="112" /><el-table-column prop="periodEnd" label="账期结束日" width="112" />
         <el-table-column v-if="isReceivable" prop="sector" label="业务板块" width="125" /><el-table-column prop="country" :label="isReceivable ? '运抵国' : '目的国'" width="100" /><el-table-column prop="customer" label="客户名称" width="160" show-overflow-tooltip /><el-table-column prop="shop" label="所属店铺" width="155" show-overflow-tooltip /><el-table-column prop="group" label="所属客户组" width="130" show-overflow-tooltip /><el-table-column prop="batchNo" label="生成批次编号" width="210" show-overflow-tooltip /><el-table-column prop="taskNo" label="任务编号" width="200" show-overflow-tooltip />
         <el-table-column label="配置编号" min-width="210"><template #default="scope"><StackedCell :primary="scope.row.configNo" :secondary="configSourceMeta[scope.row.configSource] || scope.row.configSource" /></template></el-table-column>
