@@ -4,7 +4,6 @@ import DataTableFrame from '../../shared/components/DataTableFrame.vue'
 
 const props = defineProps({
   rows: { type: Array, default: () => [] },
-  recoveries: { type: Array, default: () => [] },
   deductions: { type: Array, default: () => [] },
   baseCurrency: { type: String, default: 'CNY' },
   baseRate: { type: Number, default: 1 },
@@ -34,9 +33,6 @@ function settlementAmountText(value, row) {
   return refundRate ? amountText(Number(value) / refundRate, row.sourceCurrency) : '--'
 }
 
-function recoveriesForOrder(order) {
-  return props.recoveries.filter((row) => row.order === order)
-}
 function deductionsForOrder(order) {
   return props.deductions.filter((row) => row.order === order)
 }
@@ -73,9 +69,6 @@ function isNegativeRow(row) {
   <DataTableFrame :total="rows.length" :page-size="20" :auto-content-width="true" :auto-width-rows="rows">
     <el-table :data="rows" row-key="order" border class="clean-table">
       <el-table-column prop="order" label="业务订单号" width="170" />
-      <el-table-column label="包裹数" width="80"><template #default="scope">{{ recoveriesForOrder(scope.row.order).length }}</template></el-table-column>
-      <el-table-column label="来源金额与币种" min-width="165"><template #default="scope">{{ sourceAmountText(scope.row.sourceAmount, scope.row) }}</template></el-table-column>
-      <el-table-column label="到付附加费总额" min-width="160"><template #default="scope">{{ sourceAmountText(scope.row.codSurcharge, scope.row) }}</template></el-table-column>
       <el-table-column label="应付返款（即代收货款）" min-width="200"><template #default="scope">{{ sourceAmountText(scope.row.payableRefund, scope.row) }}</template></el-table-column>
       <el-table-column
         v-for="feeColumn in deductionFeeColumns"

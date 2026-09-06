@@ -62,8 +62,7 @@ const refundSummary = computed(() => {
   const sourceCurrency = bill.sourceCurrency || bill.currency
   const settlementCurrency = bill.settlementCurrency || bill.currency
   const baseCurrency = bill.baseCurrency || 'CNY'
-  const codSurcharge = Number(bill.codSurcharge ?? 0)
-  const payableRefund = Number(bill.payableRefund ?? bill.original ?? 0)
+  const payableRefund = Number(bill.payableRefund ?? 0)
   const specifiedDeduction = Number(bill.specifiedDeduction ?? bill.deduction ?? 0)
   const provisionalRefund = Number(bill.provisionalRefund ?? (payableRefund - specifiedDeduction))
   const refundRate = Number(bill.refundRate ?? 1)
@@ -111,7 +110,6 @@ const refundSummary = computed(() => {
     sourceCurrency,
     settlementCurrency,
     baseCurrency,
-    codSurcharge,
     payableRefund,
     specifiedDeduction,
     provisionalRefund,
@@ -165,7 +163,7 @@ const refundRates = computed(() => {
   })
   return rows.filter((row, index) => rows.findIndex(candidate => candidate.direction === row.direction && candidate.rate === row.rate) === index)
 })
-const refundDetailRows = useDemoDataset('billingRefundDetails', refundDetailFixtures, 5)
+const refundDetailRows = useDemoDataset('billingRefundDetails', refundDetailFixtures, 6)
 const deductionDetailRows = useDemoDataset('billingDeductionDetails', deductionDetailFixtures, 5)
 const writeoffRows = useDemoDataset('billingWriteoffs', billWriteoffFixtures, 2)
 const adjustmentRows = useDemoDataset('billingBillAdjustmentLinks', billAdjustmentLinkFixtures)
@@ -337,7 +335,6 @@ function openGeneration() { generationDialog.value?.open() }
       <el-tab-pane label="返款明细" name="refunds">
         <RefundOrderRowsPanel
           :rows="refundDetails"
-          :recoveries="recoveries"
           :deductions="deductionDetails"
           :base-currency="refundSummary.baseCurrency"
           :base-rate="refundSummary.baseRate"

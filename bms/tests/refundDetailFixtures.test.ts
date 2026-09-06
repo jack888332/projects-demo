@@ -15,9 +15,8 @@ describe('refund detail demonstration data', () => {
     expect(new Set(rows.map(row => row.order)).size).toBe(rows.length)
   })
 
-  it('keeps every row and each settlement-currency bucket on the same amount chain', () => {
+  it('keeps every row and each settlement-currency bucket on the payable-refund amount chain', () => {
     rows.forEach((row) => {
-      expect(row.payableRefund).toBe(row.sourceAmount - row.codSurcharge)
       expect(row.provisionalRefund).toBe(row.payableRefund - row.specifiedDeduction)
       expect(row.actualRefund).toBeCloseTo(row.provisionalRefund * row.refundRate, 6)
       const rowDeductions = deductions
@@ -26,8 +25,6 @@ describe('refund detail demonstration data', () => {
       expect(rowDeductions).toBe(row.specifiedDeduction)
     })
 
-    expect(sum(row => row.sourceAmount)).toBe(bill?.original)
-    expect(sum(row => row.codSurcharge)).toBe(bill?.codSurcharge)
     expect(sum(row => row.payableRefund)).toBe(bill?.payableRefund)
     expect(sum(row => row.specifiedDeduction)).toBe(bill?.specifiedDeduction)
     expect(sum(row => row.provisionalRefund)).toBe(bill?.provisionalRefund)
