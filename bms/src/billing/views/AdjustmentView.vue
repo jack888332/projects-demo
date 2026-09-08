@@ -119,7 +119,9 @@ function finishImport(file) { ElMessage.success(`${file.name} 已导入并进入
           <div><dt>业务订单</dt><dd>{{ selectedRecord.order }}</dd></div>
           <div><dt>首程 / 尾程</dt><dd>{{ selectedRecord.firstTracking }} / {{ selectedRecord.tracking }}</dd></div>
           <div><dt>原币金额变幅</dt><dd>{{ selectedRecord.delta }} {{ selectedRecord.beforeCurrency }}</dd></div>
+          <div><dt>原币冲正后金额</dt><dd>{{ selectedRecord.afterAmount }} {{ selectedRecord.beforeCurrency }}</dd></div>
           <div><dt>账单金额影响</dt><dd>{{ selectedRecord.afterDelta }} {{ selectedRecord.afterCurrency }}</dd></div>
+          <div><dt>冲正后金额</dt><dd>{{ selectedRecord.afterConvertedAmount }} {{ selectedRecord.afterCurrency }}</dd></div>
           <div><dt>凭证</dt><dd>{{ selectedRecord.voucher }}</dd></div>
           <div><dt>登记人</dt><dd>{{ selectedRecord.registrant }}</dd></div>
           <div><dt>审核人 / 时间</dt><dd>{{ selectedRecord.reviewer }} / {{ selectedRecord.reviewedAt }}</dd></div>

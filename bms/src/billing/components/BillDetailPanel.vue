@@ -27,6 +27,7 @@ const feeAmountDimension = ref('settlement')
 const refundSummaryDimension = ref('settlement')
 const feeBusinessNo = ref('')
 const showUnboundFees = ref(false)
+const rateDialogVisible = ref(false)
 const previewVisible = ref(false)
 const previewAction = ref('')
 const generationDialog = ref(null)
@@ -237,9 +238,9 @@ function openGeneration() { generationDialog.value?.open() }
           <StatusTag :label="bill.status" :tone="statusClass" />
           <StatusTag v-if="bill.processingState" :label="bill.processingState" tone="running" />
         </div>
-        <div class="bill-detail-meta">
+        <div v-if="isReceivable" class="bill-detail-meta">
           <span class="period-chip">{{ bill.periodType }} <i></i> {{ bill.periodStart }} ~ {{ bill.periodEnd }}</span>
-          <span>{{ bill.customer }}</span><i></i><span>{{ bill.memberCode || bill.customerNo }}</span><i></i><span>{{ bill.shop }}</span><template v-if="isReceivable"><i></i><span>{{ bill.sector }}</span></template><i></i><span>{{ bill.country }}</span>
+          <span>{{ bill.customer }}</span><i></i><span>{{ bill.memberCode || bill.customerNo }}</span><i></i><span>{{ bill.shop }}</span><i></i><span>{{ bill.sector }}</span><i></i><span>{{ bill.country }}</span>
           <i></i><span>账期收口：{{ bill.closeStatus }}</span>
         </div>
       </div>
@@ -289,6 +290,7 @@ function openGeneration() { generationDialog.value?.open() }
           :clearable="false"
           :popover-width="240"
         />
+        <el-button class="refund-rate-entry" @click="rateDialogVisible = true">账单汇率</el-button>
       </div>
       <article v-for="bucket in selectedRefundSummaries" :key="bucket.currency" class="refund-money-panel">
         <div class="currency-bucket-head refund-bucket-head">
@@ -354,7 +356,7 @@ function openGeneration() { generationDialog.value?.open() }
           </DataTableFrame>
         </div>
       </el-tab-pane>
-     <el-tab-pane label="调整记录" name="adjustments">
+     <el-tab-pane label="调账记录" name="adjustments">
        <BillAdjustmentRecordsPanel :records="adjustments" :assigned-bill-no="bill.billNo" />
      </el-tab-pane>
       <el-tab-pane label="核销记录" name="writeoffs">
@@ -363,15 +365,6 @@ function openGeneration() { generationDialog.value?.open() }
 
     <el-tabs v-else v-model="activeTab" class="bill-detail-tabs">
       <el-tab-pane label="账单概况" name="info"><dl class="bill-info-grid"><div><dt>账单编号</dt><dd>{{ bill.billNo }}</dd></div><div><dt>账单状态</dt><dd>{{ bill.status }}</dd></div><div><dt>账期收口状态</dt><dd>{{ bill.closeStatus }}</dd></div><div><dt>客户</dt><dd>{{ bill.customer }}</dd></div><div><dt>会员编码</dt><dd>{{ bill.memberCode || bill.customerNo }}</dd></div><div><dt>所属店铺快照</dt><dd>{{ bill.shopCode ? `${bill.shopCode} / ${bill.shop}` : bill.shop }}</dd></div><div><dt>目的国</dt><dd>{{ bill.country }}</dd></div><div><dt>账期类型</dt><dd>{{ bill.periodType }}</dd></div><div><dt>实际账期起止日</dt><dd>{{ bill.periodStart }} ~ {{ bill.periodEnd }}</dd></div><div><dt>截断账期标记</dt><dd>{{ bill.truncatedPeriod || '否' }}</dd></div><div><dt>数据截止点</dt><dd>{{ bill.dataCutoffAt || `${bill.periodEnd} 23:59:59` }}</dd></div></dl></el-tab-pane>
-      <el-tab-pane label="账单汇率" name="rates">
-        <BillRateTables
-          subject="返款"
-          :settlement-rates="refundSettlementRates"
-          :original-rates="refundOriginalRates"
-          :can-edit="bill.status === '待审核'"
-          @save="emit('action', '保存账单特调汇率')"
-        />
-      </el-tab-pane>
       <el-tab-pane label="返款明细" name="refunds">
         <RefundOrderRowsPanel
           :rows="refundDetails"
@@ -383,7 +376,7 @@ function openGeneration() { generationDialog.value?.open() }
       <el-tab-pane label="汇兑损益" name="recoveries">
         <RefundRecoveryPanel :bill-no="bill.billNo" :base-currency="refundSummary.baseCurrency" />
       </el-tab-pane>
-      <el-tab-pane label="调整记录" name="adjustment-records">
+      <el-tab-pane label="调账记录" name="adjustment-records">
         <BillAdjustmentRecordsPanel
           :records="adjustments"
           :negative-records="negativeCarryRecords"
@@ -403,6 +396,19 @@ function openGeneration() { generationDialog.value?.open() }
         </DataTableFrame>
       </el-tab-pane>
     </el-tabs>
+
+    <el-dialog v-model="rateDialogVisible" title="账单汇率" class="module-dialog module-dialog-large" align-center append-to-body destroy-on-close>
+      <BillRateTables
+        subject="返款"
+        :settlement-rates="refundSettlementRates"
+        :original-rates="refundOriginalRates"
+        :can-edit="bill.status === '待审核'"
+        @save="emit('action', '保存账单特调汇率')"
+      />
+      <template #footer>
+        <el-button @click="rateDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
 
     <BillGenerationDialog ref="generationDialog" :bill="bill" :is-receivable="isReceivable" @submit="emit('action', '创建账单生成任务')" />
 
