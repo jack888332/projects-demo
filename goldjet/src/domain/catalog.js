@@ -57,7 +57,7 @@ export const navigationByDomain = Object.fromEntries(domains.map((domain) => {
 }))
 
 export const genericModuleKeys = Object.keys(moduleCatalog).filter((key) => ![
-  'dashboard', 'financeWorkspace', 'airOrders', 'booking', 'groundDispatch', 'groundWaybills', 'fleet', 'warehouseOrders', 'costs', 'partners', 'airMasterData', 'customerQuotes', 'warehouseQuotes', 'messages', 'integrations',
+  'dashboard', 'financeWorkspace', 'airOrders', 'booking', 'groundDispatch', 'groundWaybills', 'fleet', 'warehouseOrders', 'costs', 'partners', 'airMasterData', 'customerQuotes', 'warehouseQuotes', 'airSupplierRates', 'messages', 'integrations',
 ].includes(key))
 
 export function getModuleByPath(path) {

@@ -15,6 +15,7 @@ const coreRoutes = [
   { key: 'airMasterData', component: () => import('../views/AirMasterDataView.vue') },
   { key: 'customerQuotes', component: () => import('../views/TransportQuotesView.vue') },
   { key: 'warehouseQuotes', component: () => import('../views/WarehouseQuotesView.vue') },
+  { key: 'airSupplierRates', component: () => import('../views/AirSupplierRatesView.vue') },
   { key: 'messages', component: () => import('../views/MessagesView.vue') },
   { key: 'integrations', component: () => import('../views/IntegrationView.vue') },
 ]

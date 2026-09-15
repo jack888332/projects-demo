@@ -19,6 +19,8 @@ import { createTransportQuoteSeed } from '../domain/transportQuotes.js'
 import { createTransportQuoteActions } from './transportQuoteActions.js'
 import { createWarehouseQuoteSeed } from '../domain/warehouseQuotes.js'
 import { createWarehouseQuoteActions } from './warehouseQuoteActions.js'
+import { createAirSupplierRateSeed, createFinanceCostItemSeed } from '../domain/airSupplierRates.js'
+import { createAirSupplierRateActions } from './airSupplierRateActions.js'
 
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
@@ -81,6 +83,9 @@ function createSeed() {
     transportQuoteSequence: 2,
     warehouseQuotes: createWarehouseQuoteSeed(),
     warehouseQuoteSequence: 4,
+    airSupplierRates: createAirSupplierRateSeed(),
+    airSupplierRateSequence: 6,
+    financeCostItems: createFinanceCostItemSeed(),
     airOrders: [
       seedAirOrder({ id: 'AIR-260908-001', customer: '启航跨境贸易', owner: '周倩', origin: 'PVG', destination: 'LAX', grossWeight: 186.5, volume: 1.28, pieces: 42, departureDate: '2026-09-10', orderStatus: '待补录', bookingStatus: '服务已完成', bookingRequirement: '优先晚班' }),
       seedAirOrder({ id: 'AIR-260908-002', customer: '云帆供应链', owner: '陈楠', origin: 'SZX', destination: 'FRA', grossWeight: 320, volume: 1.4, pieces: 68, departureDate: '2026-09-11', orderStatus: '待订舱', bookingStatus: '待服务', bookingRequirement: '需恒温操作' }),
@@ -144,6 +149,7 @@ const airMasterActions = createAirMasterActions(state, () => airMasterSession.va
 const fleetActions = createFleetActions(state, () => groundSession)
 const transportQuoteActions = createTransportQuoteActions(state, () => groundSession)
 const warehouseQuoteActions = createWarehouseQuoteActions(state, () => groundSession)
+const airSupplierRateActions = createAirSupplierRateActions(state, () => airSession)
 
 // Store only the last progress-change timestamp, never a second task status.
 watch(() => WORKBENCH_PERSONAS.map(persona => {
@@ -378,6 +384,6 @@ export function usePrototypeData() {
   return {
     state, airSession, groundSession, workbenchSession, selectWorkbenchPersona, dashboard, reset, createAirOrder, saveAirBooking, approveAirBooking, dispatchGroundOrders, updateGroundWaybillStatus, advanceWarehouseOrder,
     addCost, reviewCost, partnerSession, ...partnerActions, airMasterSession, airCatalog, ...airMasterActions, retryIntegration,
-    ...fleetActions, ...transportQuoteActions, ...warehouseQuoteActions, ensureGenericRows, addGenericRow,
+    ...fleetActions, ...transportQuoteActions, ...warehouseQuoteActions, ...airSupplierRateActions, ensureGenericRows, addGenericRow,
   }
 }

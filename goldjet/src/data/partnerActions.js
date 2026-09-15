@@ -108,6 +108,7 @@ export function createPartnerActions(state, getSession) {
     if (state.airMaster?.airlines.some(row => row.supplierIds.includes(id))) throw new Error('该供应商已被航司主数据引用；删除后的关联处理待确认，暂不能删除')
     if (state.transportQuotes?.some(row => row.partnerId === id)) throw new Error('该合作方已被运输报价引用；删除后的关联处理待确认，暂不能删除')
     if (state.warehouseQuotes?.some(row => row.partnerId === id)) throw new Error('该合作方已被仓库报价引用；删除后的关联处理待确认，暂不能删除')
+    if (state.airSupplierRates?.some(row => row.partnerId === id)) throw new Error('该合作方已被空运供应商价格引用；删除后的关联处理待确认，暂不能删除')
     const used=[...state.airOrders,...state.groundOrders,...state.warehouseOrders].some(row=>row.customerId===id || row.customer===partner.name || row.supplier===partner.name)
       || state.groundWaybills.some(row=>row.supplier===partner.name || row.customer===partner.name)
       || state.costs.some(row=>row.settlementParty===partner.name)
