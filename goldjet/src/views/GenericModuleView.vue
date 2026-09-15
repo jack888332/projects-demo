@@ -31,6 +31,7 @@ function submit() { if (!form.subject || !form.customer) return ElMessage.error(
 </script>
 
 <template><div class="module-view">
+  <el-alert title="未覆盖：当前模块仍为通用界面演示，尚未实现 PRD 专属字段、权限和跨模块流程；下方记录不代表真实业务结果。" type="warning" :closable="false" style="margin-bottom: 16px" />
   <PageHeader :title="module.label" :description="descriptions[moduleKey] || `${module.label}业务记录`"><template #actions><el-button type="primary" :icon="Plus" @click="createVisible = true">新建记录</el-button></template></PageHeader>
   <FilterBar v-model="keyword" placeholder="业务编号、主题或客户" @reset="keyword = ''; status = ''"><el-select v-model="status" clearable placeholder="处理状态" class="filter-select"><el-option v-for="value in ['待处理', '处理中', '待确认', '已完成']" :key="value" :value="value" /></el-select></FilterBar>
   <DataTableFrame :rows="rows" :page-size="10"><template #default="{ rows: pageRows }"><el-table :data="pageRows" row-key="id" stripe>

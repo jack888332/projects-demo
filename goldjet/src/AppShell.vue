@@ -4,12 +4,15 @@ import { useRoute, useRouter } from 'vue-router'
 import { Bell, Grid, Operation, Refresh, UserFilled } from '@element-plus/icons-vue'
 import { domains, moduleCatalog, navigationByDomain } from './domain/catalog.js'
 import { usePrototypeData } from './data/usePrototypeData.js'
+import { WORKBENCH_PERSONAS } from './domain/workbenchTasks.js'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
 const sidebarOpen = ref(false)
 const resetVisible = ref(false)
-const { reset } = usePrototypeData()
+const { reset, airSession, groundSession, workbenchSession, selectWorkbenchPersona } = usePrototypeData()
+const activePersona = computed(() => WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId) || WORKBENCH_PERSONAS[0])
 
 const currentDomain = computed(() => route.meta.domain || 'workspace')
 const currentGroups = computed(() => navigationByDomain[currentDomain.value] || [])
@@ -24,6 +27,13 @@ function confirmReset() {
   reset()
   resetVisible.value = false
   ElMessage.success('已恢复确定性演示数据')
+}
+async function changeAirRole(id) {
+  if (id === workbenchSession.personaId) return
+  try {
+    await ElMessageBox.confirm('切换角色会关闭或重载当前表单，尚未提交的输入将丢弃。', '切换演示角色？', { confirmButtonText: '切换角色', cancelButtonText: '保留当前角色', type: 'warning' })
+    selectWorkbenchPersona(id)
+  } catch { /* Keep the active role and draft. */ }
 }
 </script>
 
@@ -40,9 +50,11 @@ function confirmReset() {
       </nav>
       <div class="top-actions">
         <button class="icon-button" title="恢复演示数据" aria-label="恢复演示数据" @click="resetVisible = true"><el-icon><Refresh /></el-icon></button>
-        <button class="icon-button" title="应用菜单" aria-label="应用菜单"><el-icon><Grid /></el-icon></button>
+        <el-popover placement="bottom" :width="300" trigger="click"><template #reference><button class="icon-button" title="演示角色" aria-label="切换演示角色"><el-icon><Grid /></el-icon></button></template>
+          <p><strong>演示角色</strong></p><p>仅模拟本地处理人，不代表真实鉴权。</p><el-select :model-value="workbenchSession.personaId" aria-label="演示角色" @change="changeAirRole"><el-option v-for="persona in WORKBENCH_PERSONAS" :key="persona.id" :value="persona.id" :label="persona.label + ' · ' + persona.name" /></el-select>
+        </el-popover>
         <button class="icon-button has-dot" title="消息中心" aria-label="消息中心" @click="navigate('/foundation/messages')"><el-icon><Bell /></el-icon></button>
-        <span class="avatar"><el-icon><UserFilled /></el-icon></span><span class="user-name">运营管理员</span>
+        <span class="avatar"><el-icon><UserFilled /></el-icon></span><span class="user-name">{{ activePersona.label }} · {{ activePersona.name }}</span>
       </div>
     </header>
 

@@ -3,11 +3,19 @@ import { genericModuleKeys, moduleCatalog } from '../domain/catalog.js'
 
 const coreRoutes = [
   { key: 'dashboard', component: () => import('../views/DashboardView.vue') },
+  { key: 'financeWorkspace', component: () => import('../views/DashboardView.vue') },
   { key: 'airOrders', component: () => import('../views/AirOrdersView.vue') },
+  { key: 'booking', component: () => import('../views/BookingView.vue') },
   { key: 'groundDispatch', component: () => import('../views/GroundDispatchView.vue') },
+  { key: 'groundWaybills', component: () => import('../views/GroundWaybillsView.vue') },
+  { key: 'fleet', component: () => import('../views/FleetView.vue') },
   { key: 'warehouseOrders', component: () => import('../views/WarehouseOrdersView.vue') },
   { key: 'costs', component: () => import('../views/FinanceCostsView.vue') },
   { key: 'partners', component: () => import('../views/PartnersView.vue') },
+  { key: 'airMasterData', component: () => import('../views/AirMasterDataView.vue') },
+  { key: 'customerQuotes', component: () => import('../views/TransportQuotesView.vue') },
+  { key: 'warehouseQuotes', component: () => import('../views/WarehouseQuotesView.vue') },
+  { key: 'messages', component: () => import('../views/MessagesView.vue') },
   { key: 'integrations', component: () => import('../views/IntegrationView.vue') },
 ]
 

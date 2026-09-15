@@ -1,136 +1,151 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
-import { DocumentCopy, Plus, Promotion } from '@element-plus/icons-vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Plus, Search, Refresh } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import PageHeader from '../components/PageHeader.vue'
-import FilterBar from '../components/FilterBar.vue'
 import DataTableFrame from '../components/DataTableFrame.vue'
 import StatusTag from '../components/StatusTag.vue'
+import AirOrderCreateDialog from '../components/AirOrderCreateDialog.vue'
 import { usePrototypeData } from '../data/usePrototypeData.js'
-import { resolveAirTransition } from '../domain/workflows.js'
-import { calculateChargeWeight } from '../domain/chargeWeight.js'
+import { AIR_PRODUCTS } from '../domain/airOperations.js'
 
-const { state, createAirOrder } = usePrototypeData()
-const keyword = ref('')
-const status = ref('')
+const route = useRoute()
+const router = useRouter()
+const { state, airSession, airCatalog } = usePrototypeData()
 const createVisible = ref(false)
+const selectedId = ref('')
 const detailVisible = ref(false)
-const selected = ref(null)
-const formRef = ref(null)
-const form = reactive({ customer: '', owner: '周倩', businessType: '空运出口', origin: 'PVG', destination: '', grossWeight: 0, volume: 0, pieces: 1, bookingRequirement: '' })
-const rules = {
-  customer: [{ required: true, message: '请选择客户', trigger: 'change' }],
-  destination: [{ required: true, message: '请输入目的港', trigger: 'blur' }],
-  grossWeight: [{ type: 'number', min: 0.1, message: '毛重必须大于 0', trigger: 'change' }],
-  pieces: [{ type: 'number', min: 1, message: '件数至少为 1', trigger: 'change' }],
-}
-
-const filteredRows = computed(() => state.airOrders.filter((item) => {
-  const matchKeyword = !keyword.value || `${item.orderNo}${item.customer}${item.route}${item.owner}`.toLowerCase().includes(keyword.value.toLowerCase())
-  const matchStatus = !status.value || item.orderStatus === status.value || item.bookingStatus === status.value
-  return matchKeyword && matchStatus
+const emptyFilters = () => ({ orderNo: '', waybillNo: '', airline: '', creator: '', owner: '', flight: '', origin: '', destination: '', status: '', departureDate: '', createDate: '' })
+const filters = reactive(emptyFilters())
+const airlines = computed(() => state.airMaster.airlines.map(airline => airline.name))
+const includes = (value, query) => !query || String(value || '').toLowerCase().includes(query.trim().toLowerCase())
+const bookingDetailFields = [
+  ['airline', '航司'], ['flight', '头程航班'], ['departureDate', '出港日期'], ['firstDestination', '头程目的地'],
+  ['firstLeg', '头程航段'], ['takeoffTime', '起飞时刻'], ['cutoffTime', '截单时刻'], ['airCost', '空运成本'],
+  ['truckCost', '卡车成本'], ['guidePrice', '指导价'], ['waybillType', '提单属性'], ['profitRules', '预计盈利规则'],
+  ['secondLeg', '二程航段'], ['secondDestination', '二程目的地'], ['thirdLeg', '三程航段'], ['palletCompany', '打板公司'],
+  ['discountNo', '航司折扣号'], ['handlingInfo', 'Handling Information'], ['routeType', '航线类型'], ['remark', '航线备注'],
+]
+function displayValue(value) { return value === undefined || value === null || value === '' || (Array.isArray(value) && !value.length) ? '未填写' : Array.isArray(value) ? value.join('、') : value }
+const selected = computed(() => state.airOrders.find(item => item.id === selectedId.value))
+const canCreate = computed(() => ['service', 'supervisor'].includes(airSession.role))
+const visibleOrders = computed(() => state.airOrders.filter(item => airSession.role !== 'service' || item.creator === airSession.name))
+const filteredRows = computed(() => visibleOrders.value.filter(item => {
+  return includes(item.orderNo, filters.orderNo) && includes(item.waybillNo, filters.waybillNo)
+    && includes(item.creator, filters.creator) && includes(item.owner, filters.owner)
+    && (!filters.airline || item.booking?.airline === filters.airline)
+    && (!filters.flight || item.flight === filters.flight.trim())
+    && (!filters.origin || item.origin === filters.origin.toUpperCase())
+    && (!filters.destination || item.destination === filters.destination.toUpperCase())
+    && (!filters.status || item.orderStatus === filters.status)
+    && (!filters.departureDate || item.departureDate === filters.departureDate)
+    && (!filters.createDate || item.createDate === filters.createDate)
 }))
-const previewChargeWeight = computed(() => calculateChargeWeight(form.grossWeight, form.volume))
-const selectedTransition = computed(() => selected.value ? resolveAirTransition(selected.value) : null)
-
-function resetFilters() { keyword.value = ''; status.value = '' }
-function openDetail(row) { selected.value = row; detailVisible.value = true }
-function openCreate() { createVisible.value = true }
-async function submitCreate() {
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
-  const order = createAirOrder({ ...form, route: `${form.origin.toUpperCase()} - ${form.destination.toUpperCase()}` })
-  createVisible.value = false
-  selected.value = order
-  detailVisible.value = true
-  ElMessage.success(`订单 ${order.orderNo} 已保存为草稿`)
+function openDetail(row) { selectedId.value = row.id; detailVisible.value = true }
+function resetFilters() { Object.assign(filters, emptyFilters()) }
+function openBooking(order) {
+  detailVisible.value = false
+  router.push({ path: '/fulfillment/booking', query: { order: order.id } })
 }
-function advanceOrder() {
-  const transition = selectedTransition.value
-  if (!selected.value || !transition) return
-  selected.value.orderStatus = transition.nextOrderStatus
-  selected.value.bookingStatus = transition.nextBookingStatus
-  ElMessage.success(`${transition.label}完成`)
-}
-function splitOrder() {
-  selected.value.childCount += 1
-  ElMessage.success(`已拆分为 ${selected.value.childCount} 个子订单`)
-}
-function mergeOrder() {
-  selected.value.childCount = 1
-  ElMessage.success('子订单已合并')
-}
+function created(order) { resetFilters(); openDetail(order) }
+watch(() => route.query, query => {
+  if (query.action === 'create' && canCreate.value) createVisible.value = true
+  if (query.order) {
+    const order = visibleOrders.value.find(item => item.id === query.order)
+    if (order) openDetail(order)
+    else ElMessage.warning('当前角色无法查看该订单，或订单已不存在。')
+  }
+}, { immediate: true })
+watch(() => airSession.role, () => { detailVisible.value = false; createVisible.value = false })
+watch(selected, order => { if (!order) detailVisible.value = false })
 </script>
 
 <template>
   <div class="module-view">
-    <PageHeader title="空运订单" description="主订单、子订单、订舱要求与补料状态">
-      <template #actions><el-button type="primary" :icon="Plus" @click="openCreate">新建订单</el-button></template>
+    <PageHeader title="主订单管理" description="客服受理、服务指令与航线订舱共享同一订单">
+      <template #actions><el-button type="primary" :icon="Plus" :disabled="!canCreate" @click="createVisible = true">新建主订单</el-button></template>
     </PageHeader>
-
-    <FilterBar v-model="keyword" placeholder="订单号、客户、航线或业务员" @reset="resetFilters">
-      <el-select v-model="status" clearable placeholder="订单或订舱状态" class="filter-select">
-        <el-option v-for="value in ['草稿', '待确认', '待审核', '待补录', '运输中']" :key="value" :label="value" :value="value" />
-      </el-select>
-    </FilterBar>
-
+    <div v-if="!canCreate" class="air-context">当前为航线角色，订单基础信息只读。请进入订舱管理填写航程。</div>
+    <form class="air-filters" aria-label="主订单筛选" @submit.prevent>
+      <label>订单号<el-input v-model="filters.orderNo" :prefix-icon="Search" clearable aria-label="订单号筛选" placeholder="模糊查询" /></label>
+      <label>提单号<el-input v-model="filters.waybillNo" clearable aria-label="提单号筛选" placeholder="模糊查询" /></label>
+      <label>航司<el-select v-model="filters.airline" clearable aria-label="航司筛选" placeholder="全部"><el-option v-for="name in airlines" :key="name" :value="name" /></el-select></label>
+      <label>客服<el-input v-model="filters.creator" clearable aria-label="客服筛选" placeholder="全部，支持模糊查询" /></label>
+      <label>业务员<el-input v-model="filters.owner" clearable aria-label="业务员筛选" placeholder="模糊查询" /></label>
+      <label>航班号<el-input v-model="filters.flight" clearable aria-label="航班号筛选" placeholder="精确查询" /></label>
+      <label>始发港<el-select v-model="filters.origin" filterable clearable aria-label="始发港筛选" placeholder="全部"><el-option v-for="port in airCatalog.ports" :key="port.code" :label="`${port.code} · ${port.name}`" :value="port.code" /></el-select></label>
+      <label>目的港<el-select v-model="filters.destination" filterable clearable aria-label="目的港筛选" placeholder="全部"><el-option v-for="port in airCatalog.ports" :key="port.code" :label="`${port.code} · ${port.name}`" :value="port.code" /></el-select></label>
+      <label>订单状态<el-select v-model="filters.status" clearable aria-label="订单状态筛选" placeholder="全部"><el-option v-for="s in ['待订舱', '待补录', '待出提单', '已出提单', '已交单', '待审核', '已作废']" :key="s" :value="s" /></el-select></label>
+      <label>出港日期<el-date-picker v-model="filters.departureDate" value-format="YYYY-MM-DD" aria-label="出港日期筛选" placeholder="全部" /></label>
+      <label>创建日期<el-date-picker v-model="filters.createDate" value-format="YYYY-MM-DD" aria-label="创建日期筛选" placeholder="全部" /></label>
+      <el-button :icon="Refresh" @click="resetFilters">重置</el-button>
+    </form>
     <DataTableFrame :rows="filteredRows" :page-size="10">
-      <template #actions><el-button :icon="DocumentCopy" @click="ElMessage.info('当前筛选结果已进入导出队列')">导出</el-button></template>
+      <template #actions><span>{{ airSession.role === 'service' ? '仅本人创建的订单' : '当前演示角色可见订单' }}</span></template>
       <template #default="{ rows }">
-        <el-table :data="rows" row-key="id" stripe @row-dblclick="openDetail">
-          <el-table-column prop="orderNo" label="订单号" width="178" fixed="left">
-            <template #default="{ row }"><button class="link-button" @click="openDetail(row)">{{ row.orderNo }}</button></template>
-          </el-table-column>
-          <el-table-column prop="customer" label="客户" min-width="150" />
-          <el-table-column prop="businessType" label="业务类型" width="108" />
-          <el-table-column prop="route" label="航线" width="118" />
+        <el-table :data="rows" row-key="id" stripe empty-text="无符合条件的主订单" aria-label="主订单列表" @row-dblclick="openDetail">
+          <el-table-column prop="orderNo" label="订单号" width="185" fixed="left"><template #default="{ row }"><button class="link-button" @click="openDetail(row)">{{ row.orderNo }}</button></template></el-table-column>
+          <el-table-column prop="customer" label="客户" min-width="145" />
+          <el-table-column prop="waybillNo" label="提单号" width="145" />
+          <el-table-column prop="route" label="始发港 / 目的港" width="140" />
           <el-table-column prop="pieces" label="件数" width="72" align="right" />
-          <el-table-column prop="grossWeight" label="毛重 kg" width="96" align="right" />
-          <el-table-column prop="chargeWeight" label="计费重 kg" width="110" align="right" />
-          <el-table-column label="订单状态" width="102"><template #default="{ row }"><StatusTag :label="row.orderStatus" /></template></el-table-column>
-          <el-table-column label="订舱状态" width="102"><template #default="{ row }"><StatusTag :label="row.bookingStatus" /></template></el-table-column>
-          <el-table-column prop="owner" label="业务员" width="88" />
-          <el-table-column label="操作" width="84" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openDetail(row)">详情</el-button></template></el-table-column>
+          <el-table-column prop="grossWeight" label="重量 kg" width="96" align="right" />
+          <el-table-column prop="volume" label="体积 m³" width="94" align="right" />
+          <el-table-column label="订单状态" width="110"><template #default="{ row }"><StatusTag :label="row.orderStatus" /></template></el-table-column>
+          <el-table-column label="订舱服务" width="120"><template #default="{ row }"><StatusTag :label="row.bookingStatus" /></template></el-table-column>
+          <el-table-column prop="flight" label="航班号" width="100" />
+          <el-table-column prop="supplier" label="航司" width="110" />
+          <el-table-column prop="departureDate" label="出港日期" width="118" />
+          <el-table-column prop="creator" label="客服" width="90" />
+          <el-table-column prop="owner" label="业务员" width="90" />
+          <el-table-column prop="createDate" label="创建日期" width="118" />
+          <el-table-column label="操作" width="120" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openDetail(row)">详情</el-button><el-button link type="primary" @click="openBooking(row)">订舱</el-button></template></el-table-column>
         </el-table>
       </template>
     </DataTableFrame>
-
-    <el-dialog v-model="createVisible" title="新建空运订单" width="760" align-center destroy-on-close>
-      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="form-grid">
-        <el-form-item label="客户" prop="customer"><el-select v-model="form.customer" filterable><el-option v-for="value in ['启航跨境贸易', '云帆供应链', '远洲电子商务', '华越国际商贸']" :key="value" :value="value" /></el-select></el-form-item>
-        <el-form-item label="业务员"><el-select v-model="form.owner"><el-option v-for="value in ['周倩', '陈楠', '李明', '王晴']" :key="value" :value="value" /></el-select></el-form-item>
-        <el-form-item label="业务类型"><el-segmented v-model="form.businessType" :options="['空运出口', '空运进口']" /></el-form-item>
-        <el-form-item label="始发港"><el-input v-model="form.origin" maxlength="3" /></el-form-item>
-        <el-form-item label="目的港" prop="destination"><el-input v-model="form.destination" maxlength="3" placeholder="例如 LAX" /></el-form-item>
-        <el-form-item label="件数" prop="pieces"><el-input-number v-model="form.pieces" :min="1" controls-position="right" /></el-form-item>
-        <el-form-item label="毛重 kg" prop="grossWeight"><el-input-number v-model="form.grossWeight" :min="0" :precision="1" controls-position="right" /></el-form-item>
-        <el-form-item label="体积 m³"><el-input-number v-model="form.volume" :min="0" :precision="3" controls-position="right" /></el-form-item>
-        <el-form-item label="计费重 kg"><el-input :model-value="previewChargeWeight.toFixed(1)" readonly><template #suffix>自动计算</template></el-input></el-form-item>
-        <el-form-item label="订舱要求" class="span-2"><el-input v-model="form.bookingRequirement" type="textarea" :rows="3" maxlength="200" show-word-limit /></el-form-item>
-      </el-form>
-      <template #footer><el-button @click="createVisible = false">取消</el-button><el-button type="primary" @click="submitCreate">保存草稿</el-button></template>
-    </el-dialog>
-
-    <el-drawer v-model="detailVisible" title="空运订单详情" size="min(720px, 94vw)">
+    <AirOrderCreateDialog v-model="createVisible" @created="created" />
+    <el-drawer v-model="detailVisible" title="主订单详情" size="min(760px, 94vw)">
       <template v-if="selected">
-        <div class="detail-hero">
-          <div><small>{{ selected.businessType }}</small><h2>{{ selected.orderNo }}</h2><span>{{ selected.customer }} · {{ selected.route }}</span></div>
-          <div><StatusTag :label="selected.orderStatus" /><StatusTag :label="selected.bookingStatus" /></div>
-        </div>
-        <div class="detail-section">
-          <h3>货物与订舱</h3>
-          <dl class="detail-grid">
-            <div><dt>件数</dt><dd>{{ selected.pieces }} 件</dd></div><div><dt>毛重</dt><dd>{{ selected.grossWeight }} kg</dd></div>
-            <div><dt>体积</dt><dd>{{ selected.volume }} m³</dd></div><div><dt>计费重</dt><dd>{{ selected.chargeWeight }} kg</dd></div>
-            <div><dt>航司与航班</dt><dd>{{ selected.supplier || '待订舱' }} {{ selected.flight }}</dd></div><div><dt>出港日期</dt><dd>{{ selected.departureDate || '待确认' }}</dd></div>
-            <div class="span-2"><dt>订舱要求</dt><dd>{{ selected.bookingRequirement || '无补充要求' }}</dd></div>
-          </dl>
-        </div>
-        <div class="detail-section">
-          <h3>订单结构</h3>
-          <div class="structure-row"><span>当前包含 <strong>{{ selected.childCount }}</strong> 个子订单</span><div><el-button @click="splitOrder">拆分子订单</el-button><el-button :disabled="selected.childCount === 1" @click="mergeOrder">合并子订单</el-button></div></div>
-        </div>
-        <div class="drawer-actions"><el-button v-if="selectedTransition" type="primary" :icon="Promotion" @click="advanceOrder">{{ selectedTransition.label }}</el-button><span v-else>当前节点暂无待执行动作</span></div>
+        <div class="detail-hero"><div><small>空运主订单</small><h2>{{ selected.orderNo }}</h2><span>{{ selected.customer }} · {{ selected.route }}</span></div><div><StatusTag :label="selected.orderStatus" /><StatusTag :label="selected.bookingStatus" /></div></div>
+        <div class="detail-section"><h3>客户与货物</h3><dl class="detail-grid">
+          <div><dt>业务员 / 客服</dt><dd>{{ selected.owner }} / {{ selected.creator }}</dd></div><div><dt>联系人 / 电话</dt><dd>{{ selected.contact || '未填写' }} / {{ selected.phone || '未填写' }}</dd></div>
+          <div><dt>联系人邮箱</dt><dd>{{ displayValue(selected.contactEmails?.filter(Boolean)) }}</dd></div><div><dt>订单流转</dt><dd>{{ displayValue(selected.flowTo) }}</dd></div>
+          <div><dt>中文品名</dt><dd>{{ selected.goodsName || '未填写' }}</dd></div><div><dt>特殊货物</dt><dd>{{ selected.specialCargo || '无' }}</dd></div>
+          <div><dt>件数 / 重量 / 体积</dt><dd>{{ selected.pieces }} 件 / {{ selected.grossWeight }} kg / {{ selected.volume }} m³</dd></div><div><dt>预计提单计费重</dt><dd>{{ selected.chargeWeight.toFixed(1) }} kg</dd></div>
+          <div><dt>尺寸：长 / 宽 / 高（cm）</dt><dd>{{ displayValue(selected.length) }} / {{ displayValue(selected.width) }} / {{ displayValue(selected.height) }}</dd></div><div><dt>期望到货时间</dt><dd>{{ displayValue(selected.expectedArrival) }}</dd></div>
+          <div><dt>运费卖价</dt><dd>{{ selected.sellRate }}</dd></div><div><dt>后段卡车卖价</dt><dd>{{ displayValue(selected.truckSellRate) }}</dd></div><div><dt>分泡</dt><dd>{{ selected.foamRatio ?? '未填写' }}</dd></div><div><dt>创建日期</dt><dd>{{ selected.createDate }}</dd></div>
+        </dl></div>
+        <div class="detail-section"><h3>空运与航程</h3><dl class="detail-grid">
+          <div><dt>航司产品</dt><dd>{{ AIR_PRODUCTS.find(p => p.id === selected.product)?.label || selected.product }}</dd></div><div><dt>预计出港日期</dt><dd>{{ selected.expectedDepartureDate || '未填写' }}</dd></div>
+          <div><dt>已确认航班</dt><dd>{{ selected.flight || '待确认' }}</dd></div><div><dt>出港日期</dt><dd>{{ selected.departureDate || '待确认' }}</dd></div>
+          <div><dt>提单号</dt><dd>{{ selected.waybillNo || '待分配' }}</dd></div><div><dt>订舱要求</dt><dd>{{ selected.bookingRequirement || '无补充要求' }}</dd></div>
+        </dl></div>
+        <div class="detail-section" v-if="selected.booking?.flight"><h3>已保存的订舱信息</h3><dl class="detail-grid">
+          <div v-for="[key, label] in bookingDetailFields" :key="key"><dt>{{ label }}</dt><dd>{{ displayValue(selected.booking[key]) }}</dd></div>
+          <div><dt>允许亏损</dt><dd>{{ selected.booking.allowLoss ? '是' : '否' }}</dd></div>
+        </dl></div>
+        <div class="detail-section"><h3>服务单据</h3><el-table :data="selected.services || []" aria-label="订单服务单据"><el-table-column prop="id" label="服务单号" min-width="180" /><el-table-column prop="name" label="服务" width="90" /><el-table-column label="状态" min-width="110"><template #default="{ row }"><StatusTag :label="row.status" /></template></el-table-column></el-table></div>
+        <div v-if="selected.services?.some(service => service.type === 'warehouse')" class="detail-section"><h3>仓储服务信息</h3><dl class="detail-grid"><div><dt>仓储操作</dt><dd>{{ displayValue(selected.warehouseOperations) }}</dd></div></dl></div>
+        <div v-if="selected.services?.some(service => service.type === 'pickup')" class="detail-section"><h3>提货服务信息</h3><dl class="detail-grid">
+          <div><dt>供应商</dt><dd>{{ displayValue(selected.pickup?.supplier) }}</dd></div><div><dt>提货时间</dt><dd>{{ displayValue(selected.pickup?.time) }}</dd></div>
+          <div><dt>提货点</dt><dd>{{ selected.pickup?.region?.join(' / ') }} {{ displayValue(selected.pickup?.address) }}</dd></div><div><dt>提货联系人 / 电话</dt><dd>{{ displayValue(selected.pickup?.contact) }} / {{ displayValue(selected.pickup?.phone) }}</dd></div>
+          <div><dt>到货点</dt><dd>{{ displayValue(selected.pickup?.arrivalAddress) }}</dd></div><div><dt>到货联系人 / 电话</dt><dd>{{ displayValue(selected.pickup?.arrivalContact) }} / {{ displayValue(selected.pickup?.arrivalPhone) }}</dd></div>
+          <div><dt>特种车</dt><dd>{{ displayValue(selected.pickup?.vehicleType) }}</dd></div><div><dt>备注</dt><dd>{{ displayValue(selected.pickup?.remark) }}</dd></div>
+        </dl></div>
+        <div class="detail-section" v-if="selected.events?.length"><h3>处理记录</h3><el-timeline><el-timeline-item v-for="(event, index) in selected.events" :key="index" :timestamp="event.at || event.time">{{ event.text || event.message }}<span v-if="event.actor"> · {{ event.actor }}</span></el-timeline-item></el-timeline></div>
+        <el-alert v-if="selected.orderStatus === '待补录'" title="订舱已完成；订单补录与主分单管理尚待完善，本页不将补录直接跳转为运输中。" type="info" :closable="false" />
+        <div class="drawer-actions"><el-button type="primary" @click="openBooking(selected)">进入该订单订舱</el-button></div>
       </template>
     </el-drawer>
   </div>
 </template>
+
+<style scoped>
+.air-filters { margin: 0 0 16px; display: flex; align-items: end; flex-wrap: wrap; gap: 12px; }
+.air-filters label { display: flex; flex-direction: column; gap: 8px; width: 150px; color: var(--muted); }
+.air-filters label:first-child { width: 250px; }
+.air-filters :deep(.el-date-editor) { width: 100%; }
+.air-context { margin-bottom: 16px; color: var(--muted); }
+@media (max-width: 680px) { .air-filters label, .air-filters label:first-child { width: 100%; } }
+</style>

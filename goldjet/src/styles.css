@@ -197,6 +197,9 @@ button { -webkit-tap-highlight-color: transparent; }
 .drawer-actions span { color: var(--muted); }
 
 .el-button { min-height: 32px; border-radius: 4px; }
+.el-dialog.air-create-dialog, .el-dialog.air-booking-dialog, .el-dialog.ground-dialog { display: flex; flex-direction: column; max-height: 90vh; }
+.air-create-dialog .el-dialog__body, .air-booking-dialog .el-dialog__body, .ground-dialog .el-dialog__body { overflow: auto; min-height: 0; }
+.air-create-dialog .el-dialog__footer, .air-booking-dialog .el-dialog__footer, .ground-dialog .el-dialog__footer { flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 16px; }
 .el-button + .el-button { margin-left: 8px; }
 .el-input__wrapper, .el-select__wrapper, .el-textarea__inner { border-radius: 4px; }
 
