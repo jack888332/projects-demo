@@ -9,7 +9,7 @@ import StatusTag from './StatusTag.vue'
 import { AIR_FREIGHT_TERMS, AIR_HOUSE_CURRENCIES, cloneAirSupplementValue, stringifyAirSupplementValue, createHouseBillDraft, normalizeHouseBillDraft, validateHouseBillDraft, getHouseBillEditRestriction } from '../domain/airOrderSupplement.js'
 import { getAirServiceEditRestriction } from '../domain/airServiceEditing.js'
 
-const props = defineProps({ modelValue: Boolean, order: { type: Object, required: true }, child: { type: Object, default: null } })
+const props = defineProps({ modelValue: Boolean, order: { type: Object, required: true }, child: { type: Object, default: null }, customsContext: { type: Object, default: null } })
 const emit = defineEmits(['update:modelValue', 'saved', 'dirty'])
 const { airChildSession, airCatalog, saveAirHouseBill } = usePrototypeData()
 const session = computed(() => unref(airChildSession))
@@ -105,6 +105,11 @@ function save() {
     <div class="house-context"><strong>{{ child?.orderNo || '新分单' }}</strong><span>{{ order.customer }}</span><el-tag v-if="child" size="small">{{ child.orderStatus }}</el-tag></div>
     <el-alert v-if="restriction" :title="restriction" type="info" :closable="false" />
     <el-alert v-if="failure" :title="failure" type="error" :closable="false" role="alert" />
+    <section v-if="customsContext?.requests?.length" class="house-services" aria-label="分单报关材料补齐通知">
+      <h3>报关材料补齐通知 · {{ customsContext.serviceId }}</h3>
+      <el-alert title="材料更新与保存规则待确认。查看或保存其他分单信息不会完成报关材料待办。" type="warning" :closable="false" />
+      <el-table :data="customsContext.requests" row-key="id" aria-label="分单报关材料通知"><el-table-column prop="materialName" label="材料名称" min-width="140" /><el-table-column prop="content" label="通知内容" min-width="250" /><el-table-column prop="createdAt" label="接收时间" min-width="170" /><el-table-column label="处理状态" width="100"><template #default><el-tag type="warning">未完成</el-tag></template></el-table-column></el-table>
+    </section>
     <el-form :model="draft" label-position="top" class="house-form" :disabled="Boolean(restriction)" @submit.prevent="save">
       <h3>提单资料</h3>
       <div class="house-grid">

@@ -1,8 +1,10 @@
 import { getBookingApproval } from './airOperations.js'
+import { deriveAirDeclarations } from './airDeclarations.js'
 
 // Personnel are synthetic demo identities; product bindings are explicit, never inferred from an order owner.
 export const WORKBENCH_PERSONAS = [
   { id: 'service', scope: 'air', role: 'service', name: '周倩', label: '空运客服' },
+  { id: 'customsService', scope: 'customs', role: 'customsService', name: '报关演示客服', label: '报关行客服' },
   { id: 'waybillClerk', scope: 'air', role: 'waybillClerk', name: '提单演示专员', label: '打单员' },
   { id: 'templateProduct', scope: 'airTemplate', role: 'product', name: '模板演示产品人员', label: '提单模板产品人员' },
   { id: 'templateTechnical', scope: 'airTemplate', role: 'technical', name: '模板演示技术人员', label: '提单模板技术人员' },
@@ -53,6 +55,22 @@ export function deriveWorkbenchTasks(state, persona) {
   if (!session || !present(session.name)) return []
   const tasks = []
   if (session.scope === 'air') {
+    if (['service', 'supervisor'].includes(session.role)) {
+      for (const declaration of deriveAirDeclarations(state)) {
+        for (const request of declaration.materialRequests || []) {
+          if (request.recipient !== session.name || declaration.creator !== session.name) continue
+          tasks.push(task(declaration, 'air-customs-materials', {
+            id: `air-customs-materials:${declaration.id}:${request.id}`,
+            orderId: declaration.orderId, serviceId: declaration.id, childId: declaration.childId || '',
+            no: declaration.housebillNo || declaration.orderNo,
+            subject: '报关服务进行中，请补齐材料', materialName: request.materialName,
+            handler: declaration.creator, creator: declaration.creator, createdAt: request.createdAt,
+            completed: false, target: declaration.target,
+            blockedReason: '材料更新与保存规则待确认；查看通知不会完成任务。',
+          }))
+        }
+      }
+    }
     for (const order of state.airOrders || []) {
       const assignees = order.assignees ?? WORKBENCH_PRODUCT_ASSIGNEES[order.product] ?? {}
       const booking = order.booking || {}
@@ -158,6 +176,7 @@ const link = (label, path = '', reason = '尚未覆盖') => ({ label, target: pa
 export function getWorkbenchQuickLinks(persona) {
   const session = resolvePersona(persona)
   if (!session) return []
+  if (session.scope === 'customs' && session.role === 'customsService') return [link('报关单管理', '/fulfillment/declarations')]
   if (session.scope === 'airTemplate') return [link('提单模板管理', '/fulfillment/airway-bill-templates')]
   if (session.role === 'waybillClerk') return [link('提单制作', '/fulfillment/airway-bills')]
   if (session.scope === 'air' && ['service', 'supervisor'].includes(session.role)) {

@@ -8,6 +8,7 @@ const coreRoutes = [
   { key: 'airChildren', component: () => import('../views/AirChildOrdersView.vue') },
   { key: 'booking', component: () => import('../views/BookingView.vue') },
   { key: 'airwayBills', component: () => import('../views/AirWaybillsView.vue') },
+  { key: 'declarations', component: () => import('../views/AirDeclarationsView.vue') },
   { key: 'groundDispatch', component: () => import('../views/GroundDispatchView.vue') },
   { key: 'groundWaybills', component: () => import('../views/GroundWaybillsView.vue') },
   { key: 'fleet', component: () => import('../views/FleetView.vue') },

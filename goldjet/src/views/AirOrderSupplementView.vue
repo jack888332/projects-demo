@@ -15,7 +15,7 @@ import { getAirServiceEditRestriction } from '../domain/airServiceEditing.js'
 
 const route = useRoute()
 const router = useRouter()
-const { state, airChildSession, airCatalog, saveAirSupplement, saveAirOrderCode, cancelAirHouseBill, moveAirHouseBill, importAirHouseBills } = usePrototypeData()
+const { state, airChildSession, airCatalog, airDeclarations, declarationSession, saveAirSupplement, saveAirOrderCode, cancelAirHouseBill, moveAirHouseBill, importAirHouseBills } = usePrototypeData()
 const session = computed(() => unref(airChildSession))
 const order = computed(() => state.airOrders.find(row => row.id === route.params.orderId && (!['service', 'hangsheng'].includes(session.value.role) || row.creator === session.value.name)))
 const draft = ref(null)
@@ -38,6 +38,24 @@ let contextVersion = 0
 const children = computed(() => (state.airChildren || []).filter(row => row.parentId === order.value?.id))
 const activeChildren = computed(() => children.value.filter(row => !row.deleted && row.orderStatus !== '已取消'))
 const selectedChild = computed(() => children.value.find(row => row.id === childId.value) || null)
+const customsRequestId = computed(() => typeof route.query.customs === 'string' ? route.query.customs : '')
+const customsChildId = computed(() => typeof route.query.child === 'string' ? route.query.child : '')
+const inspectingCustomsSource = computed(() => route.query.inspect === 'service')
+const sourceDeclaration = computed(() => {
+  if (!inspectingCustomsSource.value || !order.value || session.value.role !== 'viewer' || unref(declarationSession)?.role !== 'customsService') return null
+  return (unref(airDeclarations) || []).find(row => row.id === customsRequestId.value && row.orderId === order.value.id
+    && (row.childId || '') === customsChildId.value) || null
+})
+const customsDeclaration = computed(() => {
+  if (inspectingCustomsSource.value || !order.value || !customsRequestId.value || !['service', 'supervisor'].includes(session.value.role)) return null
+  return (unref(airDeclarations) || []).find(row => row.id === customsRequestId.value && row.orderId === order.value.id
+    && (row.childId || '') === customsChildId.value && row.creator === session.value.name
+    && row.materialRequests?.some(request => request.recipient === session.value.name)) || null
+})
+const customsRequests = computed(() => (customsDeclaration.value?.materialRequests || []).filter(request => request.recipient === session.value.name))
+const customsContext = computed(() => customsDeclaration.value ? { serviceId: customsDeclaration.value.id, requests: customsRequests.value } : null)
+const customsLinkError = computed(() => !customsRequestId.value || customsDeclaration.value || sourceDeclaration.value ? ''
+  : inspectingCustomsSource.value ? '报关服务来源不匹配或当前角色无权查看。' : '报关材料通知不存在、来源不匹配或当前角色无权查看。')
 const childOrder = computed(() => order.value ? { ...order.value, ...draft.value, id: order.value.id } : null)
 const restriction = computed(() => getAirSupplementRestriction(order.value, session.value))
 const restrictionMessage = computed(() => order.value?.orderStatus === '待出提单' && restriction.value === '订单须处于待补录状态' ? '补录已提交。代码可单独保存；客户报价在主订单列表维护，待服务信息可在下方修改。' : restriction.value)
@@ -109,13 +127,31 @@ async function allowLeave() {
 function back() { return router.push({ path: '/fulfillment/air-orders', query: order.value ? { order: order.value.id } : {} }) }
 function beforeUnload(event) { if (dirty.value) { event.preventDefault(); event.returnValue = '' } }
 onBeforeRouteLeave(allowLeave)
-onBeforeRouteUpdate(allowLeave)
+onBeforeRouteUpdate(async (to, from) => {
+  if (to.params.orderId === from.params.orderId && to.query.customs === from.query.customs && to.query.child === from.query.child && to.query.inspect === from.query.inspect) return true
+  if (!await allowLeave()) return false
+  hydrate()
+  return true
+})
 onMounted(() => window.addEventListener('beforeunload', beforeUnload))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 function openHouse(child = null) {
   if (busy.value || !order.value || (!child && houseManagementRestriction.value) || (child && !children.value.includes(child))) return false
   childId.value = child?.id || ''; childDirty.value = false; childVisible.value = true; return true
 }
+function openCustomsSource() {
+  if ((!customsDeclaration.value && !sourceDeclaration.value) || busy.value) return false
+  if (!customsChildId.value) return true
+  if (childVisible.value) return selectedChild.value?.id === customsChildId.value
+  const child = children.value.find(row => row.id === customsChildId.value && !row.deleted)
+  return child ? openHouse(child) : false
+}
+function returnToCustoms() {
+  const declaration = sourceDeclaration.value || customsDeclaration.value
+  if (!declaration) return false
+  return router.push({ path: '/fulfillment/declarations', query: { service: declaration.id } })
+}
+watch(() => [route.params.orderId, customsRequestId.value, customsChildId.value, inspectingCustomsSource.value], openCustomsSource, { immediate: true, flush: 'post' })
 function openImport() { if (busy.value || houseManagementRestriction.value) return false; importIds.value = []; importVisible.value = true; return true }
 function selectImports(rows) { importIds.value = rows.map(row => row.id) }
 function importSelected() {
@@ -169,6 +205,17 @@ function saveCode() {
       <div class="order-context"><StatusTag :label="order.orderStatus" /><span>{{ order.origin }} / {{ order.destination }}</span><span>{{ display(order.waybillNo) }}</span><span>{{ display(order.flight) }} · {{ display(order.departureDate) }}</span></div>
       <el-alert v-if="restriction" :title="restrictionMessage" type="info" :closable="false" />
       <el-alert v-if="failure" :title="failure" type="error" :closable="false" role="alert" />
+      <section v-if="customsDeclaration" class="supplement-section customs-notices" aria-label="报关材料补齐通知">
+        <div class="section-actions"><h2>报关材料补齐通知</h2><div><el-button v-if="customsChildId" :disabled="busy" @click="openCustomsSource">查看通知分单</el-button><el-button :disabled="busy" @click="returnToCustoms">返回报关单</el-button></div></div>
+        <p class="field-note">服务单号：{{ customsDeclaration.id }}<template v-if="customsDeclaration.housebillNo"> · 分单号：{{ customsDeclaration.housebillNo }}</template></p>
+        <el-alert title="材料更新与保存规则待确认，当前仅可查看通知。要求补齐的材料更新并保存后任务才完成。" type="warning" :closable="false" />
+        <el-table :data="customsRequests" row-key="id" aria-label="当前报关服务材料通知"><el-table-column prop="materialName" label="材料名称" min-width="150" /><el-table-column prop="content" label="通知内容" min-width="280" /><el-table-column prop="createdAt" label="接收时间" min-width="170" /><el-table-column label="处理状态" width="105"><template #default><el-tag type="warning">未完成</el-tag></template></el-table-column></el-table>
+      </section>
+      <section v-else-if="sourceDeclaration" class="supplement-section" aria-label="报关服务来源">
+        <div class="section-actions"><h2>报关服务来源 · {{ sourceDeclaration.id }}</h2><div><el-button v-if="customsChildId" :disabled="busy" @click="openCustomsSource">查看来源分单</el-button><el-button :disabled="busy" @click="returnToCustoms">返回报关单</el-button></div></div>
+        <p class="field-note">来源资料只读；{{ customsChildId ? '分单号：' + display(sourceDeclaration.housebillNo) : '订单号：' + display(sourceDeclaration.orderNo) }}</p>
+      </section>
+      <el-alert v-else-if="customsLinkError" :title="customsLinkError" type="warning" :closable="false" />
       <el-form :model="draft" label-position="top" class="supplement-form" @submit.prevent="submit">
         <section class="supplement-section" aria-labelledby="supplement-info-title">
           <h2 id="supplement-info-title">提单信息</h2>
@@ -217,7 +264,7 @@ function saveCode() {
         <div v-if="Object.keys(errors).length && !restriction" class="form-errors" role="status"><span v-for="(error, key) in errors" :key="key">{{ error }}</span></div>
         <div class="supplement-actions"><el-button :disabled="busy" @click="back">取消</el-button><el-button v-if="canSubmit" type="primary" :loading="busy" :disabled="Object.keys(errors).length > 0" @click="submit">提交补录</el-button><el-button v-else-if="!houseManagementRestriction && hasHouseBills" type="primary" :icon="Plus" @click="openHouse()">分单</el-button></div>
       </el-form>
-      <AirHouseBillDialog v-if="childOrder" v-model="childVisible" :order="childOrder" :child="selectedChild" @dirty="childDirty = $event" />
+      <AirHouseBillDialog v-if="childOrder" v-model="childVisible" :order="childOrder" :child="selectedChild" :customs-context="selectedChild?.id === customsChildId ? customsContext : null" @dirty="childDirty = $event" />
       <AirServiceEditDialog v-model="serviceVisible" :order="order" :service="selectedService" @dirty="serviceDirty = $event" @saved="serviceSaved" />
       <el-dialog v-model="importVisible" title="引入同客户子订单" width="min(950px, 96vw)" align-center destroy-on-close :close-on-click-modal="false"><div class="import-context">{{ order.customer }}</div><DataTableFrame :rows="importCandidates" :page-size="10" :page-sizes="[10]" selectable :selected-count="importIds.length"><template #default="{ rows }"><el-table :data="rows" row-key="id" aria-label="可引入子订单" empty-text="无可引入的同客户子订单" @selection-change="selectImports"><el-table-column type="selection" width="45" reserve-selection /><el-table-column prop="orderNo" label="子订单号" min-width="190" /><el-table-column prop="housebillNo" label="分单号" min-width="150" /><el-table-column prop="pieces" label="预计件数" width="105" /><el-table-column prop="grossWeight" label="预计毛重 kg" width="125" /><el-table-column prop="volume" label="预计体积 m³" width="125" /><el-table-column prop="orderStatus" label="状态" min-width="125" /></el-table></template></DataTableFrame><template #footer><el-button :disabled="busy" @click="importVisible = false">取消</el-button><el-button type="primary" :disabled="!importIds.length || Boolean(houseManagementRestriction)" :loading="busy" @click="importSelected">引入所选</el-button></template></el-dialog>
       <el-dialog :model-value="Boolean(party)" :title="party === 'shipper' ? '编辑发货人' : '编辑收货人'" width="min(600px, 94vw)" align-center :close-on-click-modal="false" :before-close="closeParty"><el-form label-position="top"><el-form-item :label="party === 'shipper' ? '发货人' : '收货人'" required :error="partyError"><el-input v-model="partyText" type="textarea" :rows="8" maxlength="500" show-word-limit :aria-label="party === 'shipper' ? '发货人编辑内容' : '收货人编辑内容'" /></el-form-item></el-form><template #footer><el-button @click="closeParty">取消</el-button><el-button type="primary" :disabled="Boolean(partyError) || Boolean(restriction)" @click="saveParty">确定</el-button></template></el-dialog>

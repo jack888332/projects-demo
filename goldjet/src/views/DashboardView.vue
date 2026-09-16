@@ -14,12 +14,13 @@ const persona = computed(() => WORKBENCH_PERSONAS.find(item => item.id === workb
 const tasks = computed(() => deriveWorkbenchTasks(state, persona.value))
 const summary = computed(() => getWorkbenchSummary(tasks.value))
 const taskPage = computed(() => getWorkbenchPendingPage(tasks.value, page.value, 20))
-const taskLabels = { 'air-supplement': '立即补录', 'air-confirm-flight': '确认航班', 'air-complete-journey': '航程补充', 'air-loss-approval': '亏损审核', 'ground-dispatch': '立即调度', 'partner-approval':'档案审批', 'credit-approval':'额度审批' }
+const taskLabels = { 'air-customs-materials': '报关材料', 'air-supplement': '立即补录', 'air-confirm-flight': '确认航班', 'air-complete-journey': '航程补充', 'air-loss-approval': '亏损审核', 'ground-dispatch': '立即调度', 'partner-approval':'档案审批', 'credit-approval':'额度审批' }
 const messages=computed(()=>state.messages.filter(row=>row.recipient===persona.value.name || row.recipientRole===persona.value.role).slice().reverse())
 const shortcuts = computed(() => getWorkbenchQuickLinks(persona.value))
 const updatedAt = computed(() => state.workbenchProgress[persona.value.id]?.updatedAt || '尚无进度变化')
 const unavailable = computed(() => ({
-  air: '补录任务可进入订单补录并提交至待出提单；报关补料、废单审批和提单制作尚未覆盖。',
+  air: '报关材料通知可进入对应直单或分单查看；材料更新保存规则待确认。废单审批待办尚未覆盖。',
+  customs: '报关单可查询、下载材料并发起补齐通知；接单与状态维护规则待确认。',
   ground: '司机异常、上游变更通知、车辆到期及中转赶单待对应篇章接入。',
   warehouse: '仓库工作台待出库指令、上游事件与入仓节点接入。',
   finance: '已接入合作方和授信审批。订单成本、付款、核销等分级结算待办尚未覆盖。',
@@ -60,7 +61,7 @@ function process(task) { if (task.target) router.push(task.target) }
             <el-table-column label="任务类型" width="115"><template #default="{ row }">{{ taskLabels[row.type] || row.type }}</template></el-table-column>
             <el-table-column prop="no" label="业务单号" min-width="185" />
             <el-table-column prop="subject" label="任务详情" min-width="240">
-              <template #default="{ row }"><div>{{ row.subject }}</div><small v-if="row.blockedReason" class="task-limit">{{ row.blockedReason }}</small></template>
+              <template #default="{ row }"><div>{{ row.subject }}</div><small v-if="row.materialName" class="task-limit">材料：{{ row.materialName }}</small><small v-if="row.blockedReason" class="task-limit">{{ row.blockedReason }}</small></template>
             </el-table-column>
             <el-table-column prop="creator" label="发起人" width="110" />
             <el-table-column prop="createdAt" label="创建时间" width="165" />

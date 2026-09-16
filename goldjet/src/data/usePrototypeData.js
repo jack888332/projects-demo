@@ -30,6 +30,8 @@ import { createAirServiceActions } from './airServiceActions.js'
 import { createAirBookingActions } from './airBookingActions.js'
 import { createAirWaybillActions } from './airWaybillActions.js'
 import { createAirWaybillTemplateActions } from './airWaybillTemplateActions.js'
+import { createAirDeclarationActions } from './airDeclarationActions.js'
+import { deriveAirDeclarations } from '../domain/airDeclarations.js'
 
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
@@ -198,6 +200,12 @@ const airTemplateSession = computed(() => {
   return { role: persona?.scope === 'airTemplate' ? persona.role : 'viewer', name: persona?.name || '' }
 })
 const airWaybillTemplateActions = createAirWaybillTemplateActions(state, () => airTemplateSession.value)
+const declarationSession = computed(() => {
+  const persona = WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId)
+  return { role: persona?.scope === 'customs' ? persona.role : 'viewer', name: persona?.name || '' }
+})
+const airDeclarationActions = createAirDeclarationActions(state, () => declarationSession.value)
+const airDeclarations = computed(() => deriveAirDeclarations(state))
 
 // Store only the last progress-change timestamp, never a second task status.
 watch(() => WORKBENCH_PERSONAS.map(persona => {
@@ -375,6 +383,7 @@ export function usePrototypeData() {
     ...airOrderSupplementActions, ...airOrderActions, airChildSession, ...airChildOrderActions, ...airServiceActions,
     ...airWaybillActions, advanceAirWaybillClock,
     airTemplateSession, ...airWaybillTemplateActions,
+    declarationSession, airDeclarations, ...airDeclarationActions,
     addCost, reviewCost, partnerSession, ...partnerActions, airMasterSession, airCatalog, ...airMasterActions,
     ...fleetActions, ...transportQuoteActions, ...warehouseQuoteActions, ...airSupplierRateActions, capacitySession, ...capacityActions, ...palletActions, ensureGenericRows, addGenericRow,
   }

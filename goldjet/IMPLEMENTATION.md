@@ -19,7 +19,7 @@
 | GJ-009 | 空运订单创建 | `/fulfillment/air-orders`、`/fulfillment/air-orders/:id/supplement`、`/fulfillment/air-children` | 已接建单、直单/主分单补录、分单暂存/移单/引入、预计毛件体核对、独立子单创建/提交/复制/受限删除及同客户合单；代码/报价、待服务信息修改和本地重发；批次、客服派单、主单复制/发送/作废审批、服务取消及上下游履约未覆盖，详见下方边界 |
 | GJ-010 | 订舱管理 | `/fulfillment/booking` | 已核对完整字段、13项筛选、绑定航司默认多选、合成来源与品名展开；运营确认/操作完成/航晟直接完成、改期回退服务与待办、≤30,000元逐级亏损审批及本地通知；实际毛件体区间、操作字段归属、最终服务状态/拒绝及 GJ-PRD-091～094 未决分支保留限制 |
 | GJ-011 | 提单与航司推送 | `/fulfillment/airway-bills`、`/fulfillment/airway-bills/:orderId`、`/fulfillment/airway-bill-templates`、`/foundation/integrations` | 已接完整查询/列表、主分单字段、联系人、体积/杂费、暂存/提交、提单毛件体回写、本地顺序发送/防重/回执、模板原文件上传下载；M判级、总价、出单后编辑、异常重试、业务模板配置与交单回写保留未决限制 |
-| GJ-012 | 报关单 | `/fulfillment/declarations` | 未覆盖材料与服务状态 |
+| GJ-012 | 报关单 | `/fulfillment/declarations`、`/workspace`、`/foundation/messages`、直单/分单来源页 | 已接8项查询、默认10条分页、完整已定义服务字段、材料单个/批量原文件下载、补齐通知与建单客服待办/深链；接单、状态迁移及材料上传/更新受090、102缺口限制，未接新指令生成和待办完成 |
 | GJ-013 | 清关派送 | `/fulfillment/clearance` | 未覆盖材料、接单、分批提送与完成汇总 |
 | GJ-014 | 在途跟踪 | `/fulfillment/tracking` | 未聚合各模块轨迹 |
 | GJ-015 | 用车订单 | `/fulfillment/ground-dispatch` | 已有单笔/批量调度与详情；建单、上游交接、取消/修改、潜在关联、中转未覆盖 |
@@ -58,7 +58,7 @@
 
 ## 当前核对记录
 
-- 当前逐篇游标：第011篇已补齐下述可确定的制单与本地发送路径；下一篇为第012篇报关单。第009～011篇尚有未决分支，不记为全篇完成。
+- 当前逐篇游标：第012篇已接已收报关指令的查询、下载与补齐通知路径；下一篇为第013篇清关派送。第009～012篇尚有未决分支，不记为全篇完成。
 - 2026-09-16，GJ-011最终聚焦组合：`npm test -- --run tests/airWaybills.test.js tests/airWaybillActions.test.js tests/airWaybillContact.test.js tests/airWaybillTemplates.test.js tests/airWaybillEditPage.test.js tests/airWaybillPages.test.js tests/airWaybillIntegration.test.js tests/airSupplementIntegration.test.js tests/airPalletIntegration.test.js tests/workbenchTasks.test.js tests/workbenchOwner.test.js`，11个文件115项通过。覆盖主分单实际中央owner全链、独立毛件体、字段/权限/原子校验、计算、发送顺序及120秒边界、角色/reset过期回执、配板保护、联系人、真实File内容、页面查询/选择/草稿与SFC编译。
 - GJ-011浏览器：由订单001详情进入补录，新增分单DEMO00000011并完成预计42件/186.5kg/1.28m³对账；“进入提单”分别维护主分单42件/190kg/1.3m³，预计值不变。结构化发货人和打印内容保存为常用联系人；主单运价28得计费重217.0kg、计费总价6076.00，尺寸100×50×50×4汇总1.00m³，杂费10.5×2=21.00。主分单切换时取消离开保留输入，分别暂存后主单提交为已出提单。
 - GJ-011发送浏览器：单选分单时提示先成功发送主运单；整票可见“主单发送中/分单待发送”后均成功；2分钟内再次发送禁用，虚拟时间前进121秒后整票重发成功。再次模拟主单异常，分单本次跳过、既有成功回执保留；对接页投影同一主异常/分成功记录，不再提供无条件成功的重试按钮。DescriptionCode各前缀及恰好120秒边界由聚焦检查覆盖，未逐个浏览器演示。
