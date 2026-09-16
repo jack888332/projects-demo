@@ -6,8 +6,7 @@ import { createAirMasterSeed, deriveAirCatalog } from '../domain/airMasterData.j
 import { calculateChargeWeight } from '../domain/chargeWeight.js'
 import { WAREHOUSE_FLOW } from '../domain/workflows.js'
 import {
-  BOOKING_JOURNEY_FIELDS, BOOKING_SUPPLEMENT_FIELDS, createAirDraft, createBookingDraft,
-  getBookingDecision, getBookingPermission, validateAirDraft, validateBookingDraft,
+  createAirDraft, createBookingDraft, validateAirDraft,
 } from '../domain/airOperations.js'
 import {
   GROUND_NOW, GROUND_PLATE_PRESETS, createDispatchDraft, createGroundWaybill,
@@ -21,6 +20,16 @@ import { createWarehouseQuoteSeed } from '../domain/warehouseQuotes.js'
 import { createWarehouseQuoteActions } from './warehouseQuoteActions.js'
 import { createAirSupplierRateSeed, createFinanceCostItemSeed } from '../domain/airSupplierRates.js'
 import { createAirSupplierRateActions } from './airSupplierRateActions.js'
+import { createCapacitySeed } from '../domain/airCapacity.js'
+import { createCapacityActions } from './airCapacityActions.js'
+import { createAirPalletActions } from './airPalletActions.js'
+import { createAirOrderSupplementActions } from './airOrderSupplementActions.js'
+import { createAirOrderActions, appendAirNotification } from './airOrderActions.js'
+import { createAirChildOrderActions } from './airChildOrderActions.js'
+import { createAirServiceActions } from './airServiceActions.js'
+import { createAirBookingActions } from './airBookingActions.js'
+import { createAirWaybillActions } from './airWaybillActions.js'
+import { createAirWaybillTemplateActions } from './airWaybillTemplateActions.js'
 
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
@@ -86,6 +95,19 @@ function createSeed() {
     airSupplierRates: createAirSupplierRateSeed(),
     airSupplierRateSequence: 6,
     financeCostItems: createFinanceCostItemSeed(),
+    capacityProducts: createCapacitySeed(),
+    capacitySequence: 1,
+    palletAllocations: [],
+    palletSequence: 0,
+    airChildren: [],
+    airWaybillContacts: [],
+    airWaybillContactSequence: 0,
+    airWaybillClockMs: Date.UTC(2026, 8, 8, 14, 30),
+    airWaybillTemplates: [],
+    airWaybillTemplateSequence: 0,
+    airOrderSequence: 25,
+    airChildSequence: 0,
+    airOrderEventSequence: 0,
     airOrders: [
       seedAirOrder({ id: 'AIR-260908-001', customer: '启航跨境贸易', owner: '周倩', origin: 'PVG', destination: 'LAX', grossWeight: 186.5, volume: 1.28, pieces: 42, departureDate: '2026-09-10', orderStatus: '待补录', bookingStatus: '服务已完成', bookingRequirement: '优先晚班' }),
       seedAirOrder({ id: 'AIR-260908-002', customer: '云帆供应链', owner: '陈楠', origin: 'SZX', destination: 'FRA', grossWeight: 320, volume: 1.4, pieces: 68, departureDate: '2026-09-11', orderStatus: '待订舱', bookingStatus: '待服务', bookingRequirement: '需恒温操作' }),
@@ -150,6 +172,32 @@ const fleetActions = createFleetActions(state, () => groundSession)
 const transportQuoteActions = createTransportQuoteActions(state, () => groundSession)
 const warehouseQuoteActions = createWarehouseQuoteActions(state, () => groundSession)
 const airSupplierRateActions = createAirSupplierRateActions(state, () => airSession)
+const capacitySession = computed(() => {
+  const persona = WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId)
+  const role = persona?.scope === 'air' && ['operator', 'handler'].includes(persona.role) ? persona.role : persona?.id === 'business' ? 'business' : 'viewer'
+  return { role, name: persona?.name || '', label: persona?.label || '只读查看' }
+})
+const capacityActions = createCapacityActions(state, () => capacitySession.value)
+const palletActions = createAirPalletActions(state, () => capacitySession.value)
+const airOrderActions = createAirOrderActions(state, () => airSession)
+const airChildSession = computed(() => {
+  if (['service', 'supervisor'].includes(airSession.role)) return airSession
+  if (groundSession.role === 'hangsheng') return { role: 'hangsheng', name: groundSession.name }
+  return { role: 'viewer', name: airSession.name }
+})
+const airChildOrderActions = createAirChildOrderActions(state, () => airChildSession.value, () => state.airMaster)
+const airOrderSupplementActions = createAirOrderSupplementActions(state, () => airChildSession.value)
+const airServiceActions = createAirServiceActions(state, () => airChildSession.value)
+const bookingSession = computed(() => groundSession.role === 'hangsheng'
+  ? { role: 'hangsheng', name: groundSession.name }
+  : { role: airSession.role, name: airSession.name })
+const airBookingActions = createAirBookingActions(state, () => bookingSession.value, () => airCatalog.value)
+const airWaybillActions = createAirWaybillActions(state, () => airSession, () => state.airWaybillClockMs)
+const airTemplateSession = computed(() => {
+  const persona = WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId)
+  return { role: persona?.scope === 'airTemplate' ? persona.role : 'viewer', name: persona?.name || '' }
+})
+const airWaybillTemplateActions = createAirWaybillTemplateActions(state, () => airTemplateSession.value)
 
 // Store only the last progress-change timestamp, never a second task status.
 watch(() => WORKBENCH_PERSONAS.map(persona => {
@@ -166,6 +214,7 @@ watch(() => WORKBENCH_PERSONAS.map(persona => {
 }, { immediate: true, flush: 'sync' })
 
 export function usePrototypeData() {
+  function advanceAirWaybillClock() { state.airWaybillClockMs += 121000 }
   function reset() {
     const seed = createSeed()
     for (const key of Object.keys(seed)) state[key] = clone(seed[key])
@@ -190,8 +239,7 @@ export function usePrototypeData() {
     if (!['service', 'supervisor'].includes(airSession.role)) throw new Error('当前角色不能创建主订单')
     const errors = validateAirDraft(payload, state.partners, airCatalog.value)
     if (Object.keys(errors).length) throw Object.assign(new Error(Object.values(errors)[0]), { fields: errors })
-    const index = state.airOrders.length + 1
-    const id = `AIR-260908-${String(index + 20).padStart(3, '0')}`
+    const id = `AIR-260908-${String(++state.airOrderSequence).padStart(3, '0')}`
     const draft = Object.fromEntries(Object.keys(createAirDraft()).filter((key) => key !== 'services').map((key) => [key, clone(payload[key] ?? createAirDraft()[key] ?? null)]))
     const order = {
       ...draft, id, orderNo: `GJ-${id}`, childNo: '01', childCount: 0, businessType: '空运出口',
@@ -210,57 +258,8 @@ export function usePrototypeData() {
       if (!partner.businessContacts.some(item => JSON.stringify(item) === JSON.stringify(contact))) partner.businessContacts.push(contact)
     }
     state.airOrders.unshift(order)
+    appendAirNotification(state, order, '订单待订舱', order.assignees.operator, `订单号：${order.orderNo}待订舱，请尽快处理！`, { path: '/fulfillment/booking', query: { order: order.id } })
     return state.airOrders[0]
-  }
-
-  function saveAirBooking(id, draft, { role = airSession.role, confirmedApproval = false } = {}) {
-    if (role !== airSession.role) throw new Error('演示角色已变化，请重新打开订舱信息')
-    const order = state.airOrders.find((item) => item.id === id)
-    const permission = getBookingPermission(order, role)
-    if (!permission.action) throw new Error(permission.reason)
-    const previous = createBookingDraft(order)
-    const allowed = new Set([...(permission.journey ? BOOKING_JOURNEY_FIELDS : []), ...(permission.supplement ? BOOKING_SUPPLEMENT_FIELDS : [])])
-    if (order.bookingStatus !== '待服务') allowed.delete('waybillType')
-    for (const key of [...BOOKING_JOURNEY_FIELDS, ...BOOKING_SUPPLEMENT_FIELDS]) {
-      if (!allowed.has(key) && JSON.stringify(draft[key]) !== JSON.stringify(previous[key])) throw new Error(`当前角色或状态不允许修改 ${key}`)
-    }
-    const next = { ...previous, ...Object.fromEntries([...allowed].map((key) => [key, draft[key]])) }
-    const errors = validateBookingDraft(next, airCatalog.value)
-    if (Object.keys(errors).length) throw Object.assign(new Error(Object.values(errors)[0]), { fields: errors })
-    const decision = getBookingDecision(order, next)
-    if (['blocked', 'unconfirmed'].includes(decision.kind)) throw new Error(decision.message)
-    if (decision.kind === 'approval' && !confirmedApproval) throw Object.assign(new Error(decision.message), { code: 'APPROVAL_CONFIRMATION_REQUIRED' })
-    let bookingStatus = order.bookingStatus
-    let orderStatus = order.orderStatus
-    if (decision.kind === 'approval') {
-      bookingStatus = '待审核'
-      orderStatus = '待审核'
-    } else if (permission.action === 'confirm') bookingStatus = '服务中'
-    else if (permission.action === 'complete') {
-      bookingStatus = '服务已完成'
-      orderStatus = '待补录'
-    } else if (['flight', 'departureDate', 'firstDestination', 'firstLeg', 'secondLeg', 'secondDestination', 'thirdLeg', 'takeoffTime', 'cutoffTime'].some((key) => next[key] !== previous[key])) bookingStatus = '服务中'
-    // All checks precede the only product write, so a failed operation is atomic.
-    Object.assign(order, {
-      booking: clone(next), orderStatus, bookingStatus, supplier: next.airline, flight: next.flight,
-      departureDate: next.departureDate, waybillNo: order.waybillNo || `781-9000${order.id.slice(-3)}0`,
-      approval: decision.kind === 'approval' ? { status: '待审核', lossAmount: decision.lossAmount, createdAt: '2026-09-08 14:30' } : order.approval,
-      bookingConfirmedAt: order.bookingConfirmedAt || '2026-09-08 14:30',
-      bookingCompletedAt: permission.action === 'complete' && decision.kind !== 'approval' ? '2026-09-08 14:30' : order.bookingCompletedAt,
-    })
-    const service = order.services.find((item) => item.type === 'booking')
-    if (service) service.status = bookingStatus
-    return order
-  }
-
-  function approveAirBooking(id) {
-    const order = state.airOrders.find((item) => item.id === id)
-    if (airSession.role !== 'director') throw new Error('仅航线总监可审核亏损订舱')
-    if (!order || order.orderStatus !== '待审核' || order.bookingStatus !== '待审核') throw new Error('该订单当前不处于订舱待审核状态')
-    order.orderStatus = '待补录'
-    order.approval = { ...order.approval, status: '审核通过', decidedAt: '2026-09-08 14:30', serviceStatePending: true }
-    // The approved service-state transition is unspecified; do not invent it.
-    return order
   }
 
   function dispatchGroundOrders(ids, drafts, { specialConfirmed = false } = {}) {
@@ -337,16 +336,6 @@ export function usePrototypeData() {
     return cost
   }
 
-  function retryIntegration(id) {
-    const task = state.integrations.find((item) => item.id === id)
-    if (!task || task.status !== '失败') return null
-    task.attempts += 1
-    task.status = '成功'
-    task.lastAt = '2026-09-08 14:35'
-    task.result = '人工重试成功'
-    return task
-  }
-
   function ensureGenericRows(moduleKey, label) {
     if (!state.genericRows[moduleKey]) {
       state.genericRows[moduleKey] = [1, 2, 3, 4].map((index) => ({
@@ -378,12 +367,15 @@ export function usePrototypeData() {
     undispatched: state.groundOrders.filter((item) => item.dispatchStatus === '未调度').length,
     warehousePending: state.warehouseOrders.filter((item) => item.status !== '已完成').length,
     costPending: state.costs.filter((item) => item.status === '待审批').length,
-    integrationFailures: state.integrations.filter((item) => item.status === '失败').length,
+    integrationFailures: [...state.airOrders, ...state.airChildren].filter(item => item.waybillTransmission?.status === '异常中').length,
   }))
 
   return {
-    state, airSession, groundSession, workbenchSession, selectWorkbenchPersona, dashboard, reset, createAirOrder, saveAirBooking, approveAirBooking, dispatchGroundOrders, updateGroundWaybillStatus, advanceWarehouseOrder,
-    addCost, reviewCost, partnerSession, ...partnerActions, airMasterSession, airCatalog, ...airMasterActions, retryIntegration,
-    ...fleetActions, ...transportQuoteActions, ...warehouseQuoteActions, ...airSupplierRateActions, ensureGenericRows, addGenericRow,
+    state, airSession, groundSession, workbenchSession, selectWorkbenchPersona, dashboard, reset, createAirOrder, bookingSession, ...airBookingActions, dispatchGroundOrders, updateGroundWaybillStatus, advanceWarehouseOrder,
+    ...airOrderSupplementActions, ...airOrderActions, airChildSession, ...airChildOrderActions, ...airServiceActions,
+    ...airWaybillActions, advanceAirWaybillClock,
+    airTemplateSession, ...airWaybillTemplateActions,
+    addCost, reviewCost, partnerSession, ...partnerActions, airMasterSession, airCatalog, ...airMasterActions,
+    ...fleetActions, ...transportQuoteActions, ...warehouseQuoteActions, ...airSupplierRateActions, capacitySession, ...capacityActions, ...palletActions, ensureGenericRows, addGenericRow,
   }
 }

@@ -148,7 +148,9 @@ describe('订舱权限和状态：第010篇 1.3.3', () => {
 
   it('航晟客服可从待服务完成订舱', () => {
     const order = data.createAirOrder(validAir())
-    data.airSession.role = 'hangsheng'
+    data.selectWorkbenchPersona('hangsheng')
+    expect(data.airSession.role).toBe('viewer')
+    expect(data.bookingSession.value.role).toBe('hangsheng')
     data.saveAirBooking(order.id, validBooking(order))
     expect(order.orderStatus).toBe('待补录')
     expect(order.bookingStatus).toBe('服务已完成')
@@ -208,9 +210,9 @@ describe('亏损边界与待确认：第010篇 1.3.3 关联处理', () => {
     expect(getBookingDecision({ sellRate: 28, chargeWeight: 100 }, { airCost: 30, allowLoss: false }).kind).toBe('blocked')
   })
 
-  it('按公式包含 5,000 边界，超过时待确认', () => {
+  it('按公式包含 5,000 边界，超过时追加事业部副总经理', () => {
     expect(getBookingDecision({ sellRate: 0.3, chargeWeight: 100 }, { airCost: 50, allowLoss: true })).toMatchObject({ kind: 'approval', lossAmount: 5000 })
-    expect(getBookingDecision({ sellRate: 0.3, chargeWeight: 100.5 }, { airCost: 50, allowLoss: true }).kind).toBe('unconfirmed')
+    expect(getBookingDecision({ sellRate: 0.3, chargeWeight: 100.5 }, { airCost: 50, allowLoss: true }).stages.map(stage => stage.role)).toEqual(['director', 'deputyGeneral'])
   })
 
   it('审核二次确认前不写入；确认后主单和订舱服务均待审核', () => {
@@ -238,10 +240,10 @@ describe('亏损边界与待确认：第010篇 1.3.3 关联处理', () => {
   })
 
   it('超范围亏损即使传入确认也拒绝写入', () => {
-    const order = data.createAirOrder(validAir({ sellRate: 1 }))
+    const order = data.createAirOrder(validAir({ sellRate: 1, grossWeight: 400 }))
     data.airSession.role = 'operator'
     const before = JSON.stringify(order)
-    expect(() => data.saveAirBooking(order.id, validBooking(order, { airCost: 99, allowLoss: true }), { confirmedApproval: true })).toThrow('多级链尚未实现')
+    expect(() => data.saveAirBooking(order.id, validBooking(order, { airCost: 99, allowLoss: true }), { confirmedApproval: true })).toThrow('超过 30,000')
     expect(JSON.stringify(order)).toBe(before)
   })
 })

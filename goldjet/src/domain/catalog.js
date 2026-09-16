@@ -8,6 +8,7 @@ import {
 export const moduleCatalog = {
   dashboard: { label: '运营总览', path: '/workspace', domain: 'workspace', icon: Grid },
   airOrders: { label: '空运订单', path: '/fulfillment/air-orders', domain: 'fulfillment', group: '空运履约', icon: Promotion },
+  airChildren: { label: '子订单管理', path: '/fulfillment/air-children', domain: 'fulfillment', group: '空运履约', icon: Document },
   airCapacity: { label: '舱位产品', path: '/fulfillment/air-capacity', domain: 'fulfillment', group: '空运履约', icon: Position },
   airSupplierRates: { label: '供应商价格', path: '/fulfillment/air-supplier-rates', domain: 'fulfillment', group: '空运履约', icon: Money },
   booking: { label: '订舱管理', path: '/fulfillment/booking', domain: 'fulfillment', group: '空运履约', icon: DocumentChecked },
@@ -57,7 +58,7 @@ export const navigationByDomain = Object.fromEntries(domains.map((domain) => {
 }))
 
 export const genericModuleKeys = Object.keys(moduleCatalog).filter((key) => ![
-  'dashboard', 'financeWorkspace', 'airOrders', 'booking', 'groundDispatch', 'groundWaybills', 'fleet', 'warehouseOrders', 'costs', 'partners', 'airMasterData', 'customerQuotes', 'warehouseQuotes', 'airSupplierRates', 'messages', 'integrations',
+  'dashboard', 'financeWorkspace', 'airOrders', 'airChildren', 'booking', 'airwayBills', 'groundDispatch', 'groundWaybills', 'fleet', 'warehouseOrders', 'costs', 'partners', 'airMasterData', 'customerQuotes', 'warehouseQuotes', 'airSupplierRates', 'airCapacity', 'pallet', 'messages', 'integrations',
 ].includes(key))
 
 export function getModuleByPath(path) {

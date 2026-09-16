@@ -5,7 +5,9 @@ const coreRoutes = [
   { key: 'dashboard', component: () => import('../views/DashboardView.vue') },
   { key: 'financeWorkspace', component: () => import('../views/DashboardView.vue') },
   { key: 'airOrders', component: () => import('../views/AirOrdersView.vue') },
+  { key: 'airChildren', component: () => import('../views/AirChildOrdersView.vue') },
   { key: 'booking', component: () => import('../views/BookingView.vue') },
+  { key: 'airwayBills', component: () => import('../views/AirWaybillsView.vue') },
   { key: 'groundDispatch', component: () => import('../views/GroundDispatchView.vue') },
   { key: 'groundWaybills', component: () => import('../views/GroundWaybillsView.vue') },
   { key: 'fleet', component: () => import('../views/FleetView.vue') },
@@ -16,6 +18,8 @@ const coreRoutes = [
   { key: 'customerQuotes', component: () => import('../views/TransportQuotesView.vue') },
   { key: 'warehouseQuotes', component: () => import('../views/WarehouseQuotesView.vue') },
   { key: 'airSupplierRates', component: () => import('../views/AirSupplierRatesView.vue') },
+  { key: 'airCapacity', component: () => import('../views/AirCapacityView.vue') },
+  { key: 'pallet', component: () => import('../views/AirPalletView.vue') },
   { key: 'messages', component: () => import('../views/MessagesView.vue') },
   { key: 'integrations', component: () => import('../views/IntegrationView.vue') },
 ]
@@ -38,6 +42,9 @@ export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: '/', redirect: '/workspace' },
+    { path: '/fulfillment/airway-bills/:orderId', component: () => import('../views/AirWaybillEditView.vue'), meta: { moduleKey: 'airwayBills', title: '提单编辑', domain: 'fulfillment' } },
+    { path: '/fulfillment/airway-bill-templates', component: () => import('../views/AirWaybillTemplatesView.vue'), meta: { moduleKey: 'airwayBills', title: '提单模板管理', domain: 'fulfillment' } },
+    { path: '/fulfillment/air-orders/:orderId/supplement', component: () => import('../views/AirOrderSupplementView.vue'), meta: { moduleKey: 'airOrders', title: '主订单补录', domain: 'fulfillment' } },
     ...routes,
     { path: '/:pathMatch(.*)*', redirect: '/workspace' },
   ],

@@ -58,7 +58,7 @@ export function createAirDraft() {
 const empty = (value) => value === undefined || value === null || (typeof value === 'string' && value.trim() === '')
 const clean = (value) => String(value ?? '').trim()
 const precisePositive = (value) => !empty(value) && Number.isFinite(Number(value)) && Number(value) > 0 && /^\d+(\.\d{1,2})?$/.test(String(value))
-const rate = (value) => !empty(value) && Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100
+const rate = (value) => ['number', 'string'].includes(typeof value) && !empty(value) && Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100
 const date = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().startsWith(value)
 const dateTime = (value) => /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(value) && date(value.slice(0, 10)) && /^([01]\d|2[0-3]):[0-5]\d$/.test(value.slice(11))
 
@@ -82,9 +82,7 @@ export function validateAirDraft(form, partners, catalog = { ports: AIR_PORTS })
   for (const field of ['length', 'width', 'height']) if (!empty(form[field]) && !precisePositive(form[field])) errors[field] = '请输入正数，最多两位小数'
   for (const field of ['origin', 'destination']) if (!catalog.ports.some((port) => port.code === form[field])) errors[field] = '请选择空港基础数据中的港口'
   if (!AIR_PRODUCTS.some((product) => product.id === form.product)) errors.product = '请选择航司产品'
-  if (!rate(form.sellRate)) errors.sellRate = '运费卖价必须为 0～100'
-  if (!empty(form.truckSellRate) && !rate(form.truckSellRate)) errors.truckSellRate = '后段卡车卖价必须为 0～100'
-  if (!empty(form.foamRatio) && ![0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].includes(Number(form.foamRatio))) errors.foamRatio = '分泡请选择 0～1 的十分位值'
+  Object.assign(errors, validateAirPrices(form))
   for (const [field, max] of [['contact', 256], ['goodsName', 256], ['bookingRequirement', 50]]) if (clean(form[field]).length > max) errors[field] = `最多 ${max} 个字符`
   if (!empty(form.phone) && (clean(form.phone).length < 8 || clean(form.phone).length > 20)) errors.phone = '联系电话为 8～20 个字符'
   for (const [index, email] of (form.contactEmails || []).entries()) if (!empty(email) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean(email))) errors[`contactEmails.${index}`] = '请输入有效的联系人邮箱'
@@ -104,19 +102,33 @@ export function validateAirDraft(form, partners, catalog = { ports: AIR_PORTS })
   return errors
 }
 
+export const AIR_PRICE_FIELDS = ['sellRate', 'truckSellRate', 'foamRatio']
+export function createAirPriceDraft(order = {}) {
+  return Object.fromEntries(AIR_PRICE_FIELDS.map(key => [key, empty(order[key]) ? undefined : Number(order[key])]))
+}
+export function validateAirPrices(form = {}) {
+  const errors = {}
+  if (!rate(form.sellRate)) errors.sellRate = '运费卖价必须为 0～100'
+  if (!empty(form.truckSellRate) && !rate(form.truckSellRate)) errors.truckSellRate = '后段卡车卖价必须为 0～100'
+  if (!empty(form.foamRatio) && (!['number', 'string'].includes(typeof form.foamRatio) || ![0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].includes(Number(form.foamRatio)))) errors.foamRatio = '分泡请选择 0～1 的十分位值'
+  return errors
+}
+
 // The PRD does not enumerate the two regions: this grouping is a demo assumption.
 // The role restrictions themselves come from chapter 010, section 1.3.3.
 export const BOOKING_JOURNEY_FIELDS = ['airline', 'flight', 'departureDate', 'firstDestination', 'firstLeg', 'takeoffTime', 'cutoffTime', 'airCost', 'truckCost', 'guidePrice', 'waybillType', 'profitRules', 'routeType', 'allowLoss']
 export const BOOKING_SUPPLEMENT_FIELDS = ['secondLeg', 'secondDestination', 'thirdLeg', 'palletCompany', 'discountNo', 'handlingInfo', 'remark']
 
 export function createBookingDraft(order = {}) {
-  return {
+  const draft = {
     airline: '', flight: '', departureDate: order.departureDate || '', firstDestination: '', firstLeg: '',
     takeoffTime: '', cutoffTime: '', airCost: undefined, truckCost: undefined, guidePrice: undefined,
     waybillType: '', profitRules: ['大于等于'], secondLeg: '', secondDestination: '', thirdLeg: '',
     palletCompany: '', discountNo: '', handlingInfo: '', routeType: '直航', remark: '', allowLoss: false,
     ...JSON.parse(JSON.stringify(order.booking || {})),
   }
+  for (const field of ['airCost', 'truckCost', 'guidePrice']) if (empty(draft[field])) draft[field] = undefined
+  return draft
 }
 
 export function validateBookingDraft(draft, catalog = { ports: AIR_PORTS, flights: AIR_FLIGHTS, legs: AIR_LEGS }) {
@@ -133,6 +145,7 @@ export function validateBookingDraft(draft, catalog = { ports: AIR_PORTS, flight
   if (!['自营', '非自营'].includes(draft.waybillType)) errors.waybillType = '请选择提单属性'
   if (!Array.isArray(draft.profitRules) || !draft.profitRules.length || draft.profitRules.some((rule) => !['大于等于', '小于等于', '大于', '小于'].includes(rule))) errors.profitRules = '请选择预计盈利规则'
   if (!empty(draft.routeType) && !['直航', '国内中转'].includes(draft.routeType)) errors.routeType = '请选择航线类型'
+  if (typeof draft.allowLoss !== 'boolean') errors.allowLoss = '请选择是否允许亏损'
   for (const [field, max] of [['discountNo', 30], ['handlingInfo', 256], ['remark', 256]]) if (clean(draft[field]).length > max) errors[field] = `最多 ${max} 个字符`
   return errors
 }
@@ -141,7 +154,7 @@ export function getBookingPermission(order, role) {
   const denied = (reason) => ({ journey: false, supplement: false, action: null, reason })
   if (!order) return denied('请选择订单')
   if (!['operator', 'handler', 'hangsheng'].includes(role)) return denied('当前角色仅可查看订舱信息')
-  if (!['待订舱', '待补录', '待出提单'].includes(order.orderStatus) || order.bookingStatus === '待审核') return denied('当前状态不允许修改订舱信息')
+  if (!['待订舱', '待补录', '待出提单'].includes(order.orderStatus) || !['待服务', '服务中', '服务已完成'].includes(order.bookingStatus)) return denied('当前状态不允许修改订舱信息')
   if (order.bookingStatus === '待服务' && role === 'handler') return denied('请等待航线运营确认航班')
   const action = order.bookingStatus === '待服务' ? (role === 'operator' ? 'confirm' : 'complete')
     : order.bookingStatus === '服务中' && ['handler', 'hangsheng'].includes(role) ? 'complete' : 'save'
@@ -149,13 +162,40 @@ export function getBookingPermission(order, role) {
 }
 
 export function getBookingDecision(order, draft) {
-  const sell = Number(order.sellRate)
-  const cost = Number(draft.airCost)
-  const weight = Number(order.chargeWeight ?? calculateChargeWeight(order.grossWeight, order.volume))
-  if (!Number.isFinite(sell) || !Number.isFinite(cost) || !Number.isFinite(weight) || weight <= 0) return { kind: 'unconfirmed', message: '卖价、空运成本或计费重不完整，需确认后继续', lossAmount: 0 }
+  const number = value => !empty(value) && ['number', 'string'].includes(typeof value) && Number.isFinite(Number(value)) ? Number(value) : null
+  const sell = number(order?.sellRate)
+  const cost = number(draft?.airCost)
+  const gross = number(order?.grossWeight), volume = number(order?.volume)
+  const weight = empty(order?.chargeWeight) && gross > 0 && volume > 0
+    ? calculateChargeWeight(gross, volume) : number(order?.chargeWeight)
+  if (sell === null || sell < 0 || cost === null || cost <= 0 || weight === null || weight <= 0) return { kind: 'unconfirmed', message: '卖价、空运成本或计费重不完整，需确认后继续', lossAmount: 0 }
   if (cost <= sell) return { kind: 'ready', message: '', lossAmount: 0 }
   const lossAmount = Math.abs((sell - cost - 0.3) * weight)
-  if (!draft.allowLoss) return { kind: 'blocked', message: '空运成本大于运费卖价，未允许亏损，禁止提交', lossAmount }
-  if (lossAmount <= 5000) return { kind: 'approval', message: '本单需航线总监审核，确认后提交审核', lossAmount }
-  return { kind: 'unconfirmed', message: '第002篇规定超过 5,000 元追加事业部副总审批，超过 10,000 元追加事业部总经理审批；该多级链尚未实现。超过 30,000 元的公司总经理触发顺序待确认。', lossAmount }
+  if (draft.allowLoss !== true) return { kind: 'blocked', message: '空运成本大于运费卖价，未允许亏损，禁止提交', lossAmount }
+  if (lossAmount > 30000) return { kind: 'unconfirmed', message: '超过 30,000 元的公司总经理审批触发顺序待确认，暂不能提交该亏损申请。', lossAmount }
+  const stages = bookingApprovalStages(lossAmount)
+  return { kind: 'approval', message: `本单需航线总监审核${stages.length > 1 ? `，通过后依次提交${stages.slice(1).map(stage => stage.label).join('、')}` : ''}，确认后提交审核`, lossAmount, stages }
+}
+
+function bookingApprovalStages(lossAmount) {
+  return [
+    { role: 'director', label: '航线总监' },
+    ...(lossAmount > 5000 ? [{ role: 'deputyGeneral', label: '事业部副总经理' }] : []),
+    ...(lossAmount > 10000 ? [{ role: 'divisionGeneral', label: '事业部总经理' }] : []),
+  ]
+}
+
+export function getBookingApproval(order) {
+  const approval = order?.approval
+  if (!approval) return { status: '', lossAmount: null, reason: '', stages: [], currentRole: '', currentLabel: '', blockedReason: '' }
+  const complete = ['审核通过', '审批通过'].includes(approval.status)
+  const rejected = ['审核拒绝', '审批拒绝'].includes(approval.status)
+  const stages = approval.stages?.length ? approval.stages.map(stage => ({ ...stage }))
+    : bookingApprovalStages(approval.lossAmount).map((stage, index) => ({
+      ...stage, status: complete ? '审核通过' : rejected && index === 0 ? '审核拒绝' : index === 0 ? '待审核' : '未开始',
+      actor: complete && index === 0 ? approval.actor || '' : '', decidedAt: complete && index === 0 ? approval.decidedAt || '' : '',
+    }))
+  const blockedReason = !(approval.lossAmount > 0) || approval.lossAmount > 30000 ? '亏损额缺失或超过 30,000 元，审批路径待确认' : ''
+  const current = !complete && !rejected && !blockedReason ? stages.find(stage => stage.status === '待审核') : null
+  return { ...approval, reason: approval.reason || '', stages, currentRole: current?.role || '', currentLabel: current?.label || '', blockedReason }
 }

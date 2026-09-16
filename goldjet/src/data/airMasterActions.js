@@ -26,12 +26,15 @@ export function getAirMasterReferences(state, kind, row) {
     add('空运订单或订舱', state.airOrders.some(item =>
       [item.origin, item.destination, item.booking?.firstDestination, item.booking?.secondDestination].includes(row.code)
       || bookingLegs(item.booking).some(leg => leg.split(' - ').includes(row.code))))
+    add('子订单或分单', (state.airChildren || []).some(item => !item.deleted && [item.origin, item.destination].includes(row.code)))
   }
   if (kind === 'flights') {
+    add('舱位产品', state.capacityProducts?.some(item => item.flightId === row.id))
     add('订舱航班', state.airOrders.some(item => item.flight === row.code || item.booking?.flight === row.code))
     const isOnlyLeg = !master.flights.some(item => item.id !== row.id && legOf(item) === legOf(row))
     add('订舱航段', isOnlyLeg && state.airOrders.some(item => bookingLegs(item.booking).includes(legOf(row))))
   }
+  if (kind === 'pallets') add('舱位产品', state.capacityProducts?.some(item => item.details.some(detail => detail.palletId === row.id)))
   return refs
 }
 
@@ -44,6 +47,9 @@ export function validateAirMasterSave(kind, payload, state, { existing = null } 
     const identityFields = kind === 'airlines' ? ['code', 'name'] : kind === 'flights' ? ['code', 'airlineCode', 'origin', 'destination'] : ['code']
     if (references.length) for (const field of identityFields) {
       if (!same(draft[field], existing[field])) errors[field] = `已被${references.join('、')}引用；引用迁移规则待确认，暂不能修改此字段`
+    }
+    if (kind === 'pallets' && references.includes('舱位产品')) {
+      for (const field of ['airlineCode', 'volume']) if (!same(draft[field], existing[field])) errors[field] = '已被舱位产品引用；容量与历史配板的更新规则待确认，暂不能修改此字段'
     }
   }
   return errors

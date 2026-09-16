@@ -1,10 +1,17 @@
+import { getBookingApproval } from './airOperations.js'
+
 // Personnel are synthetic demo identities; product bindings are explicit, never inferred from an order owner.
 export const WORKBENCH_PERSONAS = [
   { id: 'service', scope: 'air', role: 'service', name: '周倩', label: '空运客服' },
+  { id: 'waybillClerk', scope: 'air', role: 'waybillClerk', name: '提单演示专员', label: '打单员' },
+  { id: 'templateProduct', scope: 'airTemplate', role: 'product', name: '模板演示产品人员', label: '提单模板产品人员' },
+  { id: 'templateTechnical', scope: 'airTemplate', role: 'technical', name: '模板演示技术人员', label: '提单模板技术人员' },
   { id: 'supervisor', scope: 'air', role: 'supervisor', name: '周倩', label: '空运客服主管' },
   { id: 'operator', scope: 'air', role: 'operator', name: '李明', label: '航线运营' },
   { id: 'handler', scope: 'air', role: 'handler', name: '王晴', label: '航线操作' },
   { id: 'director', scope: 'air', role: 'director', name: '航线总监', label: '航线总监' },
+  { id: 'deputyGeneral', scope: 'air', role: 'deputyGeneral', name: '事业部副总经理', label: '事业部副总经理' },
+  { id: 'divisionGeneral', scope: 'air', role: 'divisionGeneral', name: '事业部总经理', label: '事业部总经理' },
   { id: 'hangsheng', scope: 'ground', role: 'hangsheng', name: '陈楠', label: '航晟客服' },
   { id: 'groundSupervisor', scope: 'ground', role: 'supervisor', name: '陈楠', label: '航晟主管' },
   { id: 'warehouseService', scope: 'warehouse', role: 'service', name: '仓库演示客服', label: '仓库客服' },
@@ -56,7 +63,8 @@ export function deriveWorkbenchTasks(state, persona) {
           subject: '航线已订舱，请立即补录', handler: order.creator,
           createdAt: order.bookingCompletedAt || booking.completedAt || '',
           completed: supplementDone, actionLabel: '立即补录',
-          blockedReason: supplementDone ? '' : '主订单补录尚未覆盖',
+          target: { path: `/fulfillment/air-orders/${order.id}/supplement` },
+          blockedReason: !supplementDone && order.bookingStatus !== '服务已完成' ? '订舱服务状态尚未完成，需先确认' : '',
         }))
       }
       if (session.role === 'operator' && assignees.operator === session.name
@@ -74,19 +82,24 @@ export function deriveWorkbenchTasks(state, persona) {
         tasks.push(task(order, 'air-complete-journey', {
           subject: '已确认航班，请立即补充航程信息', handler: assignees.handler,
           creator: assignees.operator || '', createdAt: order.bookingConfirmedAt || booking.confirmedAt || '',
-          completed: present(order.bookingCompletedAt) || present(booking.completedAt)
-            || ['待补录', '待出提单'].includes(order.orderStatus),
+          completed: order.bookingStatus === '服务已完成',
           actionLabel: '航程补充', target: bookingTarget(order),
         }))
       }
-      const approval = order.approval
-      const approvalTriggered = approval || (order.orderStatus === '待审核' && order.bookingStatus === '待审核' && booking.allowLoss === true)
-      if (session.role === 'director' && assignees.director === session.name && approvalTriggered) {
-        const completed = ['审核通过', '审核拒绝', '审批通过', '审批拒绝'].includes(approval?.status)
+      const approval = getBookingApproval(order)
+      const stageIndex = approval.stages.findIndex(stage => stage.role === session.role)
+      const stage = approval.stages[stageIndex]
+      const approvalAssignee = assignees[session.role] || (['deputyGeneral', 'divisionGeneral'].includes(session.role)
+        ? WORKBENCH_PERSONAS.find(persona => persona.id === session.role)?.name : '')
+      const stageCompleted = ['审核通过', '审核拒绝', '审批通过', '审批拒绝'].includes(stage?.status)
+      if (['director', 'deputyGeneral', 'divisionGeneral'].includes(session.role) && stage && approvalAssignee === session.name && (stageCompleted || approval.currentRole === session.role)) {
+        const previousStage = approval.stages[stageIndex - 1]
         tasks.push(task(order, 'air-loss-approval', {
-          subject: '审核该订单是否允许亏损', handler: assignees.director,
-          creator: assignees.operator || '', createdAt: approval?.createdAt || order.bookingSubmittedAt || '',
-          completed, actionLabel: '亏损审核', target: bookingTarget(order),
+          subject: '审核该订单是否允许亏损', handler: approvalAssignee,
+          creator: previousStage ? previousStage.actor || previousStage.label : assignees.operator || '',
+          createdAt: previousStage ? previousStage.decidedAt || '' : approval.createdAt || order.bookingSubmittedAt || '',
+          completed: stageCompleted, actionLabel: '亏损审核', target: bookingTarget(order),
+          blockedReason: stageCompleted ? '' : approval.blockedReason || '',
         }))
       }
     }
@@ -145,11 +158,13 @@ const link = (label, path = '', reason = '尚未覆盖') => ({ label, target: pa
 export function getWorkbenchQuickLinks(persona) {
   const session = resolvePersona(persona)
   if (!session) return []
+  if (session.scope === 'airTemplate') return [link('提单模板管理', '/fulfillment/airway-bill-templates')]
+  if (session.role === 'waybillClerk') return [link('提单制作', '/fulfillment/airway-bills')]
   if (session.scope === 'air' && ['service', 'supervisor'].includes(session.role)) {
-    return [link('主订单', '/fulfillment/air-orders'), link('子订单'), link('提单制作'), link('自建仓库订单'), link('结算订单成本'), link('核算订单成本')]
+    return [link('主订单', '/fulfillment/air-orders'), link('子订单', '/fulfillment/air-children'), link('提单制作', '/fulfillment/airway-bills'), link('自建仓库订单'), link('结算订单成本'), link('核算订单成本')]
   }
-  if (session.scope === 'air' && ['operator', 'handler', 'director'].includes(session.role)) {
-    return [link('订舱管理', '/fulfillment/booking'), link('舱位产品'), link('舱位实时查询'), link('配板管理'), ...(session.role === 'director' ? [link('核算订单成本')] : [link('提单号')]), link('结算订单成本')]
+  if (session.scope === 'air' && ['operator', 'handler', 'director', 'deputyGeneral', 'divisionGeneral'].includes(session.role)) {
+    return [link('订舱管理', '/fulfillment/booking'), link('舱位产品'), link('舱位实时查询'), link('配板管理'), ...(['director', 'deputyGeneral', 'divisionGeneral'].includes(session.role) ? [link('核算订单成本')] : [link('提单号')]), link('结算订单成本')]
   }
   if (session.scope === 'ground' && ['hangsheng', 'supervisor'].includes(session.role)) {
     return [link('运输订单', '/fulfillment/ground-dispatch'), link('中转订单'), link('供应商报价'), link('客户报价'), link('运输运单', '/fulfillment/ground-waybills'), link('中转运单')]

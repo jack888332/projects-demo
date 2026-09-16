@@ -19,7 +19,7 @@ const messages=computed(()=>state.messages.filter(row=>row.recipient===persona.v
 const shortcuts = computed(() => getWorkbenchQuickLinks(persona.value))
 const updatedAt = computed(() => state.workbenchProgress[persona.value.id]?.updatedAt || '尚无进度变化')
 const unavailable = computed(() => ({
-  air: '报关补料、废单审批待对应篇章接入；补录任务暂可定位订单，但尚不能提交补录。',
+  air: '补录任务可进入订单补录并提交至待出提单；报关补料、废单审批和提单制作尚未覆盖。',
   ground: '司机异常、上游变更通知、车辆到期及中转赶单待对应篇章接入。',
   warehouse: '仓库工作台待出库指令、上游事件与入仓节点接入。',
   finance: '已接入合作方和授信审批。订单成本、付款、核销等分级结算待办尚未覆盖。',
