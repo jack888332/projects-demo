@@ -9,7 +9,7 @@ import { AIR_DECLARATION_MATERIAL_BLOCK_REASON, canManageAirDeclarations, getAir
 const route = useRoute(), router = useRouter()
 const { state, airDeclarations, airChildSession, declarationSession } = usePrototypeData()
 const session = computed(() => unref(airChildSession) || {})
-const customsStaff = computed(() => canManageAirDeclarations(unref(declarationSession)))
+const customsStaff = computed(() => unref(declarationSession).readAll || canManageAirDeclarations(unref(declarationSession)))
 const candidate = computed(() => {
   const matches = (unref(airDeclarations) || []).filter(row => row.id === route.params.serviceId && row.childId)
   return matches.length === 1 ? matches[0] : null

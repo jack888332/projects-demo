@@ -13,7 +13,7 @@ import { FLEET_RECORD_KINDS, FLEET_RECORD_FIELDS, REPAIR_UNITS, canViewFleetReco
 const props = defineProps({ kind: { type: String, required: true } })
 const { state, groundSession, saveFleetRecord } = usePrototypeData()
 const config = computed(() => FLEET_RECORD_KINDS[props.kind]), fields = computed(() => FLEET_RECORD_FIELDS[props.kind])
-const allowed = computed(() => canViewFleetRecords(groundSession.role, props.kind))
+const allowed = computed(() => groundSession.readAll || canViewFleetRecords(groundSession.role, props.kind))
 const defaults = () => ({ vehicleId: '', driverId: '', date: '', type: '', updatedDate: '', keyword: '' })
 const filters = reactive(defaults()), applied = reactive(defaults()), queryKey = ref(0)
 const rows = computed(() => allowed.value ? fleetRecordRows(props.kind, state, applied) : [])
@@ -51,7 +51,7 @@ watch(selected, row => { if (!row) detail.value = false })
 </script>
 <template>
   <div v-if="allowed" class="module-view fleet-records">
-    <PageHeader :title="config.label+'管理'" :description="`航晟物流 · ${groundSession.name}`"><template #actions><el-button v-if="kind === 'fuel'" :icon="Document" @click="report = true">油耗月报</el-button><el-button type="primary" :icon="Plus" @click="openEditor()">新增{{ config.label }}</el-button></template></PageHeader>
+    <PageHeader :title="config.label+'管理'" :description="`航晟物流 · ${groundSession.name}`"><template #actions><el-button v-if="kind === 'fuel'" :icon="Document" @click="report = true">油耗月报</el-button><el-button v-business-write="'fleet'" type="primary" :icon="Plus" @click="openEditor()">新增{{ config.label }}</el-button></template></PageHeader>
     <form class="record-filters" :aria-label="config.label+'筛选'" @submit.prevent="query">
       <label>车牌号<el-select v-model="filters.vehicleId" aria-label="筛选车牌号" filterable clearable placeholder="全部"><el-option v-for="vehicle in state.fleetVehicles" :key="vehicle.id" :value="vehicle.id" :label="vehicle.plate" /></el-select></label>
       <template v-if="kind === 'incidents'">
@@ -63,7 +63,7 @@ watch(selected, row => { if (!row) detail.value = false })
       <label v-if="kind === 'fuel'">油卡卡号或经手人<el-input v-model="filters.keyword" aria-label="油卡卡号或经手人" clearable /></label>
       <div><el-button type="primary" native-type="submit" :icon="Search">查询</el-button><el-button :icon="Refresh" @click="resetQuery">重置</el-button></div>
     </form>
-    <FleetRecordTable :key="queryKey" :kind="kind" :rows="rows" actions><template #actions="{ row }"><el-button link type="primary" :aria-label="'查看'+row.id" @click="openDetail(row)">查看</el-button><el-button link type="primary" :aria-label="'修改'+row.id" @click="openEditor(row)">修改</el-button><el-tooltip content="删除权限及关联处理待确认（147）"><span><el-button link type="danger" :aria-label="'删除'+row.id" disabled>删除</el-button></span></el-tooltip></template></FleetRecordTable>
+    <FleetRecordTable :key="queryKey" :kind="kind" :rows="rows" actions><template #actions="{ row }"><el-button link type="primary" :aria-label="'查看'+row.id" @click="openDetail(row)">查看</el-button><el-button v-business-write="'fleet'" link type="primary" :aria-label="'修改'+row.id" @click="openEditor(row)">修改</el-button><el-tooltip content="删除权限及关联处理待确认（147）"><span><el-button link type="danger" :aria-label="'删除'+row.id" disabled>删除</el-button></span></el-tooltip></template></FleetRecordTable>
     <el-dialog :model-value="editor" :title="(editingId ? '修改' : '新增')+config.label" width="min(960px, 95vw)" align-center :close-on-click-modal="false" :before-close="closeEditor" destroy-on-close>
       <el-form label-position="top" class="record-form" @submit.prevent="submit">
         <div class="record-grid">
@@ -94,7 +94,7 @@ watch(selected, row => { if (!row) detail.value = false })
         <el-form-item label="备注"><el-input v-model="form.remark" aria-label="备注" type="textarea" :rows="2" /></el-form-item>
         <dl class="metadata"><div><dt>更新人</dt><dd>{{ groundSession.name }}</dd></div><div><dt>更新时间</dt><dd>{{ GROUND_NOW }}</dd></div></dl>
       </el-form>
-      <template #footer><div class="record-footer"><span role="status">{{ config.blocker || Object.values(errors)[0] || '' }}</span><div><el-button @click="closeEditor">取消</el-button><el-button type="primary" :disabled="!allowed || !!config.blocker || Object.keys(errors).length > 0" @click="submit">提交</el-button></div></div></template>
+      <template #footer><div class="record-footer"><span role="status">{{ config.blocker || Object.values(errors)[0] || '' }}</span><div><el-button @click="closeEditor">取消</el-button><el-button v-business-write="'fleet'" type="primary" :disabled="!allowed || !!config.blocker || Object.keys(errors).length > 0" @click="submit">提交</el-button></div></div></template>
     </el-dialog>
     <el-drawer v-model="detail" :title="config.label+'详情'" size="min(900px, 95vw)"><template v-if="selected">
       <h2>{{ fleetRecordCell(kind, selected, 'plate', state) }}</h2>

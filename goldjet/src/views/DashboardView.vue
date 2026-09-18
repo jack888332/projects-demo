@@ -1,22 +1,23 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import PageHeader from '../components/PageHeader.vue'
 import BusinessMessages from '../components/BusinessMessages.vue'
+import { canReadModule, canReadTarget, canSeeMenu, isSuperAdmin } from '../data/accessControl.js'
+import { moduleCatalog } from '../domain/catalog.js'
 import { usePrototypeData } from '../data/usePrototypeData.js'
 import { WORKBENCH_PERSONAS, deriveWorkbenchTasks, getWorkbenchSummary, getWorkbenchQuickLinks, getWorkbenchPendingPage } from '../domain/workbenchTasks.js'
 
 const router = useRouter()
-const route = useRoute()
-const { state, workbenchSession, selectWorkbenchPersona } = usePrototypeData()
+const { state, workbenchSession } = usePrototypeData()
 const page = ref(1)
 const persona = computed(() => WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId) || WORKBENCH_PERSONAS[0])
-const tasks = computed(() => deriveWorkbenchTasks(state, persona.value))
+const tasks = computed(() => deriveWorkbenchTasks(state, persona.value).filter(task => canReadTarget(task.target)))
 const summary = computed(() => getWorkbenchSummary(tasks.value))
 const taskPage = computed(() => getWorkbenchPendingPage(tasks.value, page.value, 20))
 const taskLabels = { 'air-customs-materials': '报关材料', 'air-supplement': '立即补录', 'air-confirm-flight': '确认航班', 'air-complete-journey': '航程补充', 'air-loss-approval': '亏损审核', 'ground-dispatch': '立即调度', 'partner-approval':'档案审批', 'credit-approval':'额度审批' }
-const messages=computed(()=>state.messages.filter(row=>row.recipient===persona.value.name || row.recipientRole===persona.value.role).slice().reverse())
-const shortcuts = computed(() => getWorkbenchQuickLinks(persona.value))
+const messages=computed(()=>canReadModule('messages') ? state.messages.filter(row=>(isSuperAdmin() || row.recipient===persona.value.name || row.recipientRole===persona.value.role) && (!row.related || canReadTarget(row.related))).slice().reverse() : [])
+const shortcuts = computed(() => (isSuperAdmin() ? ['permissions', 'airOrders', 'groundDispatch', 'fleet'].map(key => ({ label: moduleCatalog[key].label, target: moduleCatalog[key].path })) : getWorkbenchQuickLinks(persona.value)).filter(item => item.disabled || (canReadTarget(item.target) && canSeeMenu(Object.keys(moduleCatalog).find(key => moduleCatalog[key].path === (typeof item.target === 'string' ? item.target : item.target?.path))))))
 const updatedAt = computed(() => state.workbenchProgress[persona.value.id]?.updatedAt || '尚无进度变化')
 const unavailable = computed(() => ({
   air: '报关材料通知可进入对应直单或分单查看；材料更新保存规则待确认。废单审批待办尚未覆盖。',
@@ -27,12 +28,6 @@ const unavailable = computed(() => ({
 }[persona.value.scope] || '该角色的下游业务尚未全部覆盖。'))
 watch(() => persona.value.id, () => { page.value = 1 })
 watch(() => taskPage.value.page, value => { if (page.value !== value) page.value = value })
-watch(() => route.path, path => {
-  if (path === '/finance/workspace' && persona.value.scope !== 'finance') {
-    const finance = WORKBENCH_PERSONAS.find(item => item.scope === 'finance' && item.role === 'finance')
-    if (finance) selectWorkbenchPersona(finance.id)
-  }
-}, { immediate: true })
 function process(task) { if (task.target) router.push(task.target) }
 </script>
 

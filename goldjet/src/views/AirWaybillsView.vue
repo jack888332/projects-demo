@@ -109,7 +109,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
       <div class="query-actions"><el-button native-type="submit" type="primary" :icon="Search">查询</el-button><el-button :icon="Refresh" @click="reset">重置</el-button></div>
     </form>
     <DataTableFrame :key="queryVersion" :rows="rows" :page-size="TABLE.pageSize" :page-sizes="[50]" selectable :selected-count="selectedCount">
-      <template #actions><div class="waybill-toolbar"><span>已选 {{ selectedCount }} 份运单，支持跨页</span><el-button v-if="selection.length" link @click="selection = []">清除选择</el-button><el-button :disabled="!selection.length || !allowed" type="primary" @click="sendVisible = true">批量发送运单</el-button><el-button :disabled="!rows.length" @click="openDownload">批量下载提单</el-button></div></template>
+      <template #actions><div class="waybill-toolbar"><span>已选 {{ selectedCount }} 份运单，支持跨页</span><el-button v-if="selection.length" link @click="selection = []">清除选择</el-button><el-button v-business-write="'airwayBills'" :disabled="!selection.length || !allowed" type="primary" @click="sendVisible = true">批量发送运单</el-button><el-button :disabled="!rows.length" @click="openDownload">批量下载提单</el-button></div></template>
       <template #default="{ rows: pageRows }">
         <el-table :data="pageRows" row-key="id" aria-label="提单列表" empty-text="暂无符合条件的提单，可先完成订单补录后再查询。">
           <el-table-column type="expand" width="45"><template #default="{ row }"><div class="waybill-expand">
@@ -144,7 +144,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
     <el-dialog v-model="noteVisible" title="提单备注" width="min(560px, 94vw)" :before-close="closeNote" :close-on-click-modal="false">
       <p>{{ noteOrder?.waybillNo }} · {{ noteOrder?.orderNo }}</p><el-alert v-if="noteFailure" :title="noteFailure" type="error" :closable="false" />
       <el-form label-position="top" @submit.prevent="saveNote"><el-form-item label="提单备注" :error="note.length > 256 ? '最多256个字符' : ''"><el-input v-model="note" type="textarea" :rows="5" maxlength="256" show-word-limit :readonly="!allowed" aria-label="提单备注" /></el-form-item></el-form>
-      <template #footer><el-button :disabled="noteBusy" @click="closeNote">取消</el-button><el-button type="primary" :disabled="!allowed || note.length > 256" :loading="noteBusy" @click="saveNote">保存备注</el-button></template>
+      <template #footer><el-button :disabled="noteBusy" @click="closeNote">取消</el-button><el-button v-business-write="'airwayBills'" type="primary" :disabled="!allowed || note.length > 256" :loading="noteBusy" @click="saveNote">保存备注</el-button></template>
     </el-dialog>
     <el-dialog v-model="downloadVisible" title="批量下载提单" width="min(760px, 96vw)" :close-on-click-modal="false">
       <div class="download-content"><p>选择要下载的订单和提单格式，初始均未选择。</p><el-checkbox-group v-model="downloadIds" aria-label="下载订单选择"><el-checkbox v-for="row in rows" :key="row.id" :value="row.id">{{ row.waybillNo || row.orderNo }}</el-checkbox></el-checkbox-group><h3>提单格式</h3><el-checkbox-group v-model="downloadTypes" aria-label="下载提单格式"><el-checkbox v-for="format in formats" :key="format" :value="format">{{ format }}</el-checkbox></el-checkbox-group><el-alert v-if="downloadFeedback" :title="downloadFeedback" type="warning" :closable="false" role="status" /><el-button v-if="downloadFeedback" @click="router.push('/fulfillment/airway-bill-templates')">查看提单模板</el-button></div>

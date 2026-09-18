@@ -116,7 +116,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 <template>
   <div class="module-view child-orders-view">
     <PageHeader title="子订单管理" description="独立子订单先维护客户、货物和服务，合成主订单后统一订舱。">
-      <template #actions><el-button type="primary" :icon="Plus" :disabled="Boolean(createRestriction)" @click="open('create')">创建子订单</el-button></template>
+      <template #actions><el-button v-business-write="'airChildren'" type="primary" :icon="Plus" :disabled="Boolean(createRestriction)" @click="open('create')">创建子订单</el-button></template>
     </PageHeader>
     <el-alert v-if="createRestriction" :title="createRestriction" type="info" :closable="false" />
     <el-alert v-if="failure && !consolidateVisible" :title="failure" type="error" :closable="false" role="alert" />
@@ -135,7 +135,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
       <el-button :icon="Refresh" @click="Object.assign(filters, emptyFilters())">重置</el-button>
     </form>
     <DataTableFrame :rows="rows" :page-size="AIR_CHILD_TABLE.pageSize" :page-sizes="[10]" selectable :selected-count="selection.length">
-      <template #actions><div class="child-toolbar"><span>跨页选择</span><el-button v-if="selection.length" link @click="clearSelection">清除选择</el-button><el-button type="primary" :disabled="!selection.length || Boolean(createRestriction)" @click="openConsolidation">合成主订单（{{ selection.length }}）</el-button></div></template>
+      <template #actions><div class="child-toolbar"><span>跨页选择</span><el-button v-if="selection.length" link @click="clearSelection">清除选择</el-button><el-button v-business-write="'airChildren'" type="primary" :disabled="!selection.length || Boolean(createRestriction)" @click="openConsolidation">合成主订单（{{ selection.length }}）</el-button></div></template>
       <template #default="{ rows: pageRows }"><el-table ref="table" :data="pageRows" row-key="id" aria-label="子订单列表" empty-text="暂无符合条件的子订单" @selection-change="selected">
         <el-table-column type="selection" width="45" reserve-selection :selectable="selectable" />
         <el-table-column label="子订单号" min-width="210"><template #default="{ row }"><el-button link type="primary" @click="open('detail', row)">{{ row.orderNo }}</el-button><div class="child-subtext">{{ row.housebillNo || '分单号未填写' }}</div></template></el-table-column>
@@ -144,7 +144,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
         <el-table-column label="归属" min-width="170"><template #default="{ row }"><el-button v-if="row.parentId" link type="primary" @click="router.push({ path: '/fulfillment/air-orders', query: { order: row.parentId } })">查看主订单</el-button><span v-else>{{ row.sourceKind === 'standalone' ? '独立子订单' : '移入分单' }}</span></template></el-table-column>
         <el-table-column prop="goodsName" label="中文品名" min-width="180" /><el-table-column prop="pieces" label="预计件数" width="100" align="right" /><el-table-column prop="grossWeight" label="预计毛重 kg" width="120" align="right" /><el-table-column prop="volume" label="预计体积 m³" width="125" align="right" />
         <el-table-column prop="sellRate" label="运费卖价" width="105" align="right" /><el-table-column prop="creator" label="客服" width="100" /><el-table-column prop="owner" label="业务员" width="100" />
-        <el-table-column label="操作" fixed="right" min-width="245"><template #default="{ row }"><el-button link type="primary" :disabled="Boolean(restriction(row, 'edit'))" @click="open('edit', row)">{{ row.orderStatus === '子订单完成' ? '修改报价' : '编辑' }}</el-button><el-button v-if="row.orderStatus === '子订单暂存'" link type="primary" :disabled="Boolean(restriction(row, 'submit')) || busy" @click="submit(row)">提交</el-button><el-button link type="primary" :disabled="Boolean(restriction(row, 'copy'))" @click="open('copy', row)">复制</el-button><el-button link type="danger" :disabled="Boolean(restriction(row, 'delete')) || Boolean(row.serviceRecords?.length) || busy" @click="remove(row)">作废</el-button></template></el-table-column>
+        <el-table-column label="操作" fixed="right" min-width="245"><template #default="{ row }"><el-button v-business-write="'airChildren'" link type="primary" :disabled="Boolean(restriction(row, 'edit'))" @click="open('edit', row)">{{ row.orderStatus === '子订单完成' ? '修改报价' : '编辑' }}</el-button><el-button v-business-write="'airChildren'" v-if="row.orderStatus === '子订单暂存'" link type="primary" :disabled="Boolean(restriction(row, 'submit')) || busy" @click="submit(row)">提交</el-button><el-button v-business-write="'airChildren'" link type="primary" :disabled="Boolean(restriction(row, 'copy'))" @click="open('copy', row)">复制</el-button><el-button v-business-write="'airChildren'" link type="danger" :disabled="Boolean(restriction(row, 'delete')) || Boolean(row.serviceRecords?.length) || busy" @click="remove(row)">作废</el-button></template></el-table-column>
       </el-table></template>
     </DataTableFrame>
     <p class="child-subtext">完成单的预计毛件体编辑、已有服务的作废费用、批次管理及跨客户合成仍有待确认口径。</p>
@@ -163,7 +163,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
       </el-form>
       <p>订舱服务为必选，提交后生成待订舱主订单。</p>
       <el-alert v-if="consolidationErrors.children" :title="consolidationErrors.children" type="warning" :closable="false" />
-      <template #footer><el-button :disabled="busy" @click="closeConsolidation">取消</el-button><el-button type="primary" :loading="busy" :disabled="Boolean(createRestriction) || Object.keys(consolidationErrors).length > 0" @click="consolidate">确定生成并提交订舱</el-button></template>
+      <template #footer><el-button :disabled="busy" @click="closeConsolidation">取消</el-button><el-button v-business-write="'airChildren'" type="primary" :loading="busy" :disabled="Boolean(createRestriction) || Object.keys(consolidationErrors).length > 0" @click="consolidate">确定生成并提交订舱</el-button></template>
     </el-dialog>
   </div>
 </template>

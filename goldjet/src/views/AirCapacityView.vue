@@ -14,7 +14,7 @@ const route = useRoute(), router = useRouter()
 const activeTab = computed(() => route.query.view === 'live' ? 'live' : 'products')
 const session = computed(() => capacitySession.value ?? capacitySession)
 const canMaintain = computed(() => session.value.role === 'operator')
-const canReadProducts = computed(() => ['operator', 'handler'].includes(session.value.role))
+const canReadProducts = computed(() => session.value.readAll || ['operator', 'handler'].includes(session.value.role))
 const canReadLive = computed(() => canReadProducts.value || session.value.role === 'business')
 const clone = value => JSON.parse(JSON.stringify(value))
 const productDefaults = () => ({ airline: 'bound', operator: '', flight: '', validDate: '', createDate: '' })
@@ -38,7 +38,7 @@ const airlineOf = product => state.airMaster.airlines.find(row => row.code === f
 const pallets = computed(() => state.airMaster.pallets.filter(row => row.airlineCode === flightOf(draft.value)?.airlineCode))
 const palletOf = id => state.airMaster.pallets.find(row => row.id === id)
 const employeeName = person => typeof person === 'string' ? person : person.name
-const bound = product => product.operator === session.value.name || product.handler === session.value.name
+const bound = product => session.value.readAll || product.operator === session.value.name || product.handler === session.value.name
 const rows = computed(() => !canReadProducts.value ? [] : state.capacityProducts.filter(row => {
   const f = applied.value, flight = flightOf(row)
   return (f.airline === 'bound' ? bound(row) : !f.airline || flight?.airlineCode === f.airline)
@@ -137,7 +137,7 @@ watch(() => state.capacityProducts.map(row => row.id), () => {
 
 <template>
   <div class="module-view capacity-view">
-    <PageHeader title="舱位管理" :description="'当前角色：' + session.label + ' · ' + session.name"><template #actions><el-button v-if="activeTab === 'products' && canMaintain" type="primary" :icon="Plus" @click="open('create')">新增</el-button></template></PageHeader>
+    <PageHeader title="舱位管理" :description="'当前角色：' + session.label + ' · ' + session.name"><template #actions><el-button v-business-write="'airCapacity'" v-if="activeTab === 'products' && canMaintain" type="primary" :icon="Plus" @click="open('create')">新增</el-button></template></PageHeader>
     <el-tabs :model-value="activeTab" @tab-change="switchTab"><el-tab-pane label="舱位产品" name="products" /><el-tab-pane label="舱位实时查询" name="live" /></el-tabs>
     <template v-if="activeTab === 'products'">
       <el-alert v-if="!canReadProducts" title="舱位产品由航线运营维护，航线操作可查看" type="info" :closable="false" />
@@ -160,7 +160,7 @@ watch(() => state.capacityProducts.map(row => row.id), () => {
             <el-table-column prop="boardType" label="板类型" min-width="110" />
             <el-table-column label="有效期限" min-width="220"><template #default="{row}">{{ row.startDate }} 至 {{ row.endDate }}</template></el-table-column>
             <el-table-column prop="operator" label="航线运营" min-width="110" /><el-table-column prop="handler" label="航线操作" min-width="110" /><el-table-column prop="createdAt" label="创建时间" min-width="170" />
-            <el-table-column v-if="canMaintain" label="操作" width="124" fixed="right"><template #default="{row}"><el-button link type="primary" :aria-label="'编辑舱位' + row.id" @click="open('edit',row)">编辑</el-button><el-tooltip content="删除权限及已使用舱位的处理规则待确认"><span><el-button link disabled>删除</el-button></span></el-tooltip></template></el-table-column>
+            <el-table-column v-if="canMaintain" label="操作" width="124" fixed="right"><template #default="{row}"><el-button v-business-write="'airCapacity'" link type="primary" :aria-label="'编辑舱位' + row.id" @click="open('edit',row)">编辑</el-button><el-tooltip content="删除权限及已使用舱位的处理规则待确认"><span><el-button link disabled>删除</el-button></span></el-tooltip></template></el-table-column>
             <template #empty><el-empty description="没有匹配的舱位产品" /></template>
           </el-table></template>
         </DataTableFrame>
@@ -183,7 +183,7 @@ watch(() => state.capacityProducts.map(row => row.id), () => {
           <el-table-column prop="flight" label="航班号" min-width="125" /><el-table-column prop="airline" label="航司" min-width="130" /><el-table-column prop="origin" label="始发港" min-width="90" /><el-table-column prop="destination" label="目的港" min-width="90" /><el-table-column prop="date" label="出港日期" min-width="125" />
           <el-table-column v-for="field in [{key:'takeoffTime',label:'起飞时刻'},{key:'arrivalTime',label:'到港时刻'},{key:'cutoffTime',label:'截单时刻'}]" :key="field.key" :label="field.label" min-width="105"><template #default="{row}">{{ row[field.key] || '来源未返回' }}</template></el-table-column>
           <el-table-column v-for="field in [{key:'boardCount',label:'板数'},{key:'totalVolume',label:'舱位总体积 (m³)'},{key:'bookedVolume',label:'已订体积 (m³)'},{key:'remainingVolume',label:'剩余体积 (m³)'}]" :key="field.key" :label="field.label" min-width="160" align="right"><template #default="{row}"><span :class="{'capacity-shortage':row[field.key] < 0}">{{ numberText(row[field.key]) }}</span></template></el-table-column>
-          <el-table-column label="备注与数据说明" min-width="280"><template #default="{row}"><p v-if="row.capacityReason || row.volumeReason">{{ row.capacityReason || row.volumeReason }}</p><div v-for="product in row.products" :key="product.id" class="capacity-note"><span>{{ product.boardType }} · {{ product.operator }}</span><el-button link type="primary" :aria-label="'舱位备注' + product.id + row.date" @click="openNote(product)">{{ product.remark || '未填写备注' }}</el-button></div></template></el-table-column>
+          <el-table-column label="备注与数据说明" min-width="280"><template #default="{row}"><p v-if="row.capacityReason || row.volumeReason">{{ row.capacityReason || row.volumeReason }}</p><div v-for="product in row.products" :key="product.id" class="capacity-note"><span>{{ product.boardType }} · {{ product.operator }}</span><el-button v-business-write="'airCapacity'" link type="primary" :aria-label="'舱位备注' + product.id + row.date" @click="openNote(product)">{{ product.remark || '未填写备注' }}</el-button></div></template></el-table-column>
           <template #empty><el-empty description="查询期间没有舱位产品" /></template>
         </el-table></template></DataTableFrame>
       </template>
@@ -214,9 +214,9 @@ watch(() => state.capacityProducts.map(row => row.id), () => {
         </el-table>
         <div v-if="Object.keys(errors).length" class="capacity-errors" role="alert"><p v-for="(error,key) in errors" :key="key">{{ key.startsWith('details.') ? '明细' + (Number(key.split('.')[1])+1) + '：' : '' }}{{ error }}</p></div>
       </el-form>
-      <template #footer><el-button :disabled="busy" @click="close">{{ mode === 'detail' ? '关闭' : '取消' }}</el-button><el-button v-if="isEditing" type="primary" :disabled="Object.keys(errors).length > 0" :loading="busy" @click="save">{{ mode === 'create' ? '提交' : '保存' }}</el-button></template>
+      <template #footer><el-button :disabled="busy" @click="close">{{ mode === 'detail' ? '关闭' : '取消' }}</el-button><el-button v-business-write="'airCapacity'" v-if="isEditing" type="primary" :disabled="Object.keys(errors).length > 0" :loading="busy" @click="save">{{ mode === 'create' ? '提交' : '保存' }}</el-button></template>
     </el-dialog>
-    <el-dialog :model-value="!!noteProduct" title="舱位备注" width="min(600px, 96vw)" align-center :before-close="close" :close-on-click-modal="false"><template v-if="noteProduct"><p>{{ flightOf(noteProduct)?.code }} · {{ noteProduct.boardType }} · {{ noteProduct.operator }}</p><el-alert v-if="failure" :title="failure" type="error" :closable="false" /><el-input v-model="noteText" type="textarea" :rows="5" aria-label="舱位备注" :readonly="!canEditCapacityNote(noteProduct,session)" :disabled="busy" /></template><template #footer><el-button :disabled="busy" @click="close">关闭</el-button><el-button v-if="noteProduct && canEditCapacityNote(noteProduct,session)" type="primary" :loading="busy" @click="saveNote">保存</el-button></template></el-dialog>
+    <el-dialog :model-value="!!noteProduct" title="舱位备注" width="min(600px, 96vw)" align-center :before-close="close" :close-on-click-modal="false"><template v-if="noteProduct"><p>{{ flightOf(noteProduct)?.code }} · {{ noteProduct.boardType }} · {{ noteProduct.operator }}</p><el-alert v-if="failure" :title="failure" type="error" :closable="false" /><el-input v-model="noteText" type="textarea" :rows="5" aria-label="舱位备注" :readonly="!canEditCapacityNote(noteProduct,session)" :disabled="busy" /></template><template #footer><el-button :disabled="busy" @click="close">关闭</el-button><el-button v-business-write="'airCapacity'" v-if="noteProduct && canEditCapacityNote(noteProduct,session)" type="primary" :loading="busy" @click="saveNote">保存</el-button></template></el-dialog>
   </div>
 </template>
 <style scoped>

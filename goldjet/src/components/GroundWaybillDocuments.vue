@@ -57,7 +57,7 @@ defineExpose({allowDiscard})
 </script>
 <template>
   <div>
-    <div class="records-toolbar"><h3>单据记录</h3><el-button v-if="allowed" type="primary" :icon="Plus" @click="open()">单据</el-button></div>
+    <div class="records-toolbar"><h3>单据记录</h3><el-button v-business-write="'groundWaybills'" v-if="allowed" type="primary" :icon="Plus" @click="open()">单据</el-button></div>
     <el-table :data="rows" aria-label="运单单据记录" empty-text="暂无单据记录">
       <el-table-column prop="type" label="单据类型" width="110" /><el-table-column prop="remark" label="描述" min-width="160" />
       <el-table-column label="杂费类型" width="120"><template #default="{row}">{{ row.type === '杂费单据' ? row.feeItem : '' }}</template></el-table-column>
@@ -65,7 +65,7 @@ defineExpose({allowDiscard})
       <el-table-column label="图片" min-width="150"><template #default="{row}"><GroundImagesField :model-value="row.images" readonly /></template></el-table-column>
       <el-table-column label="杂费审批状态" width="130"><template #default="{row}"><StatusTag v-if="row.approvalStatus" :label="row.approvalStatus" /></template></el-table-column>
       <el-table-column prop="actor" label="操作人" min-width="155" /><el-table-column prop="updatedAt" label="操作时间" width="170" /><el-table-column prop="approvalRemark" label="审批备注" min-width="170" />
-      <el-table-column label="操作" width="150" fixed="right"><template #default="{row}"><template v-if="allowed"><template v-if="row.type !== '杂费单据'"><el-button link type="primary" @click="open(row,'edit')">修改</el-button><el-button link type="danger" @click="remove(row)">删除</el-button></template><el-button v-else-if="row.approvalStatus === '待审批'" link type="primary" @click="open(row,'review')">审批</el-button></template></template></el-table-column>
+      <el-table-column label="操作" width="150" fixed="right"><template #default="{row}"><template v-if="allowed"><template v-if="row.type !== '杂费单据'"><el-button v-business-write="'groundWaybills'" link type="primary" @click="open(row,'edit')">修改</el-button><el-button v-business-write="'groundWaybills'" link type="danger" @click="remove(row)">删除</el-button></template><el-button v-business-write="'groundWaybills'" v-else-if="row.approvalStatus === '待审批'" link type="primary" @click="open(row,'review')">审批</el-button></template></template></el-table-column>
     </el-table>
     <el-dialog v-model="visible" :title="reviewing ? '杂费审批' : documentId ? '修改单据' : '新增单据'" width="min(660px,94vw)" append-to-body destroy-on-close :close-on-click-modal="false" :before-close="close">
       <el-form label-position="top" @submit.prevent="submit">
@@ -82,7 +82,7 @@ defineExpose({allowDiscard})
         <el-form-item :label="reviewing ? '审批备注' : '备注'" :error="errors.remark"><el-input v-model="draft.remark" type="textarea" :rows="3" :maxlength="reviewing ? undefined : 500" :show-word-limit="!reviewing" aria-label="单据备注" /></el-form-item>
         <el-alert v-if="errors.pending" :title="errors.pending" type="warning" :closable="false" />
       </el-form>
-      <template #footer><el-button :disabled="uploading" @click="close">取消</el-button><el-button type="primary" :disabled="!allowed || uploading || !!Object.keys(errors).length" @click="submit">{{ reviewing ? '提交审批' : documentId ? '保存单据' : '提交单据' }}</el-button></template>
+      <template #footer><el-button :disabled="uploading" @click="close">取消</el-button><el-button v-business-write="'groundWaybills'" type="primary" :disabled="!allowed || uploading || !!Object.keys(errors).length" @click="submit">{{ reviewing ? '提交审批' : documentId ? '保存单据' : '提交单据' }}</el-button></template>
     </el-dialog>
   </div>
 </template>

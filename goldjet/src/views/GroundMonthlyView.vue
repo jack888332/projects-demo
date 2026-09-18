@@ -6,7 +6,7 @@ import { usePrototypeData } from '../data/usePrototypeData.js'
 import { groundMonthlyRows } from '../domain/groundOrders.js'
 const router = useRouter(), { state, groundSession } = usePrototypeData()
 const month = ref('')
-const allowed = computed(() => groundSession.role === 'transportSupervisor')
+const allowed = computed(() => groundSession.readAll || groundSession.role === 'transportSupervisor')
 const all = computed(() => allowed.value ? groundMonthlyRows(state.groundOrders) : [])
 const rows = computed(() => all.value.filter(row => !month.value || row.month === month.value))
 watch(() => [groundSession.role, groundSession.name], () => { month.value = '' })

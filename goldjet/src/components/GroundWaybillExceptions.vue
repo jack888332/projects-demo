@@ -41,13 +41,13 @@ defineExpose({ allowDiscard })
 </script>
 <template>
   <div>
-    <div class="records-toolbar"><h3>异常记录</h3><el-button v-if="canManage && bill.status !== '已取消'" type="primary" :icon="Plus" @click="open()">异常</el-button></div>
+    <div class="records-toolbar"><h3>异常记录</h3><el-button v-business-write="'groundWaybills'" v-if="canManage && bill.status !== '已取消'" type="primary" :icon="Plus" @click="open()">异常</el-button></div>
     <el-table :data="rows" aria-label="运单异常记录" empty-text="暂无异常记录">
       <el-table-column prop="type" label="异常类别" min-width="110" /><el-table-column label="异常状态" width="110"><template #default="{row}"><StatusTag :label="row.status" /></template></el-table-column>
       <el-table-column prop="remark" label="异常内容" min-width="160" /><el-table-column label="上报图片" min-width="160"><template #default="{row}"><GroundImagesField :model-value="row.images" readonly /></template></el-table-column>
       <el-table-column prop="reportedAt" label="异常上报时间" width="170" /><el-table-column prop="actor" label="上报账户" min-width="150" />
       <el-table-column label="关闭信息" min-width="180"><template #default="{row}"><template v-if="row.status === '已关闭'">{{ row.closedAt }}<br />{{ row.closedBy }}<br />{{ row.closeRemark }}</template></template></el-table-column>
-      <el-table-column label="操作" width="240" fixed="right"><template #default="{row}"><template v-if="row.status === '异常中'"><el-button link type="primary" :disabled="!canManage || !!groundExceptionCloseReason(bill,row)" @click="open(row)">取消异常</el-button><p v-if="groundExceptionCloseReason(bill,row)" class="pending">{{ groundExceptionCloseReason(bill,row) }}</p></template></template></el-table-column>
+      <el-table-column label="操作" width="240" fixed="right"><template #default="{row}"><template v-if="row.status === '异常中'"><el-button v-business-write="'groundWaybills'" link type="primary" :disabled="!canManage || !!groundExceptionCloseReason(bill,row)" @click="open(row)">取消异常</el-button><p v-if="groundExceptionCloseReason(bill,row)" class="pending">{{ groundExceptionCloseReason(bill,row) }}</p></template></template></el-table-column>
     </el-table>
     <el-dialog v-model="visible" :title="closingId ? '取消异常' : '新增异常'" width="min(660px,94vw)" append-to-body destroy-on-close :close-on-click-modal="false" :before-close="close">
       <el-form label-position="top" @submit.prevent="submit">
@@ -56,7 +56,7 @@ defineExpose({ allowDiscard })
         <el-form-item label="备注" :error="errors.remark"><el-input v-model="draft.remark" aria-label="异常备注" type="textarea" :rows="3" maxlength="500" show-word-limit /></el-form-item>
         <p v-if="errors.eligibility" class="pending" role="alert">{{ errors.eligibility }}</p>
       </el-form>
-      <template #footer><el-button :disabled="uploading" @click="close">取消</el-button><el-button type="primary" :disabled="!canManage || !!firstError || uploading" @click="submit">{{ closingId ? '确认取消异常' : '提交异常' }}</el-button></template>
+      <template #footer><el-button :disabled="uploading" @click="close">取消</el-button><el-button v-business-write="'groundWaybills'" type="primary" :disabled="!canManage || !!firstError || uploading" @click="submit">{{ closingId ? '确认取消异常' : '提交异常' }}</el-button></template>
     </el-dialog>
   </div>
 </template>

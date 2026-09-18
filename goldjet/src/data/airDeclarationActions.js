@@ -70,8 +70,8 @@ export function createAirDeclarationActions(state, getSession) {
   function requireRole() {
     if (!canManageAirDeclarations(getSession())) throw new Error('仅报关行客服可操作报关材料')
   }
-  function resolveTargets(targets) {
-    requireRole()
+  function resolveTargets(targets, readOnly = false) {
+    if (!(readOnly && getSession().readAll)) requireRole()
     if (!Array.isArray(targets) || !targets.length) throw new Error('请选择需要处理的材料')
     const rows = deriveAirDeclarations(state), seen = new Set()
     return targets.map(target => {
@@ -89,7 +89,7 @@ export function createAirDeclarationActions(state, getSession) {
     })
   }
   function getAirDeclarationFiles(targets) {
-    return resolveTargets(targets).map(({ material }) => getAirDeclarationMaterialFile(material))
+    return resolveTargets(targets, true).map(({ material }) => getAirDeclarationMaterialFile(material))
   }
   function notifyAirDeclarationMaterials(targets) {
     const prepared = resolveTargets(targets).map(target => ({ ...target, ...buildAirDeclarationMaterialNotice(target.row, target.material) }))
@@ -110,7 +110,7 @@ export function createAirDeclarationActions(state, getSession) {
     return requests
   }
   function loadAirDeclarationExamples() {
-    requireRole()
+    if (!getSession().readAll) requireRole()
     if ((state.airOrders !== undefined && !Array.isArray(state.airOrders)) || (state.airChildren !== undefined && !Array.isArray(state.airChildren))) throw new Error('订单记录格式异常，未载入示例')
     const { orders, children } = receivedExamples()
     const currentOrders = array(state.airOrders), currentChildren = array(state.airChildren)

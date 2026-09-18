@@ -67,6 +67,6 @@ function save() {
       <el-form-item label="后段卡车卖价" :error="errors.truckSellRate"><el-input-number v-model="draft.truckSellRate" :disabled="Boolean(restriction)" :min="0" :max="100" aria-label="后段卡车卖价" /></el-form-item>
       <el-form-item label="分泡" :error="errors.foamRatio"><el-select v-model="draft.foamRatio" clearable :disabled="Boolean(restriction)" aria-label="分泡"><el-option v-for="n in 11" :key="n" :label="String((n - 1) / 10)" :value="(n - 1) / 10" /></el-select></el-form-item>
     </el-form>
-    <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button type="primary" :disabled="Boolean(restriction) || Object.keys(errors).length > 0" :loading="busy" @click="save">保存</el-button></template>
+    <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button v-business-write="'airOrders'" type="primary" :disabled="Boolean(restriction) || Object.keys(errors).length > 0" :loading="busy" @click="save">保存</el-button></template>
   </el-dialog>
 </template>

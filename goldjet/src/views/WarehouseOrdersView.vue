@@ -43,7 +43,7 @@ function resetFilters() { keyword.value = ''; status.value = '' }
           <el-table-column label="理货结果" width="170"><template #default="{ row }"><span class="tally-result">良 {{ row.goodQty }} · 残 {{ row.damagedQty }} · 异 {{ row.abnormalQty }}</span></template></el-table-column>
           <el-table-column label="状态" width="100"><template #default="{ row }"><StatusTag :label="row.status" /></template></el-table-column>
           <el-table-column prop="updatedAt" label="更新时间" width="145" />
-          <el-table-column label="当前操作" width="132" fixed="right"><template #default="{ row }"><el-button v-if="WAREHOUSE_ACTIONS[row.status]" link type="primary" :icon="CircleCheck" @click="advance(row)">{{ WAREHOUSE_ACTIONS[row.status] }}</el-button><span v-else>作业完成</span></template></el-table-column>
+          <el-table-column label="当前操作" width="132" fixed="right"><template #default="{ row }"><el-button v-business-write="'warehouseOrders'" v-if="WAREHOUSE_ACTIONS[row.status]" link type="primary" :icon="CircleCheck" @click="advance(row)">{{ WAREHOUSE_ACTIONS[row.status] }}</el-button><span v-else>作业完成</span></template></el-table-column>
         </el-table>
       </template>
     </DataTableFrame>

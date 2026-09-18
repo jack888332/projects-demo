@@ -59,7 +59,7 @@ function save() {
     <el-alert v-if="restriction" :title="restriction" type="info" :closable="false" />
     <el-alert v-if="failure" :title="failure" type="error" :closable="false" role="alert" />
     <el-form v-if="draft && service" label-position="top" :model="draft" @submit.prevent="save"><AirServiceFields :kind="service.type" :model="draft" :readonly="Boolean(restriction)" :errors="errors" prefix="服务修改" /><div v-if="!restriction && Object.keys(errors).length" class="service-errors" role="status"><span v-for="(error, key) in errors" :key="key">{{ error }}</span></div></el-form>
-    <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button v-if="!restriction" type="primary" :disabled="Object.keys(errors).length > 0" :loading="busy" @click="save">保存服务修改</el-button></template>
+    <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button v-business-write="'airOrders'" v-if="!restriction" type="primary" :disabled="Object.keys(errors).length > 0" :loading="busy" @click="save">保存服务修改</el-button></template>
   </el-dialog>
 </template>
 

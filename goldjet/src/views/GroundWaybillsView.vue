@@ -164,7 +164,7 @@ watch(selected, bill => {
         <el-table-column v-for="[key,label] in [['expectedPieces','预计件数（件）'],['expectedVolume','预计体积（m³）'],['expectedWeight','预计重量（kg）']]" :key="key" :label="label" width="145" align="right"><template #default="{row}">{{ showValue(row,key) }}</template></el-table-column>
         <el-table-column label="预计尺寸（cm）" width="160"><template #default="{row}">{{ [row.expectedLength,row.expectedWidth,row.expectedHeight].filter(v => v != null).join(' × ') }}</template></el-table-column>
         <el-table-column prop="expectedArrival" label="预计到达时间" width="170" /><el-table-column prop="exceptionStatus" label="异常状态" width="130" /><el-table-column prop="cargoDocuments" label="随货资料" width="100" /><el-table-column prop="remark" label="备注" min-width="180" />
-        <el-table-column label="操作" width="170" fixed="right"><template #default="{row}"><el-button link type="primary" @click="open(row)">查看详情</el-button><el-tooltip v-if="!terminal(row)" :disabled="canManage" :content="managementPermissionReason"><span class="status-action" :tabindex="canManage ? undefined : 0"><el-button link type="primary" :disabled="!canManage" @click="manage(row)">状态管理</el-button></span></el-tooltip></template></el-table-column>
+        <el-table-column label="操作" width="170" fixed="right"><template #default="{row}"><el-button link type="primary" @click="open(row)">查看详情</el-button><el-tooltip v-if="!terminal(row)" :disabled="canManage" :content="managementPermissionReason"><span class="status-action" :tabindex="canManage ? undefined : 0"><el-button v-business-write="'groundWaybills'" link type="primary" :disabled="!canManage" @click="manage(row)">状态管理</el-button></span></el-tooltip></template></el-table-column>
       </el-table></template>
     </DataTableFrame>
     <el-drawer v-model="detailVisible" :title="pageTitle + '详情'" size="min(980px, 96vw)" :before-close="closeDetail" destroy-on-close>
@@ -183,7 +183,7 @@ watch(selected, bill => {
         </el-tabs>
         <el-alert v-if="selected.status === '已卸货'" class="waybill-notice" title="运输节点已完成。自动运输费、压车费与财务账单未实现，本次不生成虚构费用。" type="warning" :closable="false" />
       </template>
-      <template #footer><el-button @click="closeDetail">关闭</el-button><el-button v-if="selected && !terminal(selected)" type="primary" :disabled="!canManage" @click="manage(selected)">状态管理</el-button></template>
+      <template #footer><el-button @click="closeDetail">关闭</el-button><el-button v-business-write="'groundWaybills'" v-if="selected && !terminal(selected)" type="primary" :disabled="!canManage" @click="manage(selected)">状态管理</el-button></template>
     </el-drawer>
     <el-dialog v-model="statusVisible" title="运单状态管理" width="min(540px, 94vw)" align-center :close-on-click-modal="false" :before-close="close">
       <p>{{ updating?.waybillNo }} · {{ updating?.plate }}</p>
@@ -194,7 +194,7 @@ watch(selected, bill => {
         <p class="waybill-help">客服可修正任意已定义运输节点，不强制顺序。已卸货后不再提供状态管理；取消调度涉及返空费，不在此处执行。</p>
         <p v-if="error" role="status" class="waybill-error">{{ error }}</p>
       </el-form>
-      <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button type="primary" :disabled="!canManage || !!error" :loading="busy" @click="submit">保存状态</el-button></template>
+      <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button v-business-write="'groundWaybills'" type="primary" :disabled="!canManage || !!error" :loading="busy" @click="submit">保存状态</el-button></template>
     </el-dialog>
   </div>
 </template>

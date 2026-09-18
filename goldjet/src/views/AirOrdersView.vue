@@ -76,7 +76,7 @@ watch(selected, order => { if (!order) detailVisible.value = false })
 <template>
   <div class="module-view">
     <PageHeader title="主订单管理" description="客服受理、服务指令与航线订舱共享同一订单">
-      <template #actions><el-button type="primary" :icon="Plus" :disabled="!canCreate" @click="createVisible = true">新建主订单</el-button></template>
+      <template #actions><el-button v-business-write="'airOrders'" type="primary" :icon="Plus" :disabled="!canCreate" @click="createVisible = true">新建主订单</el-button></template>
     </PageHeader>
     <div v-if="!canCreate" class="air-context">当前角色不能新建主订单。航线人员可进入订舱管理，航晟客服可从子订单管理创建及合成订单。</div>
     <form class="air-filters" aria-label="主订单筛选" @submit.prevent>
@@ -112,7 +112,7 @@ watch(selected, order => { if (!order) detailVisible.value = false })
           <el-table-column prop="creator" label="客服" width="90" />
           <el-table-column prop="owner" label="业务员" width="90" />
           <el-table-column prop="createDate" label="创建日期" width="118" />
-          <el-table-column label="操作" width="180" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openDetail(row)">详情</el-button><el-button link type="primary" @click="openBooking(row)">订舱</el-button><el-button v-if="!getAirPriceRestriction(row, airSession)" link type="primary" @click="openPrices(row)">改价</el-button></template></el-table-column>
+          <el-table-column label="操作" width="180" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openDetail(row)">详情</el-button><el-button link type="primary" @click="openBooking(row)">订舱</el-button><el-button v-business-write="'airOrders'" v-if="!getAirPriceRestriction(row, airSession)" link type="primary" @click="openPrices(row)">改价</el-button></template></el-table-column>
         </el-table>
       </template>
     </DataTableFrame>

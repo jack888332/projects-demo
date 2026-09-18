@@ -139,7 +139,7 @@ async function closeCredit(done) {
 <template>
   <div class="module-view partners-view">
     <PageHeader :title="mode === 'list' ? '合作方档案' : (mode === 'credit' ? '客户授信额度' : mode === 'create' ? '新增'+type : mode === 'edit' ? '编辑'+type : mode === 'approve' ? '审批'+type : type+'详情')" :description="'当前角色：'+partnerSession.label+' · '+partnerSession.name">
-      <template #actions><el-button v-if="mode !== 'list'" @click="go()">返回列表</el-button><el-button v-else type="primary" :disabled="!permissions(null).create" @click="go('create')">新增{{ type }}</el-button></template>
+      <template #actions><el-button v-if="mode !== 'list'" @click="go()">返回列表</el-button><el-button v-business-write="'partners'" v-else type="primary" :disabled="!permissions(null).create" @click="go('create')">新增{{ type }}</el-button></template>
     </PageHeader>
     <el-alert v-if="errorMessage" :title="errorMessage" type="error" :closable="false" show-icon class="partner-notice" />
     <template v-if="mode === 'list'">
@@ -173,12 +173,12 @@ async function closeCredit(done) {
           <el-table-column prop="department" label="创建部门" min-width="145" /><el-table-column prop="updatedBy" label="更新人" width="120" /><el-table-column prop="updatedAt" label="更新日期" width="170" />
           <el-table-column label="操作" width="255" fixed="right"><template #default="{row}">
             <el-button link type="primary" @click="go('detail',row)">查看</el-button>
-            <el-button v-if="permissions(row).edit" link type="primary" @click="rowAction(row,'edit')">编辑</el-button>
-            <el-button v-if="permissions(row).submit" link type="primary" @click="rowAction(row,'submit')">提交</el-button>
-            <el-button v-if="permissions(row).approve" link type="primary" @click="go('approve',row)">审批</el-button>
-            <el-button v-if="permissions(row).requestCredit" link type="primary" @click="go('credit',row)">额度申请</el-button>
-            <el-button v-if="row.type==='客户' && partnerSession.role==='finance'" link type="primary" @click="go('credit',row)">额度审批</el-button>
-            <el-dropdown trigger="click" @command="action=>rowAction(row,action)"><el-button link type="primary">更多</el-button><template #dropdown><el-dropdown-menu>
+            <el-button v-business-write="'partners'" v-if="permissions(row).edit" link type="primary" @click="rowAction(row,'edit')">编辑</el-button>
+            <el-button v-business-write="'partners'" v-if="permissions(row).submit" link type="primary" @click="rowAction(row,'submit')">提交</el-button>
+            <el-button v-business-write="'partners'" v-if="permissions(row).approve" link type="primary" @click="go('approve',row)">审批</el-button>
+            <el-button v-business-write="'partners'" v-if="permissions(row).requestCredit" link type="primary" @click="go('credit',row)">额度申请</el-button>
+            <el-button v-business-write="'partners'" v-if="row.type==='客户' && partnerSession.role==='finance'" link type="primary" @click="go('credit',row)">额度审批</el-button>
+            <el-dropdown v-business-write="'partners'" trigger="click" @command="action=>rowAction(row,action)"><el-button link type="primary">更多</el-button><template #dropdown><el-dropdown-menu>
               <el-dropdown-item command="deactivate" :disabled="!permissions(row).deactivate">失效</el-dropdown-item><el-dropdown-item command="activate" :disabled="!permissions(row).activate">启用</el-dropdown-item><el-dropdown-item command="delete" :disabled="!permissions(row).delete">删除</el-dropdown-item>
             </el-dropdown-menu></template></el-dropdown>
           </template></el-table-column>
@@ -196,18 +196,18 @@ async function closeCredit(done) {
         <el-alert v-if="mode==='approve'" title="拒绝后的主状态在第003篇存在两种口径：新建＋审批拒绝、财务审批拒绝。此分支待确认，不模拟拒绝成功。" type="warning" :closable="false" class="partner-notice" />
         <div class="partner-actions">
           <el-button @click="go()">返回列表</el-button>
-          <template v-if="editing"><el-button :disabled="busy" @click="save(false)">保存</el-button><el-button v-if="mode==='create' || permissions(selected).submit" type="primary" :disabled="busy" @click="save(true)">保存并提交审批</el-button></template>
-          <el-button v-if="mode==='approve'" type="primary" :disabled="!permissions(selected).approve || busy" @click="approve">审批通过</el-button>
-          <el-button v-if="mode==='detail' && permissions(selected).requestCredit" type="primary" @click="go('credit',selected)">额度申请</el-button>
+          <template v-if="editing"><el-button v-business-write="'partners'" :disabled="busy" @click="save(false)">保存</el-button><el-button v-business-write="'partners'" v-if="mode==='create' || permissions(selected).submit" type="primary" :disabled="busy" @click="save(true)">保存并提交审批</el-button></template>
+          <el-button v-business-write="'partners'" v-if="mode==='approve'" type="primary" :disabled="!permissions(selected).approve || busy" @click="approve">审批通过</el-button>
+          <el-button v-business-write="'partners'" v-if="mode==='detail' && permissions(selected).requestCredit" type="primary" @click="go('credit',selected)">额度申请</el-button>
         </div>
       </template>
       <template v-else>
         <el-descriptions title="客户信息" :column="2" border><el-descriptions-item label="境内外关系">{{ selected.relationship }}</el-descriptions-item><el-descriptions-item label="统一社会信用码">{{ selected.creditCode }}</el-descriptions-item><el-descriptions-item label="中文名称">{{ selected.name }}</el-descriptions-item><el-descriptions-item label="简称">{{ selected.shortName }}</el-descriptions-item><el-descriptions-item label="公司地址">{{ partnerAddress(selected) }}</el-descriptions-item><el-descriptions-item label="营业期限">{{ partnerTerm(selected) }}</el-descriptions-item><el-descriptions-item label="账期（天）">{{ selected.paymentDays }}</el-descriptions-item><el-descriptions-item label="原授信额度">{{ selected.creditLimit }}</el-descriptions-item></el-descriptions>
         <el-form v-if="permissions(selected).requestCredit" label-position="top" class="credit-form">
           <h3>{{ editingCreditId ? "重新提交额度申请 · "+editingCreditId : "新增额度申请" }}</h3><div class="credit-grid"><el-form-item label="本次申请额度" required :error="creditError"><el-input-number v-model="creditDraft.amount" :precision="2" :controls="false" aria-label="本次申请额度" /></el-form-item><el-form-item label="预计总额度"><strong>{{ creditDraft.amount == null ? '待填写' : (Number(selected.creditLimit || 0)+Number(creditDraft.amount)).toFixed(2) }}</strong></el-form-item></div>
-          <PartnerAttachments :files="creditDraft.attachments" /><el-button type="primary" :disabled="!!creditError || busy" @click="submitCredit">提交额度申请</el-button>
+          <PartnerAttachments :files="creditDraft.attachments" /><el-button v-business-write="'partners'" type="primary" :disabled="!!creditError || busy" @click="submitCredit">提交额度申请</el-button>
         </el-form>
-        <h3>额度申请记录</h3><DataTableFrame :rows="applications" :page-size="10" :page-sizes="[10]"><template #default="{rows:pageRows}"><el-table :data="pageRows" aria-label="额度申请记录"><el-table-column prop="id" label="申请编号" min-width="155" /><el-table-column prop="status" label="状态" min-width="135" /><el-table-column prop="amount" label="本次申请额度" width="135" align="right" /><el-table-column prop="creator" label="申请人" width="120" /><el-table-column prop="createdAt" label="申请日期" width="170" /><el-table-column prop="approvedAmount" label="本次批复额度" width="135" align="right" /><el-table-column label="操作" width="180"><template #default="{row}"><el-button v-if="row.status==='已提交' && partnerSession.role==='finance'" link type="primary" @click="creditReviewId=row.id; approvedAmount=row.amount; approvalRemark=''">审批</el-button><template v-if="row.status==='财务审批拒绝' && row.creator===partnerSession.name && partnerSession.role==='businessSupervisor'"><el-button link type="primary" @click="editRejectedCredit(row)">修改重提</el-button><el-button link type="danger" @click="deleteRejectedCredit(row)">删除</el-button></template></template></el-table-column></el-table></template></DataTableFrame>
+        <h3>额度申请记录</h3><DataTableFrame :rows="applications" :page-size="10" :page-sizes="[10]"><template #default="{rows:pageRows}"><el-table :data="pageRows" aria-label="额度申请记录"><el-table-column prop="id" label="申请编号" min-width="155" /><el-table-column prop="status" label="状态" min-width="135" /><el-table-column prop="amount" label="本次申请额度" width="135" align="right" /><el-table-column prop="creator" label="申请人" width="120" /><el-table-column prop="createdAt" label="申请日期" width="170" /><el-table-column prop="approvedAmount" label="本次批复额度" width="135" align="right" /><el-table-column label="操作" width="180"><template #default="{row}"><el-button v-business-write="'partners'" v-if="row.status==='已提交' && partnerSession.role==='finance'" link type="primary" @click="creditReviewId=row.id; approvedAmount=row.amount; approvalRemark=''">审批</el-button><template v-if="row.status==='财务审批拒绝' && row.creator===partnerSession.name && partnerSession.role==='businessSupervisor'"><el-button v-business-write="'partners'" link type="primary" @click="editRejectedCredit(row)">修改重提</el-button><el-button v-business-write="'partners'" link type="danger" @click="deleteRejectedCredit(row)">删除</el-button></template></template></el-table-column></el-table></template></DataTableFrame>
         <h3>历史额度（已审批通过）</h3><DataTableFrame :rows="history" :page-size="10" :page-sizes="[10]"><template #default="{rows:pageRows}"><el-table :data="pageRows" aria-label="历史额度">
           <el-table-column v-for="[key,label] in [['department','额度申请部门'],['originalAmount','原授信额度'],['amount','申请额度'],['creator','申请人'],['createdAt','申请日期'],['approvedAmount','批复额度'],['approvedBy','批复人'],['approvedAt','批复日期'],['decision','批复意见'],['remark','备注']]" :key="key" :prop="key" :label="label" :min-width="key.endsWith('At') ? 170 : 135" />
         </el-table></template></DataTableFrame>
@@ -218,7 +218,7 @@ async function closeCredit(done) {
     <el-dialog :model-value="!!creditReviewId" title="客户额度审批" width="min(760px,96vw)" :close-on-click-modal="false" :before-close="closeCredit">
       <template v-if="creditReview"><p>{{ selected?.name }} · {{ creditReview.id }}</p><el-descriptions :column="2"><el-descriptions-item label="原授信额度">{{ selected?.creditLimit }}</el-descriptions-item><el-descriptions-item label="本次申请额度">{{ creditReview.amount }}</el-descriptions-item><el-descriptions-item label="预计总额度">{{ Number(selected?.creditLimit || 0)+creditReview.amount }}</el-descriptions-item><el-descriptions-item label="实际总额度">{{ Number(selected?.creditLimit || 0)+Number(approvedAmount || 0) }}</el-descriptions-item></el-descriptions>
       <el-form label-position="top"><el-form-item label="本次批复额度" required><el-input-number v-model="approvedAmount" :precision="2" :controls="false" /></el-form-item><el-form-item label="备注"><el-input v-model="approvalRemark" type="textarea" maxlength="240" /></el-form-item></el-form><PartnerAttachments :files="creditReview.attachments" readonly /></template>
-      <template #footer><el-button @click="closeCredit">取消</el-button><el-button :disabled="busy || partnerSession.role!=='finance' || creditReview?.status!=='已提交'" type="danger" @click="reviewCredit(false)">审批拒绝</el-button><el-button :disabled="busy || partnerSession.role!=='finance' || creditReview?.status!=='已提交'" type="primary" @click="reviewCredit(true)">审批通过</el-button></template>
+      <template #footer><el-button @click="closeCredit">取消</el-button><el-button v-business-write="'partners'" :disabled="busy || partnerSession.role!=='finance' || creditReview?.status!=='已提交'" type="danger" @click="reviewCredit(false)">审批拒绝</el-button><el-button v-business-write="'partners'" :disabled="busy || partnerSession.role!=='finance' || creditReview?.status!=='已提交'" type="primary" @click="reviewCredit(true)">审批通过</el-button></template>
     </el-dialog>
   </div>
 </template>

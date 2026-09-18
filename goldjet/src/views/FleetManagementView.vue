@@ -15,8 +15,8 @@ function changeTab(tab) { router.push({ path: '/fulfillment/fleet', query: { tab
 </script>
 <template>
   <div class="fleet-management">
-    <template v-if="canMaintainFleet(groundSession.role)">
-      <el-tabs :model-value="active" aria-label="车队管理模块" @tab-click="changeTab"><el-tab-pane v-for="tab in tabs.filter(tab => ['drivers', 'vehicles'].includes(tab.key) || canViewFleetRecords(groundSession.role, tab.key))" :key="tab.key" :name="tab.key" :label="tab.label" /></el-tabs>
+    <template v-if="groundSession.readAll || canMaintainFleet(groundSession.role)">
+      <el-tabs :model-value="active" aria-label="车队管理模块" @tab-click="changeTab"><el-tab-pane v-for="tab in tabs.filter(tab => groundSession.readAll || ['drivers', 'vehicles'].includes(tab.key) || canViewFleetRecords(groundSession.role, tab.key))" :key="tab.key" :name="tab.key" :label="tab.label" /></el-tabs>
       <FleetView v-if="active === 'drivers'" /><FleetVehiclesView v-else-if="active === 'vehicles'" /><FleetRecordsView v-else :key="active" :kind="active" />
     </template>
     <el-empty v-else description="当前角色无车队档案访问权限" />

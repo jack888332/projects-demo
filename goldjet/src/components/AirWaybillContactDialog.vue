@@ -184,7 +184,7 @@ defineExpose({ allowLeave, requestClose, dirty })
           <el-table-column label="操作" width="112" fixed="right">
             <template #default="{ row }">
               <el-button link type="primary" :disabled="readOnly || busy" :aria-label="`使用联系人${row.alias || row.name}`" @click="useContact(row)">使用</el-button>
-              <el-button link type="danger" :disabled="readOnly || busy" :aria-label="`删除联系人${row.alias || row.name}`" @click="deleteContact(row)">删除</el-button>
+              <el-button v-business-write="'airwayBills'" link type="danger" :disabled="readOnly || busy" :aria-label="`删除联系人${row.alias || row.name}`" @click="deleteContact(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -195,7 +195,7 @@ defineExpose({ allowLeave, requestClose, dirty })
         <el-button v-if="!readOnly" :disabled="busy" @click="clear">清空</el-button>
         <div class="contact-primary-actions">
           <el-button :disabled="busy" @click="requestClose">{{ readOnly ? '关闭' : '取消' }}</el-button>
-          <el-button v-if="!readOnly" type="primary" :loading="busy" @click="save">保存</el-button>
+          <el-button v-business-write="'airwayBills'" v-if="!readOnly" type="primary" :loading="busy" @click="save">保存</el-button>
         </div>
       </div>
     </template>

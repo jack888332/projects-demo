@@ -13,7 +13,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 const { state, declarationSession, getAirDeclarationFiles, notifyAirDeclarationMaterials } = usePrototypeData()
 const session = computed(() => unref(declarationSession) || {})
-const allowed = computed(() => canManageAirDeclarations(session.value))
+const allowed = computed(() => session.value.readAll || canManageAirDeclarations(session.value))
 const selected = ref([]), pending = ref([]), pendingSnapshot = ref(''), failure = ref(''), result = ref(''), busy = ref(false)
 const downloadLinks = ref([])
 const downloadUrls = new Set()
@@ -194,7 +194,7 @@ function confirmNotification() {
               <div class="material-name"><strong>{{ material.name }}</strong><span>{{ material.fileName || '原文件名未记录' }}</span><span v-if="!fileAvailable(material)" class="material-error">原文件不可用</span><span v-if="noticeFor({ serviceId: row.id, materialId: material.id, row, material }).error" class="material-error">{{ noticeFor({ serviceId: row.id, materialId: material.id, row, material }).error }}</span></div>
               <div class="material-row-actions">
                 <el-button v-if="fileAvailable(material)" link type="primary" :disabled="!allowed || busy" :aria-label="`下载${row.id}的${material.name}`" @click="download([{ serviceId: row.id, materialId: material.id }])">下载</el-button>
-                <el-button link type="warning" :disabled="!allowed || busy || Boolean(noticeFor({ serviceId: row.id, materialId: material.id, row, material }).error)" :aria-label="`通知补齐${row.id}的${material.name}`" @click="prepareNotification([{ serviceId: row.id, materialId: material.id }])">补齐通知</el-button>
+                <el-button v-business-write="'declarations'" link type="warning" :disabled="!allowed || busy || Boolean(noticeFor({ serviceId: row.id, materialId: material.id, row, material }).error)" :aria-label="`通知补齐${row.id}的${material.name}`" @click="prepareNotification([{ serviceId: row.id, materialId: material.id }])">补齐通知</el-button>
               </div>
             </li>
           </ul>
@@ -204,8 +204,8 @@ function confirmNotification() {
     </div>
     <template #footer>
       <div class="declaration-material-footer">
-        <template v-if="pending.length"><el-button :disabled="busy" @click="cancelNotification">返回选择材料</el-button><el-button type="primary" :disabled="!allowed || Boolean(pendingError)" :loading="busy" @click="confirmNotification">确认补齐通知</el-button></template>
-        <template v-else><el-button :disabled="busy" @click="close">关闭</el-button><el-button :disabled="!allowed || busy || Boolean(downloadError)" :title="downloadError" @click="download()">批量下载</el-button><el-button type="primary" :disabled="!allowed || busy || Boolean(notifyError)" :title="notifyError" @click="prepareNotification()">批量补齐通知</el-button></template>
+        <template v-if="pending.length"><el-button :disabled="busy" @click="cancelNotification">返回选择材料</el-button><el-button v-business-write="'declarations'" type="primary" :disabled="!allowed || Boolean(pendingError)" :loading="busy" @click="confirmNotification">确认补齐通知</el-button></template>
+        <template v-else><el-button :disabled="busy" @click="close">关闭</el-button><el-button :disabled="!allowed || busy || Boolean(downloadError)" :title="downloadError" @click="download()">批量下载</el-button><el-button v-business-write="'declarations'" type="primary" :disabled="!allowed || busy || Boolean(notifyError)" :title="notifyError" @click="prepareNotification()">批量补齐通知</el-button></template>
       </div>
     </template>
   </el-dialog>

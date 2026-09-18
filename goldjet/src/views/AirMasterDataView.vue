@@ -128,7 +128,7 @@ async function remove(ids) {
 <template>
   <div class="module-view air-master-view">
     <PageHeader title="空运主数据" :description="'当前角色：' + airMasterSession.label + ' · ' + airMasterSession.name">
-      <template #actions><el-button type="primary" :icon="Plus" :disabled="!permission.create || busy" @click="open('create')">新增{{ tab.object }}</el-button></template>
+      <template #actions><el-button v-business-write="'airMasterData'" type="primary" :icon="Plus" :disabled="!permission.create || busy" @click="open('create')">新增{{ tab.object }}</el-button></template>
     </PageHeader>
     <el-tabs :model-value="kind" @tab-change="value => router.push({ path: route.path, query: { tab: value } })">
       <el-tab-pane v-for="item in tabs" :key="item.key" :name="item.key" :label="item.label + ' · ' + state.airMaster[item.key].length" />
@@ -139,7 +139,7 @@ async function remove(ids) {
       <el-button native-type="submit" type="primary" :icon="Search">查询</el-button><el-button :icon="Refresh" @click="resetQuery">重置</el-button>
     </form>
     <DataTableFrame :key="kind + keyword" :rows="rows" :selectable="batchAllowed" :selected-count="selectedIds.length">
-      <template #actions><el-button v-if="batchAllowed" type="danger" plain :icon="Delete" :disabled="!permission.delete || !selectedIds.length || busy" @click="remove(selectedIds)">批量删除</el-button></template>
+      <template #actions><el-button v-business-write="'airMasterData'" v-if="batchAllowed" type="danger" plain :icon="Delete" :disabled="!permission.delete || !selectedIds.length || busy" @click="remove(selectedIds)">批量删除</el-button></template>
       <template #default="{ rows: pageRows }">
         <el-table ref="table" :key="kind" :data="pageRows" row-key="id" stripe :aria-label="tab.label" @selection-change="values => selectedIds = values.map(row => row.id)">
           <el-table-column v-if="batchAllowed" type="selection" width="46" :reserve-selection="true" />
@@ -148,8 +148,8 @@ async function remove(ids) {
           </el-table-column>
           <el-table-column label="操作" :width="kind === 'pallets' ? 125 : 175" fixed="right"><template #default="{ row }">
             <el-button link type="primary" :aria-label="'查看' + (row.code || row.name)" @click="open('detail', row)">查看</el-button>
-            <el-button link type="primary" :aria-label="'编辑' + (row.code || row.name)" :disabled="!permission.edit || busy" @click="open('edit', row)">编辑</el-button>
-            <el-button v-if="kind !== 'pallets'" link type="danger" :aria-label="'删除' + (row.code || row.name)" :disabled="!permission.delete || busy" @click="remove([row.id])">删除</el-button>
+            <el-button v-business-write="'airMasterData'" link type="primary" :aria-label="'编辑' + (row.code || row.name)" :disabled="!permission.edit || busy" @click="open('edit', row)">编辑</el-button>
+            <el-button v-business-write="'airMasterData'" v-if="kind !== 'pallets'" link type="danger" :aria-label="'删除' + (row.code || row.name)" :disabled="!permission.delete || busy" @click="remove([row.id])">删除</el-button>
           </template></el-table-column>
           <template #empty><el-empty :description="keyword ? '没有匹配记录，请调整查询条件' : '暂无此类主数据'" /></template>
         </el-table>
@@ -177,7 +177,7 @@ async function remove(ids) {
           <p class="master-hint">维护与计费口径待确认</p>
         </section>
       </div>
-      <template #footer><el-button @click="close">{{ readonly ? '关闭' : '取消' }}</el-button><el-button v-if="!readonly" type="primary" :loading="busy" :disabled="Object.keys(errors).length > 0 || (mode === 'create' ? !permission.create : !permission.edit)" @click="save">保存</el-button></template>
+      <template #footer><el-button @click="close">{{ readonly ? '关闭' : '取消' }}</el-button><el-button v-business-write="'airMasterData'" v-if="!readonly" type="primary" :loading="busy" :disabled="Object.keys(errors).length > 0 || (mode === 'create' ? !permission.create : !permission.edit)" @click="save">保存</el-button></template>
     </el-dialog>
   </div>
 </template>

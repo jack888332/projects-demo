@@ -17,7 +17,7 @@ const allowed = computed(() => canManageAirWaybillTemplates(session.value))
 const airlines = computed(() => state.airMaster?.airlines || [])
 const emptyFilters = () => ({ airlineCode: '', type: '', status: '' })
 const filters = ref(emptyFilters()), applied = ref(emptyFilters())
-const rows = computed(() => allowed.value ? filterAirWaybillTemplates(state.airWaybillTemplates, applied.value) : [])
+const rows = computed(() => allowed.value || session.value.readAll ? filterAirWaybillTemplates(state.airWaybillTemplates, applied.value) : [])
 const selectedIds = ref([]), table = ref(null)
 const visible = ref(false), draft = ref(createAirWaybillTemplateDraft()), busy = ref(false), failure = ref(''), fileFailure = ref(''), submitted = ref(false)
 const input = ref(null), editor = ref(null)
@@ -84,7 +84,7 @@ function save() {
   finally { busy.value = false }
 }
 function download(ids = selectedIds.value) {
-  if (!allowed.value || busy.value) return false
+  if ((!allowed.value && !session.value.readAll) || busy.value) return false
   busy.value = true; failure.value = ''
   try {
     const files = getAirWaybillTemplateFiles(ids)
@@ -115,9 +115,9 @@ watch(() => [session.value.role, session.value.name, state.airWaybillTemplates],
 <template>
   <div>
     <PageHeader title="提单模板管理" description="按航司和类型管理模板原文件。">
-      <template #actions><el-button type="primary" :disabled="!allowed || busy" @click="open">模板上传</el-button></template>
+      <template #actions><el-button v-business-write="'airwayBills'" type="primary" :disabled="!allowed || busy" @click="open">模板上传</el-button></template>
     </PageHeader>
-    <el-alert v-if="!allowed" title="仅产品人员和技术人员可管理提单模板。" type="info" :closable="false" />
+    <el-alert v-if="!allowed && !session.readAll" title="仅产品人员和技术人员可管理提单模板。" type="info" :closable="false" />
     <template v-else>
       <el-alert title="模板配置方式待确认；已上传文件暂不标记为已完成。" type="info" :closable="false" class="template-notice" />
       <el-alert v-if="failure && !visible" :title="failure" type="error" :closable="false" role="alert" />
@@ -161,7 +161,7 @@ watch(() => [session.value.role, session.value.name, state.airWaybillTemplates],
           </el-form-item>
         </el-form>
       </div>
-      <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button type="primary" :disabled="!allowed || Boolean(errors.duplicate)" :loading="busy" @click="save">保存</el-button></template>
+      <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button v-business-write="'airwayBills'" type="primary" :disabled="!allowed || Boolean(errors.duplicate)" :loading="busy" @click="save">保存</el-button></template>
     </el-dialog>
   </div>
 </template>

@@ -1,4 +1,5 @@
 import { computed, reactive, watch } from 'vue'
+import { workbenchSession, isSuperAdmin, resetAccessControl, guardModuleActions, guardModuleReads, canWriteModule } from './accessControl.js'
 import { WORKBENCH_PERSONAS, WORKBENCH_PRODUCT_ASSIGNEES, deriveWorkbenchTasks, getWorkbenchSummary } from '../domain/workbenchTasks.js'
 import { initializePartnerState, createPartnerActions } from './partnerActions.js'
 import { createAirMasterActions } from './airMasterActions.js'
@@ -172,15 +173,14 @@ const airSession = reactive({ role: 'service', name: '周倩' })
 const groundSession = reactive({ role: 'viewer', name: '周倩', accountId: 'DEMO-service' })
 const groundOrderActions = createGroundOrderActions(state, () => groundSession)
 const groundWaybillActions = createGroundWaybillActions(state, () => groundSession)
-const workbenchSession = reactive({ personaId: 'service' })
 const partnerSession = computed(() => {
   const persona=WORKBENCH_PERSONAS.find(item=>item.id===workbenchSession.personaId) || WORKBENCH_PERSONAS[0]
-  return {role:persona.scope==='finance'?persona.role:'viewer',name:persona.name,label:persona.scope==='finance'?persona.label:'只读查看',department:'华东业务部'}
+  return {role:persona.scope==='finance'?persona.role:'viewer',name:persona.name,label:persona.scope==='finance'?persona.label:'只读查看',department:'华东业务部',readAll:isSuperAdmin()}
 })
 const partnerActions = createPartnerActions(state, () => partnerSession.value)
 const airMasterSession = computed(() => {
   const persona = WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId) || WORKBENCH_PERSONAS[0]
-  return { role: persona.scope === 'airMaster' ? persona.role : 'viewer', name: persona.name, label: persona.scope === 'airMaster' ? persona.label : '只读查看' }
+  return { role: persona.scope === 'airMaster' ? persona.role : 'viewer', name: persona.name, label: persona.scope === 'airMaster' ? persona.label : '只读查看', readAll: isSuperAdmin() }
 })
 const airCatalog = computed(() => deriveAirCatalog(state.airMaster))
 const airMasterActions = createAirMasterActions(state, () => airMasterSession.value)
@@ -191,12 +191,13 @@ const airSupplierRateActions = createAirSupplierRateActions(state, () => airSess
 const capacitySession = computed(() => {
   const persona = WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId)
   const role = persona?.scope === 'air' && ['operator', 'handler'].includes(persona.role) ? persona.role : persona?.id === 'business' ? 'business' : 'viewer'
-  return { role, name: persona?.name || '', label: persona?.label || '只读查看' }
+  return { role, name: persona?.name || '', label: persona?.label || '只读查看', readAll: isSuperAdmin() }
 })
 const capacityActions = createCapacityActions(state, () => capacitySession.value)
 const palletActions = createAirPalletActions(state, () => capacitySession.value)
 const airOrderActions = createAirOrderActions(state, () => airSession)
 const airChildSession = computed(() => {
+  if (isSuperAdmin()) return { role: 'superAdmin', name: airSession.name, readAll: true }
   if (['service', 'supervisor'].includes(airSession.role)) return airSession
   if (groundSession.role === 'hangsheng') return { role: 'hangsheng', name: groundSession.name }
   return { role: 'viewer', name: airSession.name }
@@ -206,23 +207,23 @@ const airOrderSupplementActions = createAirOrderSupplementActions(state, () => a
 const airServiceActions = createAirServiceActions(state, () => airChildSession.value)
 const bookingSession = computed(() => groundSession.role === 'hangsheng'
   ? { role: 'hangsheng', name: groundSession.name }
-  : { role: airSession.role, name: airSession.name })
+  : { role: airSession.role, name: airSession.name, readAll: isSuperAdmin() })
 const airBookingActions = createAirBookingActions(state, () => bookingSession.value, () => airCatalog.value)
 const airWaybillActions = createAirWaybillActions(state, () => airSession, () => state.airWaybillClockMs)
 const airTemplateSession = computed(() => {
   const persona = WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId)
-  return { role: persona?.scope === 'airTemplate' ? persona.role : 'viewer', name: persona?.name || '' }
+  return { role: persona?.scope === 'airTemplate' ? persona.role : 'viewer', name: persona?.name || '', readAll: isSuperAdmin() }
 })
 const airWaybillTemplateActions = createAirWaybillTemplateActions(state, () => airTemplateSession.value)
 const declarationSession = computed(() => {
   const persona = WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId)
-  return { role: persona?.scope === 'customs' ? persona.role : 'viewer', name: persona?.name || '' }
+  return { role: persona?.scope === 'customs' ? persona.role : 'viewer', name: persona?.name || '', readAll: isSuperAdmin() }
 })
 const airDeclarationActions = createAirDeclarationActions(state, () => declarationSession.value)
 const airDeclarations = computed(() => deriveAirDeclarations(state))
 const clearanceSession = computed(() => {
   const persona = WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId)
-  return { role: persona?.scope === 'clearance' ? persona.role : 'viewer', name: persona?.name || '' }
+  return { role: persona?.scope === 'clearance' ? persona.role : 'viewer', name: persona?.name || '', readAll: isSuperAdmin() }
 })
 const airClearanceActions = createAirClearanceActions(state, () => clearanceSession.value)
 const airClearances = computed(() => deriveAirClearances(state))
@@ -242,12 +243,19 @@ watch(() => WORKBENCH_PERSONAS.map(persona => {
 }, { immediate: true, flush: 'sync' })
 
 export function usePrototypeData() {
+  function loadDemoOverview() {
+    if (!isSuperAdmin()) throw new Error('仅超级管理员可准备全局演示数据')
+    createAirDeclarationActions(state, () => ({ role: 'customsService', name: '报关演示客服' })).loadAirDeclarationExamples()
+    loadTrackingExamples(state, { role: 'service', name: '周倩' })
+    loadGroundExamples(state, { role: 'hangsheng', name: '陈楠', accountId: 'DEMO-hangsheng' })
+  }
   function advanceAirWaybillClock() { state.airWaybillClockMs += 121000 }
   function reset() {
+    resetAccessControl()
     const seed = createSeed()
     for (const key of Object.keys(seed)) state[key] = clone(seed[key])
-    Object.assign(airSession, { role: 'service', name: '周倩' })
-    Object.assign(groundSession, { role: 'viewer', name: '周倩', accountId: 'DEMO-service' })
+    Object.assign(airSession, { role: 'service', name: '周倩', readAll: false })
+    Object.assign(groundSession, { role: 'viewer', name: '周倩', accountId: 'DEMO-service', readAll: false })
     workbenchSession.personaId = 'service'
     state.progressSequence = 0
     state.workbenchProgress = Object.fromEntries(WORKBENCH_PERSONAS.map(persona => [persona.id, {
@@ -259,8 +267,8 @@ export function usePrototypeData() {
     const persona = WORKBENCH_PERSONAS.find(item => item.id === id)
     if (!persona) throw new Error('未找到演示角色')
     workbenchSession.personaId = id
-    Object.assign(airSession, { role: persona.scope === 'air' ? persona.role : 'viewer', name: persona.name })
-    Object.assign(groundSession, { role: persona.scope === 'ground' ? persona.role : 'viewer', name: persona.name, accountId: 'DEMO-' + persona.id })
+    Object.assign(airSession, { role: isSuperAdmin() ? 'superAdmin' : persona.scope === 'air' ? persona.role : 'viewer', name: persona.name, readAll: isSuperAdmin() })
+    Object.assign(groundSession, { role: isSuperAdmin() ? 'superAdmin' : persona.scope === 'ground' ? persona.role : 'viewer', name: persona.name, accountId: 'DEMO-' + persona.id, readAll: isSuperAdmin() })
   }
 
   function createAirOrder(payload) {
@@ -384,6 +392,7 @@ export function usePrototypeData() {
   }
 
   function addGenericRow(moduleKey, label, payload) {
+    if (!canWriteModule(moduleKey)) throw new Error('当前角色未获该业务操作授权')
     const rows = ensureGenericRows(moduleKey, label)
     const row = {
       id: `${moduleKey.toUpperCase()}-${String(rows.length + 1).padStart(3, '0')}`,
@@ -392,6 +401,13 @@ export function usePrototypeData() {
     }
     rows.unshift(row)
     return row
+  }
+
+  function completeGenericRow(moduleKey, id) {
+    if (!canWriteModule(moduleKey)) throw new Error('当前角色未获该业务操作授权')
+    const row = state.genericRows[moduleKey]?.find(item => item.id === id)
+    if (!row) throw new Error('记录不存在')
+    row.status = '已完成'
   }
 
   const dashboard = computed(() => ({
@@ -403,15 +419,23 @@ export function usePrototypeData() {
   }))
 
   return {
-    state, airSession, groundSession, workbenchSession, selectWorkbenchPersona, dashboard, reset, createAirOrder, bookingSession, ...airBookingActions, ...groundOrderActions, ...groundWaybillActions, dispatchGroundOrders, updateGroundWaybillStatus, advanceWarehouseOrder,
-    loadGroundWaybillExamples: () => loadGroundExamples(state, groundSession),
-    ...airOrderSupplementActions, ...airOrderActions, airChildSession, ...airChildOrderActions, ...airServiceActions,
-    ...airWaybillActions, advanceAirWaybillClock,
-    airTemplateSession, ...airWaybillTemplateActions,
-    declarationSession, airDeclarations, ...airDeclarationActions,
-    clearanceSession, airClearances, ...airClearanceActions,
-    loadAirTrackingExamples: () => loadTrackingExamples(state, airSession),
-    addCost, reviewCost, partnerSession, ...partnerActions, airMasterSession, airCatalog, ...airMasterActions,
-    ...fleetActions, ...transportQuoteActions, ...warehouseQuoteActions, ...airSupplierRateActions, capacitySession, ...capacityActions, ...palletActions, ensureGenericRows, addGenericRow,
+    state, airSession, groundSession, workbenchSession, selectWorkbenchPersona, dashboard, reset, loadDemoOverview, bookingSession,
+    ...guardModuleActions('airOrders', { createAirOrder, ...airOrderSupplementActions, ...airOrderActions, ...airServiceActions }),
+    ...guardModuleActions('booking', airBookingActions),
+    ...guardModuleActions('groundDispatch', { ...groundOrderActions, dispatchGroundOrders }),
+    ...guardModuleActions('groundWaybills', { ...groundWaybillActions, updateGroundWaybillStatus }),
+    ...guardModuleActions('warehouseOrders', { advanceWarehouseOrder }),
+    ...guardModuleReads('groundWaybills', { loadGroundWaybillExamples: () => loadGroundExamples(state, groundSession) }),
+    airChildSession, ...guardModuleActions('airChildren', airChildOrderActions),
+    ...guardModuleActions('airwayBills', airWaybillActions), advanceAirWaybillClock,
+    airTemplateSession, ...guardModuleReads('airwayBills', { getAirWaybillTemplateFiles: airWaybillTemplateActions.getAirWaybillTemplateFiles }), ...guardModuleActions('airwayBills', { saveAirWaybillTemplate: airWaybillTemplateActions.saveAirWaybillTemplate }),
+    declarationSession, airDeclarations, ...guardModuleReads('declarations', { loadAirDeclarationExamples: airDeclarationActions.loadAirDeclarationExamples, getAirDeclarationFiles: airDeclarationActions.getAirDeclarationFiles }), ...guardModuleActions('declarations', { notifyAirDeclarationMaterials: airDeclarationActions.notifyAirDeclarationMaterials }),
+    clearanceSession, airClearances, ...guardModuleReads('clearance', { getAirClearanceFiles: airClearanceActions.getAirClearanceFiles }), ...guardModuleActions('clearance', { acceptAirClearance: airClearanceActions.acceptAirClearance }),
+    ...guardModuleReads('tracking', { loadAirTrackingExamples: () => loadTrackingExamples(state, airSession) }),
+    ...guardModuleActions('costs', { addCost, reviewCost }), partnerSession, ...guardModuleActions('partners', partnerActions),
+    airMasterSession, airCatalog, ...guardModuleActions('airMasterData', airMasterActions),
+    ...guardModuleActions('fleet', fleetActions), ...guardModuleActions('customerQuotes', transportQuoteActions),
+    ...guardModuleActions('warehouseQuotes', warehouseQuoteActions), ...guardModuleActions('airSupplierRates', airSupplierRateActions),
+    capacitySession, ...guardModuleActions('airCapacity', capacityActions), ...guardModuleActions('pallet', palletActions), ensureGenericRows, addGenericRow, completeGenericRow,
   }
 }

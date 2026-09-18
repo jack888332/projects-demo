@@ -11,7 +11,7 @@ import { getPalletCandidates, getPalletFlightRows, getPalletAllocatedRows, getPa
 
 const { state, capacitySession, allocateAirOrders, unloadAirAllocations, splitAirAllocation, withdrawAirSplit, saveAirAllocationNote, reallocateAirFlight } = usePrototypeData()
 const session = computed(() => capacitySession.value ?? capacitySession)
-const canRead = computed(() => ['operator', 'handler'].includes(session.value.role))
+const canRead = computed(() => session.value.readAll || ['operator', 'handler'].includes(session.value.role))
 const writeReason = computed(() => getPalletWriteRestriction(session.value))
 const clone = value => JSON.parse(JSON.stringify(value))
 const defaults = () => ({ orderNo: '', waybillNo: '', customer: '', creator: '', foamRatio: '', origin: '', destination: '', owner: '', departureDate: [], createDate: [], flight: '', specialCargo: '', airline: '' })
@@ -23,7 +23,7 @@ const candidateIds = ref([]), allocatedIds = ref([]), flightKey = ref(''), selec
 const busy = ref(false), failure = ref(''), dialog = ref(''), editingId = ref(''), draft = ref({}), initial = ref('')
 const editing = computed(() => state.palletAllocations.find(row => row.id === editingId.value))
 const dirty = computed(() => !!dialog.value && JSON.stringify(draft.value) !== initial.value)
-const ownProducts = computed(() => canRead.value ? state.capacityProducts.filter(row => row[session.value.role] === session.value.name) : [])
+const ownProducts = computed(() => canRead.value ? state.capacityProducts.filter(row => session.value.readAll || row[session.value.role] === session.value.name) : [])
 const airlines = computed(() => state.airMaster.airlines.filter(airline => ownProducts.value.some(product => state.airMaster.flights.some(flight => flight.id === product.flightId && flight.airlineCode === airline.code))))
 const flights = computed(() => state.airMaster.flights.filter(row => airlines.value.some(airline => airline.code === row.airlineCode)))
 const allCandidates = computed(() => canRead.value ? getPalletCandidates(state, session.value) : [])
@@ -164,7 +164,7 @@ watch(() => state.palletAllocations.map(row => row.id), () => { if (editingId.va
         </DataTableFrame>
       </section>
       <section class="pallet-section">
-        <div class="pallet-heading"><h2>目标航班</h2><el-tooltip :content="allocationReason || '将已选订单配至当前航班'"><span><el-button type="primary" :icon="Connection" :disabled="!!allocationReason || busy || !!dialog" @click="allocate">配板</el-button></span></el-tooltip></div>
+        <div class="pallet-heading"><h2>目标航班</h2><el-tooltip :content="allocationReason || '将已选订单配至当前航班'"><span><el-button v-business-write="'pallet'" type="primary" :icon="Connection" :disabled="!!allocationReason || busy || !!dialog" @click="allocate">配板</el-button></span></el-tooltip></div>
         <p v-if="candidateIds.length && allocationReason" class="pallet-reason">{{ allocationReason }}</p>
         <DataTableFrame :key="'flights' + JSON.stringify(applied)" :rows="flightRows" :page-sizes="[10]"><template #default="{rows:pageRows}"><el-table :data="pageRows" row-key="key" highlight-current-row aria-label="目标航班列表" @row-click="selectFlight">
           <el-table-column label="选择" width="62"><template #default="{row}"><el-radio :model-value="flightKey" :value="row.key" :disabled="busy" :aria-label="'选择航班' + row.flight + row.date" @change="selectFlight(row)"><span /></el-radio></template></el-table-column>
@@ -175,14 +175,14 @@ watch(() => state.palletAllocations.map(row => row.id), () => { if (editingId.va
         </el-table></template></DataTableFrame>
       </section>
       <section class="pallet-section">
-        <div class="pallet-heading"><h2>{{ target ? target.flight + ' · ' + target.date + ' 已配板订单' : '已配板订单' }}</h2><div><el-tooltip :content="unloadReason || '卸下选中的已配板记录'"><span><el-button :icon="Download" :disabled="!!unloadReason || busy || !!dialog" @click="confirmAction('unload')">卸下</el-button></span></el-tooltip><el-tooltip :content="reallocateReason || '卸下当前航班全部已配板记录'"><span><el-button :icon="RefreshLeft" :disabled="!!reallocateReason || busy || !!dialog" @click="confirmAction('reallocate')">重配</el-button></span></el-tooltip></div></div>
+        <div class="pallet-heading"><h2>{{ target ? target.flight + ' · ' + target.date + ' 已配板订单' : '已配板订单' }}</h2><div><el-tooltip :content="unloadReason || '卸下选中的已配板记录'"><span><el-button v-business-write="'pallet'" :icon="Download" :disabled="!!unloadReason || busy || !!dialog" @click="confirmAction('unload')">卸下</el-button></span></el-tooltip><el-tooltip :content="reallocateReason || '卸下当前航班全部已配板记录'"><span><el-button v-business-write="'pallet'" :icon="RefreshLeft" :disabled="!!reallocateReason || busy || !!dialog" @click="confirmAction('reallocate')">重配</el-button></span></el-tooltip></div></div>
         <DataTableFrame :key="'allocated' + selectionVersion + flightKey" :rows="allocatedRows" :page-sizes="[10]"><template #default="{rows:pageRows}"><el-table :data="pageRows" row-key="id" aria-label="已配板订单" @selection-change="selectAllocated">
           <el-table-column type="selection" width="42" reserve-selection :selectable="() => !writeReason && !busy" />
           <el-table-column type="expand"><template #default="{row}"><div class="pallet-cargo-details"><el-descriptions :column="1" border><el-descriptions-item v-for="source in sourceLabels" :key="source.key" :label="source.label + '毛重 / 件数 / 体积'">{{ cargoText(row.cargoSources[source.key]) }}</el-descriptions-item><el-descriptions-item v-if="row.dimensions" label="托盘尺寸 (cm)">{{ row.dimensions }}</el-descriptions-item><el-descriptions-item v-if="row.specialCargo" label="特殊物品">{{ row.specialCargo }}</el-descriptions-item><el-descriptions-item label="配板来源">{{ row.cargoSource }}</el-descriptions-item></el-descriptions><p v-if="row.dimensionReason" class="pallet-reason">{{ row.dimensionReason }}</p></div></template></el-table-column>
           <el-table-column label="订单号" min-width="175"><template #default="{row}">{{ row.orderNo }}<el-tag v-if="row.isSplit" size="small" type="warning">分批</el-tag></template></el-table-column><el-table-column prop="waybillNo" label="提单号" min-width="145" /><el-table-column prop="customer" label="客户" min-width="145" />
           <el-table-column v-for="field in cargoFields" :key="field.key" :label="field.label" min-width="110" align="right"><template #default="{row}">{{ numericText(row.cargo?.[field.key]) }}</template></el-table-column>
-          <el-table-column label="备注" min-width="180"><template #default="{row}"><el-button link type="primary" :aria-label="'配板备注' + row.id" @click="open('note',row)">{{ row.remark || '未填写备注' }}</el-button></template></el-table-column>
-          <el-table-column label="操作" width="95" fixed="right"><template #default="{row}"><el-tooltip v-if="row.isSplit" :content="withdrawReason(row) || '取消分批并恢复原配板毛件体'"><span><el-button link type="primary" :disabled="!!withdrawReason(row) || busy" @click="confirmAction('withdraw',row)">撤回</el-button></span></el-tooltip><el-tooltip v-else :content="splitReason(row) || '拆出本订单的一部分毛件体'"><span><el-button link type="primary" :disabled="!!splitReason(row) || busy" @click="open('split',row)">分批</el-button></span></el-tooltip></template></el-table-column>
+          <el-table-column label="备注" min-width="180"><template #default="{row}"><el-button v-business-write="'pallet'" link type="primary" :aria-label="'配板备注' + row.id" @click="open('note',row)">{{ row.remark || '未填写备注' }}</el-button></template></el-table-column>
+          <el-table-column label="操作" width="95" fixed="right"><template #default="{row}"><el-tooltip v-if="row.isSplit" :content="withdrawReason(row) || '取消分批并恢复原配板毛件体'"><span><el-button v-business-write="'pallet'" link type="primary" :disabled="!!withdrawReason(row) || busy" @click="confirmAction('withdraw',row)">撤回</el-button></span></el-tooltip><el-tooltip v-else :content="splitReason(row) || '拆出本订单的一部分毛件体'"><span><el-button v-business-write="'pallet'" link type="primary" :disabled="!!splitReason(row) || busy" @click="open('split',row)">分批</el-button></span></el-tooltip></template></el-table-column>
           <template #empty><el-empty :description="target ? '当前航班尚无已配板订单' : '请选择目标航班'" /></template>
         </el-table></template></DataTableFrame>
       </section>
@@ -192,7 +192,7 @@ watch(() => state.palletAllocations.map(row => row.id), () => { if (editingId.va
         <el-form v-if="dialog === 'split'" label-position="top" @submit.prevent="save"><p>当前配板：{{ cargoText(editing.cargo) }}（kg / 件 / m³）</p><div class="pallet-split-fields"><el-form-item v-for="field in cargoFields" :key="field.key" :label="'拆出' + field.label" required :error="splitErrors[field.key]"><el-input v-model="draft[field.key]" inputmode="decimal" :aria-label="'拆出' + field.name" :disabled="busy" /></el-form-item><el-form-item label="航班号" :error="splitErrors.flight" required><el-select v-model="draft.flight" filterable aria-label="分批航班号" :disabled="busy"><el-option v-for="flight in flights" :key="flight.id" :value="flight.code" /></el-select></el-form-item><el-form-item label="出港日期" required><el-date-picker v-model="draft.date" type="date" value-format="YYYY-MM-DD" aria-label="分批出港日期" :disabled="busy" /></el-form-item></div><el-form-item :error="splitErrors.confirmedInsufficient"><el-checkbox v-model="draft.confirmedInsufficient" :disabled="busy">确认本订单货物一批运不完</el-checkbox></el-form-item><p class="pallet-reason">跨航班或跨日期分批的订舱、提单及舱位联动规则待确认。</p></el-form>
         <el-input v-else v-model="draft.remark" type="textarea" :rows="5" aria-label="配板备注" :readonly="!canEditAirAllocationNote(editing,session)" :disabled="busy" />
       </template>
-      <template #footer><el-button :disabled="busy" @click="close">{{ dialog === 'note' && !canEditAirAllocationNote(editing,session) ? '关闭' : '取消' }}</el-button><el-button v-if="dialog === 'split' || canEditAirAllocationNote(editing,session)" type="primary" :disabled="dialog === 'split' && Object.keys(splitErrors).length > 0" :loading="busy" @click="save">{{ dialog === 'split' ? '提交' : '保存' }}</el-button></template>
+      <template #footer><el-button :disabled="busy" @click="close">{{ dialog === 'note' && !canEditAirAllocationNote(editing,session) ? '关闭' : '取消' }}</el-button><el-button v-business-write="'pallet'" v-if="dialog === 'split' || canEditAirAllocationNote(editing,session)" type="primary" :disabled="dialog === 'split' && Object.keys(splitErrors).length > 0" :loading="busy" @click="save">{{ dialog === 'split' ? '提交' : '保存' }}</el-button></template>
     </el-dialog>
   </div>
 </template>

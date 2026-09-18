@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import { genericModuleKeys, moduleCatalog } from '../domain/catalog.js'
 
 const coreRoutes = [
+  { key: 'permissions', component: () => import('../views/RolePermissionsView.vue') },
   { key: 'dashboard', component: () => import('../views/DashboardView.vue') },
   { key: 'financeWorkspace', component: () => import('../views/DashboardView.vue') },
   { key: 'airOrders', component: () => import('../views/AirOrdersView.vue') },

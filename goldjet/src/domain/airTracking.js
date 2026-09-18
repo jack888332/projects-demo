@@ -23,8 +23,8 @@ export const TRACKING_CONTACT_FIELDS = [
   ['securityPhone', '联系方式（货站安检）'], ['overseas', '海外部'], ['overseasPhone', '联系方式（清关派送）'],
 ]
 
-export const canQueryAirTracking = session => session?.role === 'service' && Boolean(text(session.name))
-export const canViewAirTrackingOrder = (order, session) => canQueryAirTracking(session) && Boolean(order && !order.deleted && order.creator === session.name)
+export const canQueryAirTracking = session => Boolean(session?.readAll || (session?.role === 'service' && text(session.name)))
+export const canViewAirTrackingOrder = (order, session) => canQueryAirTracking(session) && Boolean(order && !order.deleted && (session.readAll || order.creator === session.name))
 
 function validDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
@@ -122,7 +122,7 @@ export function queryAirTracking(state, session, query) {
   const station = flights.length === 1 ? rows(state.airMaster?.stations).find(row => row.id === flights[0].station)?.name || '' : ''
   const linkedGroundIds = new Set(rows(state.groundOrders).filter(row => row.airOrderId === order.id && !row.deleted).map(row => row.id))
   const transports = rows(state.groundWaybills).filter(row => linkedGroundIds.has(row.orderId) && !row.deleted).map(transportView)
-  const children = rows(state.airChildren).filter(child => child.parentId === order.id && child.creator === session.name && !child.deleted)
+  const children = rows(state.airChildren).filter(child => child.parentId === order.id && (session.readAll || child.creator === session.name) && !child.deleted)
   return { kind: 'ready', order: {
     id: order.id, orderNo: order.orderNo, waybillNo: order.waybillNo || '', customer: order.customer || '',
     origin: order.origin || '', destination: order.destination || '', flight: formatTrackingFlight(flight, departureDate), departureDate,

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import { Check, Close, Plus } from '@element-plus/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import FilterBar from '../components/FilterBar.vue'
@@ -30,7 +31,7 @@ function resetFilters() { keyword.value = ''; status.value = '' }
 <template>
   <div class="module-view">
     <PageHeader title="订单成本" description="业务订单的应收、应付费用维护与审批">
-      <template #actions><el-button type="primary" :icon="Plus" @click="createVisible = true">新增费用</el-button></template>
+      <template #actions><el-button v-business-write="'costs'" type="primary" :icon="Plus" @click="createVisible = true">新增费用</el-button></template>
     </PageHeader>
     <div class="inline-metrics"><div><span>应收合计</span><strong>¥ {{ totals.receivable.toLocaleString() }}</strong></div><div><span>应付合计</span><strong>¥ {{ totals.payable.toLocaleString() }}</strong></div><div><span>预计毛利</span><strong>¥ {{ (totals.receivable - totals.payable).toLocaleString() }}</strong></div></div>
     <FilterBar v-model="keyword" placeholder="订单号、费用项目或结算单位" @reset="resetFilters">
@@ -48,7 +49,7 @@ function resetFilters() { keyword.value = ''; status.value = '' }
           <el-table-column prop="applicant" label="申请人" width="86" />
           <el-table-column prop="rejectReason" label="拒绝原因" min-width="140"><template #default="{ row }">{{ row.rejectReason || '—' }}</template></el-table-column>
           <el-table-column prop="updatedAt" label="更新时间" width="145" />
-          <el-table-column label="审批操作" width="142" fixed="right"><template #default="{ row }"><template v-if="row.status === '待审批'"><el-button link type="success" :icon="Check" @click="approve(row)">通过</el-button><el-button link type="danger" :icon="Close" @click="openReject(row)">拒绝</el-button></template><span v-else>已处理</span></template></el-table-column>
+          <el-table-column label="审批操作" width="142" fixed="right"><template #default="{ row }"><template v-if="row.status === '待审批'"><el-button v-business-write="'costs'" link type="success" :icon="Check" @click="approve(row)">通过</el-button><el-button v-business-write="'costs'" link type="danger" :icon="Close" @click="openReject(row)">拒绝</el-button></template><span v-else>已处理</span></template></el-table-column>
         </el-table>
       </template>
     </DataTableFrame>
@@ -62,8 +63,8 @@ function resetFilters() { keyword.value = ''; status.value = '' }
         <el-form-item label="币种"><el-select v-model="form.currency"><el-option v-for="value in ['CNY', 'USD', 'EUR']" :key="value" :value="value" /></el-select></el-form-item>
         <el-form-item label="金额"><el-input-number v-model="form.amount" :min="0" :precision="2" controls-position="right" /></el-form-item>
       </el-form>
-      <template #footer><el-button @click="createVisible = false">取消</el-button><el-button type="primary" @click="submitCost">保存并提交审批</el-button></template>
+      <template #footer><el-button @click="createVisible = false">取消</el-button><el-button v-business-write="'costs'" type="primary" @click="submitCost">保存并提交审批</el-button></template>
     </el-dialog>
-    <el-dialog v-model="rejectVisible" title="拒绝费用审批" width="520" align-center><el-input v-model="rejectReason" type="textarea" :rows="4" maxlength="100" show-word-limit placeholder="说明申请人需要补充或修正的内容" /><template #footer><el-button @click="rejectVisible = false">取消</el-button><el-button type="danger" @click="confirmReject">确认拒绝</el-button></template></el-dialog>
+    <el-dialog v-model="rejectVisible" title="拒绝费用审批" width="520" align-center><el-input v-model="rejectReason" type="textarea" :rows="4" maxlength="100" show-word-limit placeholder="说明申请人需要补充或修正的内容" /><template #footer><el-button @click="rejectVisible = false">取消</el-button><el-button v-business-write="'costs'" type="danger" @click="confirmReject">确认拒绝</el-button></template></el-dialog>
   </div>
 </template>

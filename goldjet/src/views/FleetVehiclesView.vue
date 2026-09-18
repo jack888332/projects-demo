@@ -59,7 +59,7 @@ watch(selected, vehicle => { if (!vehicle) detail.value = false })
 </script>
 <template>
   <div class="module-view vehicle-view">
-    <PageHeader title="车辆管理" :description="`航晟物流 · ${groundSession.name}`"><template #actions><el-button type="primary" :icon="Plus" :disabled="!canEdit" @click="openForm()">新增车辆</el-button></template></PageHeader>
+    <PageHeader title="车辆管理" :description="`航晟物流 · ${groundSession.name}`"><template #actions><el-button v-business-write="'fleet'" type="primary" :icon="Plus" :disabled="!canEdit" @click="openForm()">新增车辆</el-button></template></PageHeader>
     <form class="vehicle-filters" aria-label="车辆筛选" @submit.prevent="query">
       <label>车牌号或分配司机<el-input v-model="filters.keyword" aria-label="车牌号或分配司机" clearable /></label>
       <label>车型<el-select v-model="filters.model" aria-label="筛选车型" clearable placeholder="全部"><el-option v-for="value in VEHICLE_MODELS" :key="value" :value="value" /></el-select></label>
@@ -75,7 +75,7 @@ watch(selected, vehicle => { if (!vehicle) detail.value = false })
       <el-table-column label="司机" width="180"><template #default="{ row }">{{ vehicleDrivers(row, state).map(driver => driver.name).join('、') || '未分配' }}</template></el-table-column>
       <el-table-column label="预计年审时间" width="225"><template #default="{ row }">{{ vehicleExpiryLabel(row.inspectionDate) }}</template></el-table-column>
       <el-table-column label="当前位置" width="140"><template #default>定位来源待确认</template></el-table-column>
-      <el-table-column label="操作" width="135" fixed="right"><template #default="{ row }"><el-button link type="primary" :aria-label="`查看${row.plate}`" @click="openDetail(row)">查看</el-button><el-button link type="primary" :disabled="!canEdit" :aria-label="`修改${row.plate}`" @click="openForm(row)">修改</el-button></template></el-table-column>
+      <el-table-column label="操作" width="135" fixed="right"><template #default="{ row }"><el-button link type="primary" :aria-label="`查看${row.plate}`" @click="openDetail(row)">查看</el-button><el-button v-business-write="'fleet'" link type="primary" :disabled="!canEdit" :aria-label="`修改${row.plate}`" @click="openForm(row)">修改</el-button></template></el-table-column>
     </el-table></template></DataTableFrame>
     <el-dialog :model-value="editor" :title="editingId ? '修改车辆' : '新增车辆'" width="min(900px, 95vw)" align-center :close-on-click-modal="false" :before-close="closeEditor" destroy-on-close>
       <el-form label-position="top" class="vehicle-form" @submit.prevent="submit">
@@ -93,7 +93,7 @@ watch(selected, vehicle => { if (!vehicle) detail.value = false })
         </div></section>
         <el-form-item label="备注"><el-input v-model="form.remark" aria-label="备注" type="textarea" :rows="2" /></el-form-item>
       </el-form>
-      <template #footer><div class="vehicle-footer"><span role="status">{{ uploading ? '正在读取图片' : Object.values(errors)[0] || '' }}</span><div><el-button :disabled="busy || uploading" @click="closeEditor">取消</el-button><el-button type="primary" :loading="busy" :disabled="!canEdit || uploading || Object.keys(errors).length > 0" @click="submit">提交</el-button></div></div></template>
+      <template #footer><div class="vehicle-footer"><span role="status">{{ uploading ? '正在读取图片' : Object.values(errors)[0] || '' }}</span><div><el-button :disabled="busy || uploading" @click="closeEditor">取消</el-button><el-button v-business-write="'fleet'" type="primary" :loading="busy" :disabled="!canEdit || uploading || Object.keys(errors).length > 0" @click="submit">提交</el-button></div></div></template>
     </el-dialog>
     <el-drawer v-model="detail" title="车辆详情" size="min(1040px, 95vw)">
       <template v-if="selected">
@@ -110,7 +110,7 @@ watch(selected, vehicle => { if (!vehicle) detail.value = false })
             <el-table-column v-if="taskTab === 'history'" label="运单完成时间" width="180"><template #default="{ row }">{{ row.completedAt || '未记录' }}</template></el-table-column>
             <el-table-column v-if="taskTab === 'history'" label="运单应收" width="140"><template #default>口径待确认</template></el-table-column>
           </el-table></template></DataTableFrame>
-          <el-empty v-else-if="!canViewFleetRecords(groundSession.role, taskTab)" description="仅航晟主管可查询该台账" />
+          <el-empty v-else-if="!groundSession.readAll && !canViewFleetRecords(groundSession.role, taskTab)" description="仅航晟主管可查询该台账" />
           <el-empty v-else-if="taskTab === 'fuel'" description="月度油耗汇总口径待确认（150），尚未生成报表" />
           <FleetRecordTable v-else :key="taskTab" :kind="taskTab" :rows="fleetRecordRows(taskTab, state, { vehicleId: selected.id })" :page-size="5" />
         </section>

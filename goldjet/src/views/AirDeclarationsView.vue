@@ -12,7 +12,7 @@ import { AIR_DECLARATION_STATUS_BLOCK_REASON, DECLARATION_STATUSES, canManageAir
 
 const route = useRoute(), router = useRouter()
 const { state, declarationSession, loadAirDeclarationExamples } = usePrototypeData()
-const allowed = computed(() => canManageAirDeclarations(unref(declarationSession)))
+const allowed = computed(() => unref(declarationSession).readAll || canManageAirDeclarations(unref(declarationSession)))
 const allRows = computed(() => deriveAirDeclarations(state))
 const emptyFilters = () => ({ serviceNo: '', waybillNo: '', customer: '', origin: '', destination: '', departure: [], created: [], status: '' })
 const filters = reactive(emptyFilters()), applied = ref(emptyFilters()), queryVersion = ref(0)
@@ -89,7 +89,7 @@ watch(() => [state.airOrders, state.airChildren, unref(declarationSession).role,
       <div class="declaration-actions"><el-button type="primary" native-type="submit" :icon="Search">查询</el-button><el-button :icon="Refresh" @click="resetQuery">重置</el-button></div>
     </form>
     <DataTableFrame :key="queryVersion" :rows="rows" :page-size="10" :page-sizes="[10, 20, 50]" selectable :selected-count="selected.length">
-      <template #actions><div class="declaration-actions"><el-button v-if="selected.length" link @click="selected = []">清除选择</el-button><el-button :disabled="!allowed || !hasSelectedMaterials" @click="openMaterials(selected)">批量下载材料</el-button><el-button type="primary" :disabled="!allowed || !hasSelectedMaterials || Boolean(selectedNotifyReason)" :title="selectedNotifyReason" @click="openMaterials(selected, 'notify')">批量补齐通知</el-button></div></template>
+      <template #actions><div class="declaration-actions"><el-button v-if="selected.length" link @click="selected = []">清除选择</el-button><el-button :disabled="!allowed || !hasSelectedMaterials" @click="openMaterials(selected)">批量下载材料</el-button><el-button v-business-write="'declarations'" type="primary" :disabled="!allowed || !hasSelectedMaterials || Boolean(selectedNotifyReason)" :title="selectedNotifyReason" @click="openMaterials(selected, 'notify')">批量补齐通知</el-button></div></template>
       <template #default="{ rows: pageRows }">
         <el-table :data="pageRows" row-key="id" aria-label="报关单列表" empty-text="暂无符合条件的报关服务；可载入已收指令示例演示。">
           <el-table-column width="48"><template #header><el-checkbox :disabled="!allowed || !pageRows.length" :model-value="pageSelected(pageRows)" :indeterminate="pagePartSelected(pageRows)" aria-label="选择本页报关服务" @change="value => togglePage(pageRows, value)" /></template><template #default="{ row }"><el-checkbox :disabled="!allowed" :model-value="selected.includes(row.id)" :aria-label="`选择报关服务${row.id}`" @change="value => toggle(row.id, value)" /></template></el-table-column>
@@ -102,7 +102,7 @@ watch(() => [state.airOrders, state.airChildren, unref(declarationSession).role,
           <el-table-column label="报关状态" width="115"><template #default="{ row }"><StatusTag :label="row.customsStatus" /></template></el-table-column>
           <el-table-column label="已上传材料" width="110"><template #default="{ row }">{{ row.materials.length }} 份</template></el-table-column>
           <el-table-column prop="creator" label="建单客服" width="100" /><el-table-column prop="createdAt" label="创建时间" min-width="175" />
-          <el-table-column label="操作" fixed="right" width="180"><template #default="{ row }"><el-button link type="primary" @click="openMaterials([row.id])">查看材料</el-button><el-button link type="primary" :disabled="!allowed || !row.materials.length || Boolean(row.notifyBlockReason)" :title="row.notifyBlockReason" @click="openMaterials([row.id], 'notify')">补齐通知</el-button></template></el-table-column>
+          <el-table-column label="操作" fixed="right" width="180"><template #default="{ row }"><el-button link type="primary" @click="openMaterials([row.id])">查看材料</el-button><el-button v-business-write="'declarations'" link type="primary" :disabled="!allowed || !row.materials.length || Boolean(row.notifyBlockReason)" :title="row.notifyBlockReason" @click="openMaterials([row.id], 'notify')">补齐通知</el-button></template></el-table-column>
         </el-table>
       </template>
     </DataTableFrame>

@@ -83,7 +83,7 @@ watch(selected, row => { if (!row) detailVisible.value = false })
 
 <template>
   <div class="module-view fleet-view">
-    <PageHeader title="司机管理" :description="`航晟物流 · ${groundSession.name}`"><template #actions><el-button type="primary" :icon="Plus" :disabled="!canEdit" @click="openForm()">新增司机</el-button></template></PageHeader>
+    <PageHeader title="司机管理" :description="`航晟物流 · ${groundSession.name}`"><template #actions><el-button v-business-write="'fleet'" type="primary" :icon="Plus" :disabled="!canEdit" @click="openForm()">新增司机</el-button></template></PageHeader>
     <p v-if="!canEdit" class="permission-note">当前角色无司机资料维护权限。</p>
     <form class="fleet-filters" aria-label="司机筛选" @submit.prevent="query">
       <label>姓名或手机号<el-input v-model="filters.keyword" aria-label="姓名或手机号" clearable placeholder="精准查询" /></label>
@@ -105,7 +105,7 @@ watch(selected, row => { if (!row) detailVisible.value = false })
         <el-table-column label="从业资格证号" width="150"><template #default="{ row }">{{ display(row.qualificationNo) }}</template></el-table-column>
         <el-table-column label="从业类别" width="120"><template #default="{ row }">{{ display(row.employmentType) }}</template></el-table-column>
         <el-table-column label="资格证有效期" width="220"><template #default="{ row }">{{ expiryText(row.qualificationExpiry) }}</template></el-table-column>
-        <el-table-column label="操作" width="135" fixed="right"><template #default="{ row }"><el-button link type="primary" :aria-label="`查看${row.name}`" @click="openDetail(row)">查看</el-button><el-button link type="primary" :disabled="!canEdit" :aria-label="`修改${row.name}`" @click="openForm(row)">修改</el-button></template></el-table-column>
+        <el-table-column label="操作" width="135" fixed="right"><template #default="{ row }"><el-button link type="primary" :aria-label="`查看${row.name}`" @click="openDetail(row)">查看</el-button><el-button v-business-write="'fleet'" link type="primary" :disabled="!canEdit" :aria-label="`修改${row.name}`" @click="openForm(row)">修改</el-button></template></el-table-column>
       </el-table>
     </template></DataTableFrame>
     <el-dialog :model-value="dialogVisible" :title="editingId ? '修改司机' : '新增司机'" width="min(860px, 95vw)" align-center :close-on-click-modal="false" :before-close="closeForm" destroy-on-close>
@@ -133,7 +133,7 @@ watch(selected, row => { if (!row) detailVisible.value = false })
           <el-form-item v-if="editingId" label="司机状态"><el-select v-model="form.status" aria-label="司机状态"><el-option v-for="value in DRIVER_STATUSES" :key="value" :value="value" /></el-select></el-form-item>
         </div><el-form-item label="备注"><el-input v-model="form.remark" aria-label="备注" type="textarea" :rows="2" /></el-form-item></section>
       </el-form>
-      <template #footer><div class="fleet-footer"><span role="status">{{ uploading ? '正在读取图片' : Object.values(errors)[0] || '' }}</span><div><el-button :disabled="busy || uploading" @click="closeForm">取消</el-button><el-button type="primary" :loading="busy" :disabled="!canEdit || uploading || Object.keys(errors).length > 0" @click="submit">提交</el-button></div></div></template>
+      <template #footer><div class="fleet-footer"><span role="status">{{ uploading ? '正在读取图片' : Object.values(errors)[0] || '' }}</span><div><el-button :disabled="busy || uploading" @click="closeForm">取消</el-button><el-button v-business-write="'fleet'" type="primary" :loading="busy" :disabled="!canEdit || uploading || Object.keys(errors).length > 0" @click="submit">提交</el-button></div></div></template>
     </el-dialog>
     <el-drawer v-model="detailVisible" title="司机详情" size="min(1040px, 95vw)">
       <template v-if="selected">

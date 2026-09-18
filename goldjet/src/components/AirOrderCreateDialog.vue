@@ -168,7 +168,7 @@ async function submit(finalize = true) {
       <el-table v-if="isChild && order?.serviceRecords?.length" :data="order.serviceRecords" aria-label="子订单服务单据"><el-table-column prop="id" label="服务单号" min-width="200" /><el-table-column prop="name" label="服务" width="100" /><el-table-column prop="status" label="状态" min-width="120" /></el-table>
       <p v-if="Object.keys(errors).length" class="air-form-error" role="status">请完成标红的必填项或修正输入后提交。</p>
     </el-form>
-    <template #footer><el-button :disabled="busy" @click="close">{{ readOnly ? '关闭' : '取消' }}</el-button><template v-if="!readOnly"><el-button v-if="isChild" :type="priceOnly ? 'primary' : 'default'" :loading="busy" :disabled="Boolean(restriction) || Object.keys(errors).length > 0" @click="submit(false)">{{ priceOnly ? '保存报价' : '暂存' }}</el-button><el-button v-if="!priceOnly" type="primary" :loading="busy" :disabled="Boolean(restriction) || Object.keys(errors).length > 0" @click="submit(true)">提交</el-button></template></template>
+    <template #footer><el-button :disabled="busy" @click="close">{{ readOnly ? '关闭' : '取消' }}</el-button><template v-if="!readOnly"><el-button v-business-write="'airOrders'" v-if="isChild" :type="priceOnly ? 'primary' : 'default'" :loading="busy" :disabled="Boolean(restriction) || Object.keys(errors).length > 0" @click="submit(false)">{{ priceOnly ? '保存报价' : '暂存' }}</el-button><el-button v-business-write="'airOrders'" v-if="!priceOnly" type="primary" :loading="busy" :disabled="Boolean(restriction) || Object.keys(errors).length > 0" @click="submit(true)">提交</el-button></template></template>
   </el-dialog>
 </template>
 

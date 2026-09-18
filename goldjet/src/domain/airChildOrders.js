@@ -38,6 +38,7 @@ export function validateAirChildDraft(draft, partners, catalog) {
 }
 
 export function getAirChildRestriction(order, session = {}, action = 'edit') {
+  if (session.readAll && action === 'detail') return order?.deleted ? '子订单已删除' : ''
   if (!['service', 'supervisor', 'hangsheng'].includes(session.role)) return '仅空运客服、客服主管或航晟客服可处理子订单'
   if (!order) return ''
   if (order.deleted || order.orderStatus === '已取消') return '子订单已删除或取消'

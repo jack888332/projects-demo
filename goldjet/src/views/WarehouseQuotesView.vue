@@ -168,7 +168,7 @@ async function remove(row) {
 <template>
   <div class="module-view warehouse-quotes-view">
     <PageHeader title="仓库报价" :description="'当前角色：' + (permission.create ? '航晟' + (groundSession.role === 'supervisor' ? '主管' : '客服') : '只读查看') + ' · ' + groundSession.name">
-      <template #actions><el-button type="primary" :icon="Plus" :disabled="!permission.create || busy" @click="open('create')">新建报价</el-button></template>
+      <template #actions><el-button v-business-write="'warehouseQuotes'" type="primary" :icon="Plus" :disabled="!permission.create || busy" @click="open('create')">新建报价</el-button></template>
     </PageHeader>
     <el-alert v-if="permission.reason" :title="permission.reason" type="info" :closable="false" show-icon class="quote-notice" />
     <section v-if="editing" ref="editor" class="quote-editor" :aria-label="mode === 'create' ? '新增仓库报价' : '修改仓库报价'">
@@ -200,9 +200,9 @@ async function remove(row) {
           <el-table-column label="状态" width="115"><template #default="{ row }"><el-tag :type="status(row) === '生效' ? 'success' : status(row) === '待生效' ? 'warning' : 'info'">{{ status(row) }}</el-tag></template></el-table-column>
           <el-table-column v-for="field in columns" :key="field.key" :label="field.label" :min-width="field.key === 'partnerId' ? 190 : field.key === 'remark' ? 220 : 125" :align="['amount', 'taxRate'].includes(field.key) ? 'right' : 'left'"><template #default="{ row }">{{ display(row, field) }}</template></el-table-column>
           <el-table-column label="操作" width="180" fixed="right" class-name="quote-actions"><template #default="{ row }">
-            <el-button link type="primary" :disabled="!permission.edit || busy" :aria-label="'修改' + row.id" @click="open('edit', row)">修改</el-button>
-            <el-tooltip :content="permission.reason || actionFor(row).reason" :disabled="permission.toggle && actionFor(row).allowed"><span><el-button link type="primary" :disabled="!permission.toggle || !actionFor(row).allowed || busy" :aria-label="actionFor(row).label + row.id" @click="toggle(row)">{{ actionFor(row).label }}</el-button></span></el-tooltip>
-            <el-button link type="danger" :disabled="!permission.delete || busy" :aria-label="'删除' + row.id" @click="remove(row)">删除</el-button>
+            <el-button v-business-write="'warehouseQuotes'" link type="primary" :disabled="!permission.edit || busy" :aria-label="'修改' + row.id" @click="open('edit', row)">修改</el-button>
+            <el-tooltip :content="permission.reason || actionFor(row).reason" :disabled="permission.toggle && actionFor(row).allowed"><span><el-button v-business-write="'warehouseQuotes'" link type="primary" :disabled="!permission.toggle || !actionFor(row).allowed || busy" :aria-label="actionFor(row).label + row.id" @click="toggle(row)">{{ actionFor(row).label }}</el-button></span></el-tooltip>
+            <el-button v-business-write="'warehouseQuotes'" link type="danger" :disabled="!permission.delete || busy" :aria-label="'删除' + row.id" @click="remove(row)">删除</el-button>
           </template></el-table-column>
           <template #empty><el-empty :description="applied.partnerId || applied.subject ? '没有匹配报价，请调整查询条件' : '暂无仓库报价'" /></template>
         </el-table>

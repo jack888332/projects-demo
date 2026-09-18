@@ -7,6 +7,8 @@ import * as workbench from '../src/domain/workbenchTasks.js'
 import * as supplement from '../src/domain/airOrderSupplement.js'
 import * as serviceEditing from '../src/domain/airServiceEditing.js'
 import * as declarations from '../src/domain/airDeclarations.js'
+import * as accessControl from '../src/data/accessControl.js'
+import * as catalog from '../src/domain/catalog.js'
 
 const data = usePrototypeData()
 const route = vue.reactive({ path: '/dashboard', params: {}, query: {} })
@@ -31,6 +33,8 @@ function loadPage(relativePath) {
     '../domain/airOrderSupplement.js': supplement,
     '../domain/airServiceEditing.js': serviceEditing,
     '../domain/airDeclarations.js': declarations,
+    '../data/accessControl.js': accessControl,
+    '../domain/catalog.js': catalog,
   }
   const imported = { defineProps: () => context.props, defineEmits: () => context.emit }
   let body = parsed.descriptor.scriptSetup.content
@@ -78,7 +82,7 @@ afterEach(() => scopes.splice(0).forEach(scope => scope.stop()))
 describe('GJ-012 报关材料通知与客服工作台来源页', () => {
   it('报关角色独立隔离，快捷入口指向实际报关页', () => {
     data.selectWorkbenchPersona('customsService')
-    expect(data.declarationSession.value).toEqual({ role: 'customsService', name: '报关演示客服' })
+    expect(data.declarationSession.value).toEqual({ role: 'customsService', name: '报关演示客服', readAll: false })
     expect(data.airChildSession.value.role).toBe('viewer')
     expect(workbench.getWorkbenchQuickLinks('customsService')).toEqual([expect.objectContaining({ target: { path: '/fulfillment/declarations' }, disabled: false })])
     data.selectWorkbenchPersona('service')

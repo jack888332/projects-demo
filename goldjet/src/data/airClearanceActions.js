@@ -20,7 +20,7 @@ export function createAirClearanceActions(state, getSession, getNow = clearanceO
     return acceptance
   }
   function getAirClearanceFiles(targets) {
-    authorize()
+    if (!getSession().readAll) authorize()
     if (!Array.isArray(targets) || !targets.length) throw new Error('请选择要下载的材料')
     const seen = new Set(), rows = deriveAirClearances(state)
     return targets.map(target => {

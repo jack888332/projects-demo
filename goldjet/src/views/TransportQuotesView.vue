@@ -144,7 +144,7 @@ watch(() => state.transportQuotes.map(row => row.id), ids => {
   <div class="module-view transport-quotes-view">
     <PageHeader title="客户供应商报价" :description="groundSession.name"><template #actions>
       <el-tooltip content="Excel 模板与重复范围待确认"><span><el-button :icon="Upload" disabled>上传报价</el-button></span></el-tooltip>
-      <el-button type="primary" :icon="Plus" :disabled="!canEdit || busy" @click="open('create')">新增报价</el-button>
+      <el-button v-business-write="'customerQuotes'" type="primary" :icon="Plus" :disabled="!canEdit || busy" @click="open('create')">新增报价</el-button>
     </template></PageHeader>
     <el-tabs :model-value="kind" @tab-change="value => router.push({ path: route.path, query: { tab: value } })"><el-tab-pane name="supplier" label="供应商运输报价" /><el-tab-pane name="customer" label="客户收费报价" /></el-tabs>
     <p v-if="!canEdit" class="quote-note">当前角色只读</p>
@@ -158,7 +158,7 @@ watch(() => state.transportQuotes.map(row => row.id), ids => {
       <div class="filter-actions"><el-button type="primary" :icon="Search" native-type="submit">查询</el-button><el-button :icon="Refresh" @click="resetQuery">重置</el-button></div>
     </form>
     <DataTableFrame :key="kind + JSON.stringify(applied)" :rows="rows" :selected-count="selectedIds.length" selectable>
-      <template #actions><el-button :icon="Delete" type="danger" plain :disabled="!canEdit || busy || !selectedIds.length" @click="remove(selectedIds)">批量删除</el-button></template>
+      <template #actions><el-button v-business-write="'customerQuotes'" :icon="Delete" type="danger" plain :disabled="!canEdit || busy || !selectedIds.length" @click="remove(selectedIds)">批量删除</el-button></template>
       <template #default="{ rows: pageRows }"><el-table ref="table" :data="pageRows" row-key="id" aria-label="运输报价列表" @selection-change="values => selectedIds = values.map(row => row.id)">
         <el-table-column type="selection" width="46" reserve-selection />
         <el-table-column label="报价ID" width="200" fixed="left"><template #default="{ row }"><el-button link type="primary" @click="open('detail', row)">{{ row.id }}</el-button></template></el-table-column>
@@ -166,7 +166,7 @@ watch(() => state.transportQuotes.map(row => row.id), ids => {
         <el-table-column v-for="point in [{ key: 'pickup', label: '提货点' }, { key: 'delivery', label: '卸货点' }]" :key="point.key" :label="point.label" width="260"><template #default="{ row }">{{ address(row[point.key]) }}</template></el-table-column>
         <el-table-column v-for="[key, label] in listFields" :key="key" :label="label" :width="['remark', 'updatedAt'].includes(key) ? 190 : 140"><template #default="{ row }">{{ displayField(row, key) }}</template></el-table-column>
         <el-table-column label="状态" width="135"><template #default="{ row }"><StatusTag :label="getTransportQuoteStatus(row)" /></template></el-table-column>
-        <el-table-column label="操作" fixed="right" width="165"><template #default="{ row }"><el-button link type="primary" :aria-label="'查看' + row.id" @click="open('detail', row)">查看</el-button><el-button link type="primary" :aria-label="'修改' + row.id" :disabled="!canEdit || busy" @click="open('edit', row)">修改</el-button><el-button link type="danger" :aria-label="'删除' + row.id" :disabled="!canEdit || busy" @click="remove([row.id])">删除</el-button></template></el-table-column>
+        <el-table-column label="操作" fixed="right" width="165"><template #default="{ row }"><el-button link type="primary" :aria-label="'查看' + row.id" @click="open('detail', row)">查看</el-button><el-button v-business-write="'customerQuotes'" link type="primary" :aria-label="'修改' + row.id" :disabled="!canEdit || busy" @click="open('edit', row)">修改</el-button><el-button v-business-write="'customerQuotes'" link type="danger" :aria-label="'删除' + row.id" :disabled="!canEdit || busy" @click="remove([row.id])">删除</el-button></template></el-table-column>
       </el-table></template>
     </DataTableFrame>
     <el-dialog :model-value="!!mode" :title="(readonly ? '查看' : mode === 'create' ? '新增' : '修改') + (kind === 'supplier' ? '供应商报价' : '客户报价')" :width="readonly ? 'min(860px, 96vw)' : 'min(1180px, 96vw)'" align-center :close-on-click-modal="false" :before-close="close" destroy-on-close>
@@ -208,7 +208,7 @@ watch(() => state.transportQuotes.map(row => row.id), ids => {
           </el-form>
         </div>
       </div>
-      <template #footer><div class="quote-footer"><span role="status">{{ !readonly && rowErrors.length ? `${rowErrors.length} 行待完善：第 ${rowErrors[0].index + 1} 行，${Object.values(rowErrors[0].fields)[0]}` : '' }}</span><div><el-button :disabled="busy" @click="close">{{ readonly ? '关闭' : '取消' }}</el-button><el-button v-if="!readonly" type="primary" :loading="busy" :disabled="!canEdit || !draftRows.length || !!rowErrors.length" @click="submit">{{ mode === 'create' ? '提交' : '保存' }}</el-button></div></div></template>
+      <template #footer><div class="quote-footer"><span role="status">{{ !readonly && rowErrors.length ? `${rowErrors.length} 行待完善：第 ${rowErrors[0].index + 1} 行，${Object.values(rowErrors[0].fields)[0]}` : '' }}</span><div><el-button :disabled="busy" @click="close">{{ readonly ? '关闭' : '取消' }}</el-button><el-button v-business-write="'customerQuotes'" v-if="!readonly" type="primary" :loading="busy" :disabled="!canEdit || !draftRows.length || !!rowErrors.length" @click="submit">{{ mode === 'create' ? '提交' : '保存' }}</el-button></div></div></template>
     </el-dialog>
   </div>
 </template>

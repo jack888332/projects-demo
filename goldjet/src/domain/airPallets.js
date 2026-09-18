@@ -16,7 +16,7 @@ export function getPalletWriteRestriction(session = {}) {
 }
 
 function ownsProduct(product, session) {
-  return ['operator', 'handler'].includes(session.role) && product[session.role] === session.name
+  return session.readAll || (['operator', 'handler'].includes(session.role) && product[session.role] === session.name)
 }
 
 function matchingProducts(state, session, flight, date) {
@@ -67,8 +67,8 @@ export function getPalletOrderRestriction(order) {
 }
 
 export function getPalletCandidates(state = {}, session = {}) {
-  return (state.airOrders || []).filter(order => mainOrder(order) && ['operator', 'handler'].includes(session.role)
-    && (ownedOrder(state, session, order) || order.assignees?.[session.role] === session.name)
+  return (state.airOrders || []).filter(order => mainOrder(order) && (session.readAll || ['operator', 'handler'].includes(session.role))
+    && (session.readAll || ownedOrder(state, session, order) || order.assignees?.[session.role] === session.name)
     && !(state.palletAllocations || []).some(row => row.orderId === order.id)).map(order => {
     const cargo = getPalletOrderCargo(order, state), reason = getPalletOrderRestriction(order) || cargo.reason
       || (!ownedOrder(state, session, order) ? '当前出港日期未维护本人绑定的舱位产品' : '')

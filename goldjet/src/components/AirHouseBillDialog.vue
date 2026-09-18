@@ -118,7 +118,7 @@ function save() {
         <el-form-item label="唛头" :error="errors.marks"><el-input v-model="draft.marks" maxlength="256" aria-label="分单唛头" /></el-form-item>
         <el-form-item label="海关申报价值" :error="errors.customsDeclaredValue"><el-input v-model="draft.customsDeclaredValue" aria-label="分单海关申报价值" /></el-form-item>
         <el-form-item v-for="item in [{ key: 'shipper', label: '发货人' }, { key: 'consignee', label: '收货人' }]" :key="item.key" :label="item.label" required :error="errors[item.key]" class="house-wide">
-          <div class="party-field"><el-input :model-value="draft[item.key]" readonly type="textarea" :rows="2" :aria-label="`分单${item.label}`" /><el-button :icon="EditPen" :aria-label="`编辑分单${item.label}`" @click="openParty(item.key)">编辑</el-button></div>
+          <div class="party-field"><el-input :model-value="draft[item.key]" readonly type="textarea" :rows="2" :aria-label="`分单${item.label}`" /><el-button v-business-write="'airOrders'" :icon="EditPen" :aria-label="`编辑分单${item.label}`" @click="openParty(item.key)">编辑</el-button></div>
         </el-form-item>
       </div>
       <h3>预计货物</h3>
@@ -139,10 +139,10 @@ function save() {
       <div v-if="Object.keys(errors).length" class="form-errors" role="status"><span v-for="(error, key) in errors" :key="key">{{ error }}</span></div>
     </el-form>
     <section v-if="child?.serviceRecords?.length" class="house-services" aria-label="分单已生成服务"><h3>已生成服务</h3><el-table :data="child.serviceRecords" aria-label="分单服务单据"><el-table-column prop="id" label="服务单号" min-width="180" /><el-table-column prop="name" label="服务" min-width="100" /><el-table-column label="状态" min-width="120"><template #default="{ row }"><StatusTag :label="row.status" /></template></el-table-column><el-table-column label="操作" min-width="250"><template #default="{ row }"><el-button v-if="row.status === '待服务'" link type="primary" :disabled="Boolean(serviceRestriction(row))" @click="openService(row)">修改</el-button><span v-if="serviceRestriction(row)" class="field-note">{{ serviceRestriction(row) }}</span><span v-if="row.resendCount" class="field-note">已修改 {{ row.resendCount }} 次</span></template></el-table-column></el-table></section>
-    <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button v-if="!restriction" type="primary" :loading="busy" :disabled="Object.keys(errors).length > 0" @click="save">保存分单</el-button></template>
+    <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button v-business-write="'airOrders'" v-if="!restriction" type="primary" :loading="busy" :disabled="Object.keys(errors).length > 0" @click="save">保存分单</el-button></template>
     <el-dialog :model-value="Boolean(party)" :title="party === 'shipper' ? '编辑分单发货人' : '编辑分单收货人'" width="min(580px, 94vw)" align-center append-to-body :close-on-click-modal="false" :before-close="closeParty">
       <el-form label-position="top"><el-form-item :label="party === 'shipper' ? '发货人' : '收货人'" required :error="partyError"><el-input v-model="partyText" type="textarea" :rows="8" maxlength="500" show-word-limit :aria-label="party === 'shipper' ? '分单发货人编辑内容' : '分单收货人编辑内容'" /></el-form-item></el-form>
-      <template #footer><el-button @click="closeParty">取消</el-button><el-button type="primary" :disabled="Boolean(partyError) || Boolean(restriction)" @click="saveParty">确定</el-button></template>
+      <template #footer><el-button @click="closeParty">取消</el-button><el-button v-business-write="'airOrders'" type="primary" :disabled="Boolean(partyError) || Boolean(restriction)" @click="saveParty">确定</el-button></template>
     </el-dialog>
     <AirServiceEditDialog v-model="serviceVisible" :order="order" :service="selectedService" :child="child" @dirty="serviceDirty = $event" @saved="serviceSaved" />
   </el-dialog>

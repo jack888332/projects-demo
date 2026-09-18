@@ -102,7 +102,7 @@ defineExpose({ open, allowDiscard })
       </fieldset>
       <el-form-item label="备注" :error="errors.remark"><el-input v-model="draft.remark" type="textarea" :rows="3" maxlength="800" show-word-limit aria-label="订单备注" /></el-form-item>
     </el-form>
-    <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button type="primary" :loading="busy" :disabled="Object.keys(errors).length > 0" @click="submit">{{ editingId ? '保存订单' : '提交订单' }}</el-button></template>
+    <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button v-business-write="'groundDispatch'" type="primary" :loading="busy" :disabled="Object.keys(errors).length > 0" @click="submit">{{ editingId ? '保存订单' : '提交订单' }}</el-button></template>
   </el-dialog>
 </template>
 

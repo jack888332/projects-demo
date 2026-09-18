@@ -21,7 +21,7 @@ export function createAirWaybillTemplateActions(state, getSession) {
     return record
   }
   function getAirWaybillTemplateFiles(ids) {
-    requirePermission()
+    if (!getSession().readAll) requirePermission()
     if (!Array.isArray(ids) || !ids.length) throw new Error('请至少选择一条模板')
     return [...new Set(ids)].map(id => {
       const record = (state.airWaybillTemplates || []).find(row => row.id === id)

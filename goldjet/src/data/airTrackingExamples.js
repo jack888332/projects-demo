@@ -7,7 +7,7 @@ export function loadAirTrackingExamples(state, session) {
   const id = 'DEMO-TRACKING-014'
   const existing = state.airOrders.find(order => order.id === id)
   if (existing) {
-    if (existing.creator !== session.name) throw new Error('该示例已由其他客服载入，请恢复演示数据后重试')
+    if (!session.readAll && existing.creator !== session.name) throw new Error('该示例已由其他客服载入，请恢复演示数据后重试')
     return existing
   }
   const order = {

@@ -160,7 +160,7 @@ watch(selected, row => {
 <template>
   <div class="module-view air-rates-view">
     <PageHeader title="供应商价格" :description="'当前角色：' + (permission.create ? '空运客服主管' : '只读查看') + ' · ' + airSession.name">
-      <template #actions><el-button v-if="permission.create" type="primary" :icon="Plus" :disabled="busy" @click="open('create')">新增</el-button></template>
+      <template #actions><el-button v-business-write="'airSupplierRates'" v-if="permission.create" type="primary" :icon="Plus" :disabled="busy" @click="open('create')">新增</el-button></template>
     </PageHeader>
     <section v-if="editing" ref="editor" class="rate-editor" :aria-label="mode === 'create' ? '新增供应商价格' : '编辑供应商价格'">
       <h2>{{ mode === 'create' ? '新增供应商价格' : '编辑供应商价格 · ' + selectedId }}</h2>
@@ -199,8 +199,8 @@ watch(selected, row => {
           </el-table-column>
           <el-table-column label="状态" width="110"><template #default="{ row }"><el-tag :type="status(row) === '已生效' ? 'success' : 'info'">{{ status(row) }}</el-tag></template></el-table-column>
           <el-table-column v-if="permission.edit" label="操作" width="172" fixed="right" class-name="rate-actions"><template #default="{ row }">
-            <el-button link type="primary" :aria-label="'编辑' + row.id" :disabled="busy" @click="open('edit', row)">编辑</el-button>
-            <el-tooltip v-for="action in ['enable', 'disable']" :key="action" :content="actionFor(row, action).reason" :disabled="actionFor(row, action).allowed"><span><el-button link type="primary" :aria-label="(action === 'enable' ? '启用' : '失效') + row.id" :disabled="busy || !actionFor(row, action).allowed" @click="toggle(row, action)">{{ action === 'enable' ? '启用' : '失效' }}</el-button></span></el-tooltip>
+            <el-button v-business-write="'airSupplierRates'" link type="primary" :aria-label="'编辑' + row.id" :disabled="busy" @click="open('edit', row)">编辑</el-button>
+            <el-tooltip v-for="action in ['enable', 'disable']" :key="action" :content="actionFor(row, action).reason" :disabled="actionFor(row, action).allowed"><span><el-button v-business-write="'airSupplierRates'" link type="primary" :aria-label="(action === 'enable' ? '启用' : '失效') + row.id" :disabled="busy || !actionFor(row, action).allowed" @click="toggle(row, action)">{{ action === 'enable' ? '启用' : '失效' }}</el-button></span></el-tooltip>
           </template></el-table-column>
           <template #empty><el-empty :description="Object.values(applied).some(Boolean) ? '没有匹配价格，请调整查询条件' : '暂无供应商价格'" /></template>
         </el-table>

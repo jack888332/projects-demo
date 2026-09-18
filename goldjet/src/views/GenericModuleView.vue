@@ -1,6 +1,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { Plus, View } from '@element-plus/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import FilterBar from '../components/FilterBar.vue'
@@ -10,7 +11,7 @@ import { moduleCatalog } from '../domain/catalog.js'
 import { usePrototypeData } from '../data/usePrototypeData.js'
 
 const route = useRoute()
-const { ensureGenericRows, addGenericRow } = usePrototypeData()
+const { ensureGenericRows, addGenericRow, completeGenericRow } = usePrototypeData()
 const moduleKey = computed(() => route.meta.moduleKey)
 const module = computed(() => moduleCatalog[moduleKey.value])
 const sourceRows = computed(() => ensureGenericRows(moduleKey.value, module.value.label))
@@ -32,13 +33,13 @@ function submit() { if (!form.subject || !form.customer) return ElMessage.error(
 
 <template><div class="module-view">
   <el-alert title="未覆盖：当前模块仍为通用界面演示，尚未实现 PRD 专属字段、权限和跨模块流程；下方记录不代表真实业务结果。" type="warning" :closable="false" style="margin-bottom: 16px" />
-  <PageHeader :title="module.label" :description="descriptions[moduleKey] || `${module.label}业务记录`"><template #actions><el-button type="primary" :icon="Plus" @click="createVisible = true">新建记录</el-button></template></PageHeader>
+  <PageHeader :title="module.label" :description="descriptions[moduleKey] || `${module.label}业务记录`"><template #actions><el-button v-business-write="moduleKey" type="primary" :icon="Plus" @click="createVisible = true">新建记录</el-button></template></PageHeader>
   <FilterBar v-model="keyword" placeholder="业务编号、主题或客户" @reset="keyword = ''; status = ''"><el-select v-model="status" clearable placeholder="处理状态" class="filter-select"><el-option v-for="value in ['待处理', '处理中', '待确认', '已完成']" :key="value" :value="value" /></el-select></FilterBar>
   <DataTableFrame :rows="rows" :page-size="10"><template #default="{ rows: pageRows }"><el-table :data="pageRows" row-key="id" stripe>
     <el-table-column prop="businessNo" label="业务编号" width="160" fixed="left" /><el-table-column prop="subject" label="业务主题" min-width="190" /><el-table-column prop="customer" label="客户或合作方" min-width="155" /><el-table-column prop="owner" label="负责人" width="90" />
     <el-table-column label="状态" width="95"><template #default="{ row }"><StatusTag :label="row.status" /></template></el-table-column><el-table-column prop="updatedAt" label="更新时间" width="145" />
     <el-table-column label="操作" width="88" fixed="right"><template #default="{ row }"><el-button link type="primary" :icon="View" @click="openDetail(row)">查看</el-button></template></el-table-column>
   </el-table></template></DataTableFrame>
-  <el-dialog v-model="createVisible" :title="`新建${module.label}记录`" width="580" align-center><el-form :model="form" label-position="top"><el-form-item label="业务主题"><el-input v-model="form.subject" /></el-form-item><el-form-item label="客户或合作方"><el-input v-model="form.customer" /></el-form-item><el-form-item label="负责人"><el-select v-model="form.owner"><el-option v-for="value in ['周倩','陈楠','李明','王晴']" :key="value" :value="value" /></el-select></el-form-item></el-form><template #footer><el-button @click="createVisible = false">取消</el-button><el-button type="primary" @click="submit">保存</el-button></template></el-dialog>
-  <el-drawer v-model="detailVisible" :title="`${module.label}详情`" size="min(620px, 94vw)"><template v-if="selected"><div class="detail-hero"><div><small>{{ module.label }}</small><h2>{{ selected.businessNo }}</h2><span>{{ selected.subject }}</span></div><StatusTag :label="selected.status" /></div><dl class="detail-grid detail-section"><div><dt>客户或合作方</dt><dd>{{ selected.customer }}</dd></div><div><dt>负责人</dt><dd>{{ selected.owner }}</dd></div><div><dt>更新时间</dt><dd>{{ selected.updatedAt }}</dd></div><div><dt>处理状态</dt><dd>{{ selected.status }}</dd></div></dl><div class="drawer-actions"><el-button type="primary" @click="selected.status = '已完成'; ElMessage.success('记录已完成')">标记完成</el-button></div></template></el-drawer>
+  <el-dialog v-model="createVisible" :title="`新建${module.label}记录`" width="580" align-center><el-form :model="form" label-position="top"><el-form-item label="业务主题"><el-input v-model="form.subject" /></el-form-item><el-form-item label="客户或合作方"><el-input v-model="form.customer" /></el-form-item><el-form-item label="负责人"><el-select v-model="form.owner"><el-option v-for="value in ['周倩','陈楠','李明','王晴']" :key="value" :value="value" /></el-select></el-form-item></el-form><template #footer><el-button @click="createVisible = false">取消</el-button><el-button v-business-write="moduleKey" type="primary" @click="submit">保存</el-button></template></el-dialog>
+  <el-drawer v-model="detailVisible" :title="`${module.label}详情`" size="min(620px, 94vw)"><template v-if="selected"><div class="detail-hero"><div><small>{{ module.label }}</small><h2>{{ selected.businessNo }}</h2><span>{{ selected.subject }}</span></div><StatusTag :label="selected.status" /></div><dl class="detail-grid detail-section"><div><dt>客户或合作方</dt><dd>{{ selected.customer }}</dd></div><div><dt>负责人</dt><dd>{{ selected.owner }}</dd></div><div><dt>更新时间</dt><dd>{{ selected.updatedAt }}</dd></div><div><dt>处理状态</dt><dd>{{ selected.status }}</dd></div></dl><div class="drawer-actions"><el-button v-business-write="moduleKey" type="primary" @click="completeGenericRow(moduleKey, selected.id); ElMessage.success('演示记录已完成')">标记完成</el-button></div></template></el-drawer>
 </div></template>

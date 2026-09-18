@@ -284,8 +284,8 @@ function backToOrder() { if (selected.value) router.push({ path: '/fulfillment/a
       </template>
       <template #footer>
         <div class="booking-footer"><el-button @click="backToOrder">查看主订单</el-button><span /><el-button @click="close">取消</el-button>
-          <el-button v-if="canApprove" type="primary" :loading="busy" @click="approve">审核通过</el-button>
-          <el-button v-else-if="actionLabel" type="primary" :loading="busy" :disabled="blocked" @click="submit">{{ decision.kind === 'approval' ? '提交航线总监审核' : actionLabel }}</el-button>
+          <el-button v-business-write="'booking'" v-if="canApprove" type="primary" :loading="busy" @click="approve">审核通过</el-button>
+          <el-button v-business-write="'booking'" v-else-if="actionLabel" type="primary" :loading="busy" :disabled="blocked" @click="submit">{{ decision.kind === 'approval' ? '提交航线总监审核' : actionLabel }}</el-button>
         </div>
       </template>
     </el-dialog>

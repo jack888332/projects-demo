@@ -5,8 +5,14 @@ import 'element-plus/dist/index.css'
 import AppShell from './AppShell.vue'
 import { router } from './router/index.js'
 import './styles.css'
+import { businessWrite } from './directives/businessWrite.js'
+import { usePrototypeData } from './data/usePrototypeData.js'
+
+usePrototypeData().selectWorkbenchPersona('superAdmin')
+usePrototypeData().loadDemoOverview()
 
 createApp(AppShell)
+  .directive('business-write', businessWrite)
   .use(router)
   .use(ElementPlus, { locale: zhCn })
   .mount('#app')

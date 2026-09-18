@@ -97,7 +97,7 @@ function advance() { if (!busy.value) advanceAirWaybillClock() }
       </div>
       <p v-if="busy" role="status" aria-live="polite">正在等待本地模拟回执，请稍候。</p>
     </div>
-    <template #footer><el-button :disabled="busy" @click="close">{{ results.length ? '关闭' : '取消' }}</el-button><el-button type="primary" :loading="busy" :disabled="Boolean(restriction)" @click="send">{{ results.length ? '再次模拟发送' : '确认模拟发送' }}</el-button></template>
+    <template #footer><el-button :disabled="busy" @click="close">{{ results.length ? '关闭' : '取消' }}</el-button><el-button v-business-write="'airwayBills'" type="primary" :loading="busy" :disabled="Boolean(restriction)" @click="send">{{ results.length ? '再次模拟发送' : '确认模拟发送' }}</el-button></template>
   </el-dialog>
 </template>
 

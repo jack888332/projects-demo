@@ -202,7 +202,7 @@ describe('第002篇工作台：统计、分页和真实入口', () => {
     const service = getWorkbenchQuickLinks('service')
     expect(service[0]).toMatchObject({ label: '主订单', disabled: false, target: { path: '/fulfillment/air-orders' } })
     expect(service.find(item => item.label === '子订单')).toMatchObject({ disabled: false, target: { path: '/fulfillment/air-children' } })
-    expect(getWorkbenchQuickLinks('hangsheng').filter(item => !item.disabled).map(item => item.label)).toEqual(['运输订单', '运输运单'])
+    expect(getWorkbenchQuickLinks('hangsheng').filter(item => !item.disabled).map(item => item.label)).toEqual(['运输订单', '中转订单', '运输运单'])
     expect(getWorkbenchQuickLinks('finance').filter(item => !item.disabled).map(item => item.label)).toEqual(['供应商列表', '客户列表'])
     expect(getWorkbenchQuickLinks('finance').find(item => item.label === '订单成本审批明细').disabled).toBe(true)
     expect(getWorkbenchQuickLinks('missing')).toEqual([])
