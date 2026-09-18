@@ -118,7 +118,7 @@ describe('GJ-017 司机页面实际编辑流程', () => {
     expect(view.errors.value.phone).toBeTruthy()
     expect(JSON.stringify(data.state.fleetDrivers)).toBe(before)
     view.form.phone = '00000001099'
-    data.selectWorkbenchPersona('hangsheng')
+    data.selectWorkbenchPersona('groundTransportSupervisor')
     view.submit()
     await nextTick()
     expect(view.canEdit.value).toBe(false)

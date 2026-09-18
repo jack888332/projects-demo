@@ -20,6 +20,7 @@ const columns = [['dispatchCount','调度订单数'],['transportCount','完成�
       <form class="monthly-filter" @submit.prevent><label>月份<el-select v-model="month" clearable placeholder="全部月份" aria-label="陆运月报月份"><el-option v-for="row in all" :key="row.month" :value="row.month" /></el-select></label><el-button @click="month=''">重置</el-button></form>
       <el-alert title="调度归月、币种及主管审批金额口径待确认，相关指标暂不计算。" type="info" :closable="false" />
       <el-alert v-if="all.some(row => row.missingCompletionTime)" title="存在缺少完成时间的订单，完成数量暂不能准确归月。" type="warning" :closable="false" />
+      <el-alert v-if="all.some(row => row.pendingStatus)" title="存在异常汇总状态待确认的订单，完成数量暂不计算。" type="warning" :closable="false" />
       <el-table :data="rows" aria-label="陆运月报" stripe empty-text="暂无订单月份"><el-table-column prop="month" label="月份" width="120" fixed="left" /><el-table-column v-for="[key,label] in columns" :key="key" :label="label" min-width="150" align="right"><template #default="{row}"><span :class="{pending:row[key]===null}">{{ row[key] === null ? '待确认' : row[key] }}</span></template></el-table-column></el-table>
     </template>
   </div>

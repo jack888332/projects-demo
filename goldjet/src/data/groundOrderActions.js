@@ -85,7 +85,7 @@ export function createGroundOrderActions(state, getSession) {
   }
   function modifyGroundDispatch(id, payload) {
     const bill = state.groundWaybills.find(row => row.id === id), order = bill && find(bill.orderId)
-    if (!['hangsheng', 'supervisor'].includes(getSession().role) || !order || order.source !== '航晟手工创建' || order.dispatchStatus !== '已调度' || ['已卸货', '已取消', '异常中'].includes(bill.status) || bill.exceptionStatus === '异常中') throw new Error('该调度的修改资格或上游回传规则待确认')
+    if (!['hangsheng', 'supervisor'].includes(getSession().role) || !order || order.source !== '航晟手工创建' || order.dispatchStatus !== '已调度' || bill.status !== '待提货' || bill.exceptionStatus === '异常中') throw new Error('仅无异常的待提货运单可修改调度；其他状态须取消重录，上游回传规则待确认')
     const errors = validateDispatchDraft(payload)
     if (Object.keys(errors).length) throw Object.assign(new Error(Object.values(errors)[0]), { fields: errors })
     const fields = Object.keys(createDispatchDraft()), before = Object.fromEntries(fields.map(key => [key, clone(bill[key] ?? null)]))

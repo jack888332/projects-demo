@@ -104,14 +104,15 @@ export function groundMonthlyRows(orders, currentMonth = GROUND_DATE.slice(0, 7)
   if (!months.length) return []
   const [year, month] = months[0].split('-').map(Number), [endYear, endMonth] = currentMonth.split('-').map(Number)
   const missingCompletionTime = orders.some(order => order.dispatchStatus === '已完成' && !order.completedAt)
+  const pendingStatus = orders.some(order => order.statusPendingReason)
   const result = []
   for (let index = endYear * 12 + endMonth - 1; index >= year * 12 + month - 1; index--) {
     const value = `${Math.floor(index / 12)}-${String(index % 12 + 1).padStart(2, '0')}`
     const completed = orders.filter(order => order.dispatchStatus === '已完成' && order.completedAt?.startsWith(value))
     const transfer = completed.filter(order => order.orderType === '中转订单').length
-    result.push({ month: value, dispatchCount: null, transportCount: missingCompletionTime ? null : completed.length - transfer,
-      transferCount: missingCompletionTime ? null : transfer, totalCount: missingCompletionTime ? null : completed.length,
-      receivable: null, payable: null, profit: null, missingCompletionTime })
+    result.push({ month: value, dispatchCount: null, transportCount: missingCompletionTime || pendingStatus ? null : completed.length - transfer,
+      transferCount: missingCompletionTime || pendingStatus ? null : transfer, totalCount: missingCompletionTime || pendingStatus ? null : completed.length,
+      receivable: null, payable: null, profit: null, missingCompletionTime, pendingStatus })
   }
   return result
 }

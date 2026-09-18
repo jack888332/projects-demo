@@ -13,6 +13,8 @@ import {
   deriveGroundOrderStatus, validateBatchGroundOrders, validateDispatchDraft, validateGroundStatusChange,
 } from '../domain/groundOperations.js'
 import { createFleetSeed } from '../domain/fleetOperations.js'
+import { createVehicleSeed } from '../domain/fleetVehicles.js'
+import { createFleetRecordSeeds } from '../domain/fleetRecords.js'
 import { createFleetActions } from './fleetActions.js'
 import { createTransportQuoteSeed } from '../domain/transportQuotes.js'
 import { createTransportQuoteActions } from './transportQuoteActions.js'
@@ -36,6 +38,8 @@ import { createAirClearanceActions } from './airClearanceActions.js'
 import { deriveAirClearances } from '../domain/airClearances.js'
 import { loadAirTrackingExamples as loadTrackingExamples } from './airTrackingExamples.js'
 import { createGroundOrderActions } from './groundOrderActions.js'
+import { createGroundWaybillActions, syncGroundWaybillOrder } from './groundWaybillActions.js'
+import { loadGroundWaybillExamples as loadGroundExamples } from './groundWaybillExamples.js'
 
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
@@ -86,6 +90,7 @@ function seedGroundData() {
   }))
   const seedDispatch = { ...createDispatchDraft(), ...clone(GROUND_PLATE_PRESETS[0]), vehicleType: '8T/7.6', supplier: '申捷车队', companyAddress: '上海市浦东新区演示路 18 号', remark: '已完成调度，等待前往提货。' }
   const waybill = createGroundWaybill(orders[2], seedDispatch, { serial: 1, vehicleCount: 1, actor: '陈楠', time: '2026-09-08 12:05' })
+  waybill.trajectory[0].actorId = 'DEMO-hangsheng'
   orders[2].dispatchStatus = deriveGroundOrderStatus([waybill])
   return { groundOrders: orders, groundWaybills: [waybill], groundPlateHistory: clone(GROUND_PLATE_PRESETS), groundSequence: 1,
     groundOrderSequence: 0, groundOrderEventSequence: 0, groundCustomerPartnerIds: ['PT-00018', 'PT-00019', 'PT-00020', 'PT-00021'], groundUpsPartnerId: '' }
@@ -124,6 +129,8 @@ function createSeed() {
     ],
     ...seedGroundData(),
     fleetDrivers: createFleetSeed(),
+    fleetVehicles: createVehicleSeed(),
+    ...createFleetRecordSeeds(),
     warehouseOrders: [
       { id: 'WH-260908-006', serviceNo: 'GJ-WH-260908-006', customer: '启航跨境贸易', warehouse: '昆山中转仓', inboundType: '备货入库', forecastQty: 320, actualQty: 288, goodQty: 272, damagedQty: 10, abnormalQty: 6, status: '部分收货', updatedAt: '2026-09-08 13:42' },
       { id: 'WH-260908-007', serviceNo: 'GJ-WH-260908-007', customer: '云帆供应链', warehouse: '松江保税仓', inboundType: '备货入库', forecastQty: 180, actualQty: 180, goodQty: 174, damagedQty: 4, abnormalQty: 2, status: '待确认', updatedAt: '2026-09-08 12:18' },
@@ -164,6 +171,7 @@ const state = reactive(createSeed())
 const airSession = reactive({ role: 'service', name: '周倩' })
 const groundSession = reactive({ role: 'viewer', name: '周倩', accountId: 'DEMO-service' })
 const groundOrderActions = createGroundOrderActions(state, () => groundSession)
+const groundWaybillActions = createGroundWaybillActions(state, () => groundSession)
 const workbenchSession = reactive({ personaId: 'service' })
 const partnerSession = computed(() => {
   const persona=WORKBENCH_PERSONAS.find(item=>item.id===workbenchSession.personaId) || WORKBENCH_PERSONAS[0]
@@ -297,7 +305,10 @@ export function usePrototypeData() {
     if (orders.some(order => ['pieces', 'weight', 'volume'].some(key => order[key] !== '' && order[key] != null && (!Number.isFinite(Number(order[key])) || Number(order[key]) <= 0)))) throw new Error('手工货量的数值规则待确认，当前值无法进行运单分配')
     let serial = state.groundSequence
     const generated = orders.flatMap(order => drafts.map(draft => createGroundWaybill(order, draft, { serial: ++serial, vehicleCount: drafts.length, actor: groundSession.name })))
-    for (const bill of generated) bill.dispatchedById = groundSession.accountId || groundSession.role
+    for (const bill of generated) {
+      bill.dispatchedById = groundSession.accountId || groundSession.role
+      bill.trajectory[0].actorId = bill.dispatchedById
+    }
     const nextHistory = clone(state.groundPlateHistory)
     for (const draft of drafts) {
       // Cargo allocations belong to the current order, not the reusable vehicle record.
@@ -324,17 +335,12 @@ export function usePrototypeData() {
     const waybill = state.groundWaybills.find(item => item.id === id)
     const error = validateGroundStatusChange(waybill, update)
     if (error) throw new Error(error)
-    const record = { id: `${id}-T${waybill.trajectory.length + 1}`, event: update.status === '提货中' ? '前往提货' : update.status, status: update.status, time: update.time, remark: update.remark || '', actor: groundSession.name, role: '航晟客服' }
+    const record = { id: `${id}-T${waybill.trajectory.length + 1}`, event: update.status === '提货中' ? '前往提货' : update.status, status: update.status, time: update.time, remark: update.remark || '', actor: groundSession.name, actorId: groundSession.accountId, role: '航晟客服' }
     waybill.status = update.status
+    waybill.fulfillmentStatus = update.status
     waybill.updatedAt = GROUND_NOW
     waybill.trajectory.push(record)
-    const order = state.groundOrders.find(item => item.id === waybill.orderId)
-    if (order) {
-      const previous = order.dispatchStatus
-      order.dispatchStatus = deriveGroundOrderStatus(state.groundWaybills.filter(item => item.orderId === order.id), order.dispatchStatus)
-      if (order.dispatchStatus === '已完成' && previous !== '已完成') order.completedAt = GROUND_NOW
-      order.updatedAt = GROUND_NOW
-    }
+    syncGroundWaybillOrder(state, waybill)
     return waybill
   }
 
@@ -397,7 +403,8 @@ export function usePrototypeData() {
   }))
 
   return {
-    state, airSession, groundSession, workbenchSession, selectWorkbenchPersona, dashboard, reset, createAirOrder, bookingSession, ...airBookingActions, ...groundOrderActions, dispatchGroundOrders, updateGroundWaybillStatus, advanceWarehouseOrder,
+    state, airSession, groundSession, workbenchSession, selectWorkbenchPersona, dashboard, reset, createAirOrder, bookingSession, ...airBookingActions, ...groundOrderActions, ...groundWaybillActions, dispatchGroundOrders, updateGroundWaybillStatus, advanceWarehouseOrder,
+    loadGroundWaybillExamples: () => loadGroundExamples(state, groundSession),
     ...airOrderSupplementActions, ...airOrderActions, airChildSession, ...airChildOrderActions, ...airServiceActions,
     ...airWaybillActions, advanceAirWaybillClock,
     airTemplateSession, ...airWaybillTemplateActions,

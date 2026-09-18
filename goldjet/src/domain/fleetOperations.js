@@ -74,7 +74,7 @@ function validDate(value) {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
 }
 
-export function validateDriverDraft(value, drivers = [], { existingId = '' } = {}) {
+export function validateDriverDraft(value, drivers = [], { existingId = '', vehicles, waybills = [] } = {}) {
   const v = value || {}, errors = {}
   const required = [['name', '请输入姓名'], ['gender', '请选择性别'], ['identityNo', '请输入身份证/驾驶证号码'], ['phone', '请输入联系方式'], ['licenseExpiry', '请选择驾驶证期限'], ['joinDate', '请选择入职日期']]
   for (const [field, message] of required) if (!text(v[field])) errors[field] = message
@@ -103,7 +103,11 @@ export function validateDriverDraft(value, drivers = [], { existingId = '' } = {
   const duplicate = drivers.find(item => item.id !== existingId && item.status === '正常' && text(item.identityNo).toUpperCase() === text(v.identityNo).toUpperCase())
   if (duplicate) errors.identityNo = '您提交的信息已存在，请重新检查！'
   const current = drivers.find(item => item.id === existingId)
-  if (text(v.vehicle) !== text(current?.vehicle)) errors.vehicle = '车辆档案候选未接入，暂不能更改分配车辆'
+  if (current && (text(v.name) !== current.name || text(v.identityNo).toUpperCase() !== current.identityNo) && waybills.some(bill => bill.drivers?.some(person => person.name === current.name || person.identity && text(person.identity).toUpperCase() === current.identityNo))) errors.name = '存在关联任务，司机身份变更的历史处理规则待确认'
+  if (vehicles) {
+    if (text(v.vehicle) && !vehicles.some(vehicle => vehicle.plate === text(v.vehicle))) errors.vehicle = '请选择车辆档案中的车牌号'
+    if (v.status === '已离职' && text(v.vehicle)) errors.vehicle = '已分配司机的离职处理待确认，请先解除车辆分配'
+  } else if (text(v.vehicle) !== text(current?.vehicle)) errors.vehicle = '车辆档案候选未接入，暂不能更改分配车辆'
   return errors
 }
 
@@ -129,12 +133,25 @@ export function driverExpiryState(value, today = GROUND_DATE) {
 }
 
 export function deriveDriverTaskSummary(driver, state) {
-  const name = driver?.name || ''
-  const bills = name ? (state?.groundWaybills || []).filter(item => (item.drivers || []).some(row => row.name === name)) : []
-  const running = bills.filter(item => !['已取消', '已卸货', '已完成'].includes(item.status))
-  const history = bills.filter(item => ['已卸货', '已完成'].includes(item.status))
+  const candidates = state?.fleetDrivers || (driver ? [driver] : [])
+  const matches = person => person.identity
+    ? candidates.filter(row => text(row.identityNo).toUpperCase() === text(person.identity).toUpperCase())
+    : candidates.filter(row => row.name === person.name)
+  const bills = driver ? (state?.groundWaybills || []).filter(item => (item.drivers || []).some(person => {
+    const found = matches(person)
+    return found.length === 1 && found[0].id === driver.id
+  })) : []
+  const ambiguous = driver && (state?.groundWaybills || []).some(item => item.drivers?.some(person => {
+    const found = matches(person)
+    return found.length > 1 && found.some(row => row.id === driver.id)
+  }))
+  const running = bills.filter(item => !['已取消', '已卸货', '已完成'].includes(fleetTaskStatus(item)))
+  const history = bills.filter(item => ['已卸货', '已完成'].includes(fleetTaskStatus(item)))
   return {
     running, history, completed: null, year: null, month: null, week: null, amount: null,
+    associationReason: ambiguous ? '部分运单无法唯一关联司机，暂未计入任务列表（146）' : '',
     statisticsReason: '完成口径待确认：司机统计使用“已完成”，运输运单仅有“已卸货”；应收统计是否含取消运单也存在冲突，且应收金额来源尚未接入。',
   }
 }
+
+export function fleetTaskStatus(bill) { return bill.status === '异常中' ? bill.fulfillmentStatus || bill.status : bill.status }

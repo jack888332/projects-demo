@@ -61,7 +61,7 @@ describe('GJ-015 手工建单到运单的共享写入', () => {
     expect(order.dispatchMails).toHaveLength(2); expect(order.dispatchMails[1].body).toContain('原车牌号：沪A·TEST15')
     data.updateGroundWaybillStatus(bill.id, { status: '已卸货', time: '2026-09-08 18:30' })
     expect(order.dispatchStatus).toBe('已完成'); expect(order.completedAt).toBeTruthy()
-    expect(() => data.modifyGroundDispatch(bill.id, dispatch())).toThrow('资格')
+    expect(() => data.modifyGroundDispatch(bill.id, dispatch())).toThrow('待提货')
   })
   it('权限、上游单、已关闭保护及关闭不记费', () => {
     data.selectWorkbenchPersona('groundSupervisor'); expect(() => data.saveGroundOrder(valid())).toThrow('不允许')

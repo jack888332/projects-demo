@@ -122,7 +122,7 @@ async function openDispatch(order) {
   initial.value = JSON.stringify(drafts.value); visible.value = true
 }
 function canModify(bill) {
-  return canDispatch.value && selected.value?.source === '航晟手工创建' && selected.value?.dispatchStatus === '已调度' && !['已卸货','已取消','异常中'].includes(bill.status) && bill.exceptionStatus !== '异常中'
+  return canDispatch.value && selected.value?.source === '航晟手工创建' && selected.value?.dispatchStatus === '已调度' && bill.status === '待提货' && bill.exceptionStatus !== '异常中'
 }
 function openModify(bill) {
   if (!canModify(bill)) return
@@ -207,7 +207,7 @@ function submit() {
       <template #default="{ rows: pageRows }"><el-table ref="table" :data="pageRows" stripe row-key="id" aria-label="运输订单列表" @sort-change="value => Object.assign(sort,value)" @selection-change="items => selectedIds = items.map(i => i.id)">
         <el-table-column type="selection" reserve-selection width="48" :selectable="row => row.dispatchStatus === '未调度'" />
         <el-table-column prop="orderNo" label="订单号" width="185" sortable="custom" fixed="left"><template #default="{row}"><button class="link-button" @click="openDetail(row)">{{ row.orderNo }}</button></template></el-table-column>
-        <el-table-column prop="dispatchStatus" label="订单状态" width="115" sortable="custom"><template #default="{row}"><StatusTag :label="row.dispatchStatus" /></template></el-table-column>
+        <el-table-column prop="dispatchStatus" label="订单状态" width="140" sortable="custom"><template #default="{row}"><StatusTag :label="row.dispatchStatus" /><el-tooltip v-if="row.statusPendingReason" :content="row.statusPendingReason"><span class="pending-status">汇总待确认</span></el-tooltip></template></el-table-column>
         <el-table-column v-for="[key,label,width] in columns" :key="key" :prop="key" :label="label" :min-width="width" sortable="custom"><template #default="{row}">{{ key === 'customer' ? customerName(row) : row[key] }}</template></el-table-column>
         <el-table-column label="尺寸（cm）" width="145"><template #default="{row}">{{ [row.length,row.width,row.height].filter(v => v != null).join(' × ') }}</template></el-table-column>
         <el-table-column v-for="key in ['pickup','delivery']" :key="key" :label="key === 'pickup' ? '提货联系人及联系方式' : '送货联系人及联系方式'" width="195"><template #default="{row}">{{ (row[key+'Points'] || []).map(p => [p.contact,p.phone].filter(Boolean).join('：')).join('；') }}</template></el-table-column>
@@ -254,6 +254,7 @@ function submit() {
     <el-drawer v-model="detailVisible" title="运输订单详情" size="min(1050px, 96vw)">
       <template v-if="selected">
         <div class="detail-hero"><div><small>{{ selected.orderNo ? '订单号' : selected.childNo ? '分单号' : '用车单号' }}</small><h2>{{ selected.orderNo || selected.childNo || selected.systemOrderNo }}</h2><span>{{ customerName(selected) }}</span></div><StatusTag :label="selected.dispatchStatus" /></div>
+        <el-alert v-if="selected.statusPendingReason" :title="selected.statusPendingReason + '；保留上次已知状态。'" type="warning" :closable="false" />
         <div class="order-detail-actions"><el-button @click="orderExpanded = !orderExpanded">{{ orderExpanded ? '收起订单信息' : '展开订单信息' }}</el-button><el-button :disabled="!access(selected).edit" @click="editOrder(selected)">修改订单</el-button><el-button :disabled="!access(selected).close" @click="closeOrder(selected)">关闭订单</el-button><el-button @click="detailVisible = false">返回</el-button></div>
         <el-tabs v-model="detailTab">
         <el-tab-pane label="订单详情" name="order">

@@ -149,7 +149,7 @@ describe('运单状态与轨迹：第016篇 1.3.5、1.3.7', () => {
     const saved = data.state.groundWaybills.find(item => item.id === waybill.id)
     const before = copy(saved)
     expect(() => data.updateGroundWaybillStatus(waybill.id, { status: '已取消', time: '2026-09-08 18:30' })).toThrow('返空费')
-    expect(() => data.updateGroundWaybillStatus(waybill.id, { status: '异常中', time: '2026-09-08 18:30' })).toThrow('异常上报不在本次范围')
+    expect(() => data.updateGroundWaybillStatus(waybill.id, { status: '异常中', time: '2026-09-08 18:30' })).toThrow('异常上报请使用异常管理')
     expect(() => data.updateGroundWaybillStatus(waybill.id, { status: '已提货', time: '2026-02-30 18:30' })).toThrow('有效的操作时间')
     expect(copy(saved)).toEqual(before)
   })

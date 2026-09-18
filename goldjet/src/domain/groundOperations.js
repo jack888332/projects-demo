@@ -141,11 +141,15 @@ export function createGroundWaybill(order, draft, { serial, vehicleCount, actor,
   }
 }
 
+export function groundWaybillTerminal(waybill) {
+  return ['已卸货', '已取消'].includes(waybill?.status === '异常中' ? waybill.fulfillmentStatus : waybill?.status)
+}
+
 export function validateGroundStatusChange(waybill, update) {
   if (!waybill) return '未找到运输运单'
-  if (['已卸货', '已取消'].includes(waybill.status)) return '已卸货或已取消的运单不能再修改状态'
+  if (groundWaybillTerminal(waybill)) return '已卸货或已取消的运单不能再修改状态'
   if (update?.status === '已取消') return '取消调度涉及返空费，当前未覆盖；不能通过状态管理直接取消'
-  if (!GROUND_EDITABLE_STATUSES.includes(update?.status)) return '请选择已定义的运输节点；异常上报不在本次范围'
+  if (!GROUND_EDITABLE_STATUSES.includes(update?.status)) return '请选择已定义的运输节点；异常上报请使用异常管理'
   if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(update?.time || '')) return '请选择操作时间，格式为 YYYY-MM-DD HH:mm'
   const [date, clock] = update.time.split(' ')
   const parsed = new Date(`${date}T${clock}:00Z`)

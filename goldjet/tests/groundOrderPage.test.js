@@ -9,7 +9,7 @@ import { deriveWorkbenchTasks, getWorkbenchQuickLinks } from '../src/domain/work
 
 const data = usePrototypeData(), scopes = [], route = vue.reactive({ query: {} })
 const router = { replace: vi.fn(async value => { route.query = typeof value === 'string' ? {} : value.query || {} }), push: vi.fn() }
-const modules = { vue, 'vue-router': { useRoute: () => route, useRouter: () => router, onBeforeRouteLeave: () => {}, onBeforeRouteUpdate: () => {} },
+const modules = { vue: {...vue,onMounted:()=>{},onBeforeUnmount:()=>{}}, 'vue-router': { useRoute: () => route, useRouter: () => router, onBeforeRouteLeave: () => {}, onBeforeRouteUpdate: () => {} },
   'element-plus': { ElMessage: { error:vi.fn(), warning:vi.fn(), success:vi.fn() }, ElMessageBox:{confirm:vi.fn(async () => true)} },
   '@element-plus/icons-vue': {}, '../data/usePrototypeData.js':{usePrototypeData:() => data}, '../domain/groundOrders.js':orders, '../domain/groundOperations.js':operations }
 function setup(file = 'GroundDispatchView.vue') {
@@ -50,6 +50,8 @@ describe('GJ-015 页面投影与导航', () => {
     view.openDetail(order,'dispatch'); expect(view.bills.value).toHaveLength(1)
     expect(view.canModify(bill)).toBe(true); view.openModify(bill)
     expect(view.modifyingBillId.value).toBe(bill.id); expect(view.drafts.value[0].plate).toBe(bill.plate)
+    bill.status = '提货中'; expect(view.canModify(bill)).toBe(false)
+    expect(() => data.modifyGroundDispatch(bill.id,view.drafts.value[0])).toThrow('待提货')
     bill.status = '已卸货'; expect(view.canModify(bill)).toBe(false)
     const original = view.bills.value[0].dispatchUpdatedAt
     expect(view.orderCosts.value).toHaveLength(1)
@@ -80,5 +82,28 @@ describe('GJ-015 页面投影与导航', () => {
     expect(view.allowed.value).toBe(true); expect(view.rows.value[0]).toMatchObject({month:'2026-09',totalCount:0})
     view.month.value = '2026-09'; data.selectWorkbenchPersona('hangsheng'); await vue.nextTick()
     expect(view.rows.value).toEqual([]); expect(view.month.value).toBe('')
+  })
+})
+
+describe('GJ-016 运单查询', () => {
+  it('运输中转分列，封条号仅在中转中精确匹配', async () => {
+    const bill = data.state.groundWaybills[0]
+    data.state.groundOrders.push({...data.state.groundOrders[2],id:'TRANSFER-16',orderType:'中转订单'})
+    data.state.groundWaybills.push({...bill,id:'BILL-16',waybillNo:'BILL-16',orderId:'TRANSFER-16',sealNo:'SEAL-16'})
+    const view = setup('GroundWaybillsView.vue')
+    expect(view.rows.value).toHaveLength(1)
+    route.query = {tab:'transfer'}; await vue.nextTick()
+    expect(view.rows.value[0].sealNo).toBe('SEAL-16')
+    view.filters.keyword = 'SEAL'; expect(view.rows.value).toHaveLength(0)
+    view.filters.keyword = 'SEAL-16'; expect(view.rows.value).toHaveLength(1)
+  })
+  it('重复业务单号不误关联，明确运单深链自动选择类型', async () => {
+    const order = data.state.groundOrders[2], bill = data.state.groundWaybills[0]
+    data.state.groundOrders.push({...order,id:'DUPLICATE-16'})
+    route.query = {order:order.orderNo}; const view = setup('GroundWaybillsView.vue')
+    expect(view.routeError.value).toContain('多笔订单'); expect(view.rows.value).toHaveLength(0)
+    order.orderType = '中转订单'; route.query = {order:order.id,waybill:bill.id}; await vue.nextTick()
+    expect(view.selected.value.id).toBe(bill.id); expect(view.listKind.value).toBe('transfer')
+    expect(view.rows.value).toHaveLength(1)
   })
 })

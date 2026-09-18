@@ -7,12 +7,13 @@ import PageHeader from '../components/PageHeader.vue'
 import DataTableFrame from '../components/DataTableFrame.vue'
 import StatusTag from '../components/StatusTag.vue'
 import FleetCertificateField from '../components/FleetCertificateField.vue'
+import FleetRecordTable from '../components/FleetRecordTable.vue'
 import { usePrototypeData } from '../data/usePrototypeData.js'
 import { DRIVER_ATTACHMENT_FIELDS, DRIVER_EMPLOYMENT_TYPES, DRIVER_EMPLOYMENT_FILTERS, DRIVER_LICENSE_CLASSES, DRIVER_STATUSES, createDriverDraft, deriveDriverTaskSummary, normalizeDriver, validateDriverDraft, filterDrivers, driverExpiryState } from '../domain/fleetOperations.js'
 
 const router = useRouter()
 const { state, groundSession, saveDriver } = usePrototypeData()
-const canEdit = computed(() => ['supervisor', 'admin'].includes(groundSession.role))
+const canEdit = computed(() => ['hangsheng', 'supervisor', 'admin'].includes(groundSession.role))
 const defaults = () => ({ keyword: '', status: '', licenseClass: '', employmentType: '' })
 const filters = reactive(defaults()), applied = reactive(defaults())
 const dialogVisible = ref(false), detailVisible = ref(false), editingId = ref(''), selectedId = ref('')
@@ -20,7 +21,7 @@ const selected = computed(() => state.fleetDrivers.find(row => row.id === select
 const form = reactive(createDriverDraft()), initial = ref(''), busy = ref(false), uploads = reactive({}), touched = reactive({})
 const taskTab = ref('running')
 const rows = computed(() => filterDrivers(state.fleetDrivers, applied))
-const errors = computed(() => validateDriverDraft(form, state.fleetDrivers, { existingId: editingId.value }))
+const errors = computed(() => validateDriverDraft(form, state.fleetDrivers, { existingId: editingId.value, vehicles: state.fleetVehicles, waybills: state.groundWaybills }))
 const uploading = computed(() => Object.values(uploads).some(Boolean))
 const dirty = computed(() => dialogVisible.value && JSON.stringify(form) !== initial.value)
 const summary = computed(() => deriveDriverTaskSummary(selected.value, state))
@@ -83,7 +84,7 @@ watch(selected, row => { if (!row) detailVisible.value = false })
 <template>
   <div class="module-view fleet-view">
     <PageHeader title="司机管理" :description="`航晟物流 · ${groundSession.name}`"><template #actions><el-button type="primary" :icon="Plus" :disabled="!canEdit" @click="openForm()">新增司机</el-button></template></PageHeader>
-    <p v-if="!canEdit" class="permission-note">当前角色只读；客服维护权限待确认。</p>
+    <p v-if="!canEdit" class="permission-note">当前角色无司机资料维护权限。</p>
     <form class="fleet-filters" aria-label="司机筛选" @submit.prevent="query">
       <label>姓名或手机号<el-input v-model="filters.keyword" aria-label="姓名或手机号" clearable placeholder="精准查询" /></label>
       <label>状态<el-select v-model="filters.status" aria-label="筛选状态" clearable placeholder="全部"><el-option v-for="value in DRIVER_STATUSES" :key="value" :value="value" /></el-select></label>
@@ -127,7 +128,7 @@ watch(selected, row => { if (!row) detailVisible.value = false })
         </div></section>
         <section class="form-section"><h3>其他信息</h3><div class="form-grid">
           <el-form-item label="入职日期" required :error="showError('joinDate')"><el-date-picker v-model="form.joinDate" aria-label="入职日期" value-format="YYYY-MM-DD" @blur="touched.joinDate = true" /></el-form-item>
-          <el-form-item label="当前分配车辆"><el-input :model-value="form.vehicle" aria-label="当前分配车辆" disabled placeholder="未分配" /><small class="field-note">车辆档案候选未接入，暂不可修改</small></el-form-item>
+          <el-form-item label="当前分配车辆" :error="showError('vehicle')"><el-select v-model="form.vehicle" aria-label="当前分配车辆" filterable clearable placeholder="未分配"><el-option v-for="vehicle in state.fleetVehicles" :key="vehicle.id" :value="vehicle.plate" /></el-select></el-form-item>
           <el-form-item label="当前驾驶分数" :error="showError('drivingScore')"><el-input v-model="form.drivingScore" aria-label="当前驾驶分数" inputmode="numeric" maxlength="20" /></el-form-item>
           <el-form-item v-if="editingId" label="司机状态"><el-select v-model="form.status" aria-label="司机状态"><el-option v-for="value in DRIVER_STATUSES" :key="value" :value="value" /></el-select></el-form-item>
         </div><el-form-item label="备注"><el-input v-model="form.remark" aria-label="备注" type="textarea" :rows="2" /></el-form-item></section>
@@ -141,8 +142,10 @@ watch(selected, row => { if (!row) detailVisible.value = false })
         <section class="detail-section"><h3>证件图片</h3><div class="form-grid"><div v-for="field in certificates" :key="field.key" class="detail-certificate"><h4>{{ field.label }}</h4><FleetCertificateField :model-value="selected[field.key]" :label="field.label" readonly /></div></div></section>
         <section class="detail-section"><h3>业绩统计</h3><p class="field-note">{{ summary.statisticsReason }}</p><dl class="fleet-statistics"><div v-for="label in statistics" :key="label"><dt>{{ label }}</dt><dd>口径待确认</dd></div></dl></section>
         <section class="detail-section">
-          <el-tabs v-model="taskTab"><el-tab-pane label="执行中的任务" name="running" /><el-tab-pane label="历史任务" name="history" /><el-tab-pane label="违章事故记录（未覆盖）" name="violations" disabled /></el-tabs>
-          <DataTableFrame :key="taskTab" :rows="taskRows" :page-size="5" :page-sizes="[5]"><template #default="{ rows: pageRows }"><el-table :data="pageRows" :aria-label="taskTab === 'history' ? '历史任务' : '执行中的任务'" empty-text="暂无符合条件的任务">
+          <el-tabs v-model="taskTab"><el-tab-pane label="执行中的任务" name="running" /><el-tab-pane label="历史任务" name="history" /><el-tab-pane label="违章事故记录" name="violations" /></el-tabs>
+          <p v-if="taskTab !== 'violations' && summary.associationReason" class="field-note">{{ summary.associationReason }}</p>
+          <FleetRecordTable v-if="taskTab === 'violations'" kind="incidents" :rows="state.fleetIncidents.filter(row => row.driverId === selected.id)" :page-size="5" />
+          <DataTableFrame v-else :key="taskTab" :rows="taskRows" :page-size="5" :page-sizes="[5]"><template #default="{ rows: pageRows }"><el-table :data="pageRows" :aria-label="taskTab === 'history' ? '历史任务' : '执行中的任务'" empty-text="暂无符合条件的任务">
             <el-table-column label="运单号" min-width="180"><template #default="{ row }"><el-button link type="primary" @click="openTask(row)">{{ row.waybillNo }}</el-button></template></el-table-column>
             <el-table-column label="关联订单" min-width="180"><template #default="{ row }"><el-button link type="primary" @click="openOrder(row)">{{ row.orderNo }}</el-button></template></el-table-column>
             <el-table-column prop="plate" label="车牌号" width="135" /><el-table-column prop="status" label="运单状态" width="110" />
@@ -152,6 +155,7 @@ watch(selected, row => { if (!row) detailVisible.value = false })
           </el-table></template></DataTableFrame>
         </section>
       </template>
+      <template #footer><el-button @click="detailVisible = false">返回</el-button></template>
     </el-drawer>
   </div>
 </template>

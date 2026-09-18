@@ -39,7 +39,7 @@ async function selectFile(event) {
 }
 async function remove() {
   try {
-    await ElMessageBox.confirm(`删除“${props.label}”已上传的图片？保存后将解除与此司机的关联。`, '删除证件图片', { confirmButtonText: '删除图片', cancelButtonText: '保留图片', type: 'warning' })
+    await ElMessageBox.confirm(`删除“${props.label}”已上传的图片？保存后将解除与当前档案的关联。`, '删除证件图片', { confirmButtonText: '删除图片', cancelButtonText: '保留图片', type: 'warning' })
     emit('update:modelValue', null)
     failure.value = ''
   } catch { /* Keep the attachment when cancelled. */ }

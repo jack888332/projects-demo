@@ -24,12 +24,13 @@ describe('GJ-017 owner：司机管理', () => {
     expect(summary.history).toHaveLength(0)
   })
 
-  it('只读客服不能新增，主管新增后可修改状态', () => {
+  it('卡车报表角色不能维护，客服新增后主管可修改状态', () => {
+    data.selectWorkbenchPersona('groundTransportSupervisor')
+    expect(() => data.saveDriver(valid())).toThrow('仅航晟客服、主管或管理员')
     data.selectWorkbenchPersona('hangsheng')
-    expect(() => data.saveDriver(valid())).toThrow('仅航晟主管或管理员')
-    data.selectWorkbenchPersona('groundSupervisor')
     const driver = data.saveDriver(valid())
     expect(driver.id).toBe('DRV-0004')
+    data.selectWorkbenchPersona('groundSupervisor')
     const edited = data.saveDriver({ ...driver, status: '休假', remark: '演示更新' }, { id: driver.id })
     expect(edited.status).toBe('休假')
     expect(edited.updatedBy).toBe('陈楠')
@@ -87,14 +88,14 @@ describe('GJ-017 owner：司机管理', () => {
     expect(saved.licenseImage.name).not.toBe('changed.png')
   })
 
-  it('车辆候选未接入时保留现有关系，拒绝任意新增和修改分配', () => {
+  it('车辆只能选择档案候选，支持解除和重新分配', () => {
     data.selectWorkbenchPersona('groundSupervisor')
     const before = JSON.stringify(data.state.fleetDrivers)
-    expect(() => data.saveDriver(valid({ vehicle: '任意车牌' }))).toThrow('车辆档案候选未接入')
+    expect(() => data.saveDriver(valid({ vehicle: '任意车牌' }))).toThrow('请选择车辆档案')
     const existing = data.state.fleetDrivers[0]
-    expect(() => data.saveDriver({ ...existing, vehicle: '' }, { id: existing.id })).toThrow('车辆档案候选未接入')
     expect(JSON.stringify(data.state.fleetDrivers)).toBe(before)
-    expect(data.saveDriver({ ...existing, remark: '保留原车辆' }, { id: existing.id }).vehicle).toBe('沪A·DEMO1')
+    expect(data.saveDriver({ ...existing, vehicle: '' }, { id: existing.id }).vehicle).toBe('')
+    expect(data.saveDriver({ ...existing, vehicle: '沪B·DEMO2' }, { id: existing.id }).vehicle).toBe('沪B·DEMO2')
   })
 
   it('精确查询姓名或手机号，正常与休假按同一优先级拼音排序', () => {
