@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { reactive } from 'vue'
 import { createAirDeclarationActions } from '../src/data/airDeclarationActions.js'
+import { createAirOrderSupplementActions } from '../src/data/airOrderSupplementActions.js'
+import { deriveWorkbenchTasks } from '../src/domain/workbenchTasks.js'
 import {
   DECLARATION_STATUSES, buildAirDeclarationMaterialNotice, canManageAirDeclarations,
   deriveAirDeclarations, filterAirDeclarations, getAirDeclarationMaterialFile,
@@ -27,7 +29,6 @@ beforeEach(() => {
     { id: 'CHILD', parentId: 'MAIN', housebillNo: 'HOUSE-001', creator: '分单建单客服', customer: '分单客户乙', origin: 'CAN', destination: 'AMS',
       serviceRecords: [{ id: 'SERVICE-C', type: 'customs', status: '服务中', customsStatus: '报关查验', createdAt: '2026-09-07 12:00',
         details: { choice: '我司报关', documentType: '单证报关', attachments: [material('M-C')] }, materialRequests: [] }] },
-    { id: 'DETACHED', parentId: '', serviceRecords: [{ id: 'SERVICE-DETACHED', type: 'customs' }] },
   ], messages: [] })
   session = { role: 'customsService', name: '报关演示客服' }
   owner = createAirDeclarationActions(state, () => session)
@@ -39,12 +40,47 @@ describe('第012篇报关单投影与查询', () => {
     expect(rows.map(row => row.id)).toEqual(['SERVICE-C', 'SERVICE-D'])
     expect(rows[0]).toMatchObject({ orderId: 'MAIN', childId: 'CHILD', housebillNo: 'HOUSE-001', waybillNo: '784-23456789',
       creator: '分单建单客服', customer: '分单客户乙', origin: 'CAN', destination: 'AMS', departureDate: '2026-09-11', customsStatus: '报关查验', serviceStatus: '服务中',
-      target: { path: '/fulfillment/air-orders/MAIN/supplement', query: { customs: 'SERVICE-C', child: 'CHILD' } } })
+      target: { path: '/fulfillment/declarations/SERVICE-C/source' } })
     expect(rows[1]).toMatchObject({ customsStatus: '单证预审', target: { path: '/fulfillment/air-orders/DIRECT/supplement', query: { customs: 'SERVICE-D' } } })
     expect(rows.every(row => row.blockReason.includes('待确认') && row.materialBlockReason.includes('待确认'))).toBe(true)
     expect(snapshot(state)).toEqual(before)
     expect(DECLARATION_STATUSES).toEqual(['单证预审', '报关审结', '报关查验', '放行', '已结关'])
     expect(deriveAirDeclarations({})).toEqual([])
+  })
+  it('实际移单保留报关服务、材料与未完成待办，独立来源不再引用旧主单且可继续通知', async () => {
+    const request = owner.notifyAirDeclarationMaterials([targets[1]])[0]
+    const child = state.airChildren[0], service = child.serviceRecords[0], originalService = snapshot(service)
+    child.orderStatus = '子订单完成'
+    Object.assign(state.airOrders[1], { orderStatus: '待补录', bookingStatus: '服务已完成' })
+    createAirOrderSupplementActions(state, () => ({ role: 'supervisor', name: '主管' })).moveAirHouseBill('MAIN', 'CHILD')
+    const row = deriveAirDeclarations(state).find(item => item.id === 'SERVICE-C')
+    expect(row).toMatchObject({ orderId: '', orderNo: '', waybillNo: '', departureDate: '', childId: 'CHILD', housebillNo: 'HOUSE-001',
+      creator: '分单建单客服', notifyBlockReason: '', target: { path: '/fulfillment/declarations/SERVICE-C/source' } })
+    expect(row.materialRequests).toEqual([request])
+    expect(snapshot(service)).toEqual(originalService)
+    const tasks = deriveWorkbenchTasks(state, { scope: 'air', role: 'service', name: '分单建单客服' }).filter(item => item.type === 'air-customs-materials')
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0]).toMatchObject({ completed: false, target: row.target })
+    expect(await owner.getAirDeclarationFiles([targets[1]])[0].blob.text()).toBe('真实合成文本M-C')
+    expect(owner.notifyAirDeclarationMaterials([targets[1]])[0].recipient).toBe('分单建单客服')
+    expect(service.materialRequests).toHaveLength(2)
+    expect(state.messages.at(-1).related).toEqual(row.target)
+  })
+  it('母单缺失仍投影分单服务，不引用失效父单信息，保留历史但阻止新增通知', async () => {
+    const child = state.airChildren[0]
+    owner.notifyAirDeclarationMaterials([targets[1]])
+    Object.assign(child, { waybillNo: 'STALE-WAYBILL', booking: { departureDate: '2000-01-01' } })
+    state.airOrders = state.airOrders.filter(item => item.id !== child.parentId)
+    const before = snapshot(state), row = deriveAirDeclarations(state).find(item => item.id === 'SERVICE-C')
+    expect(row).toMatchObject({ childId: 'CHILD', orderId: '', orderNo: '', waybillNo: '', departureDate: '', creator: '分单建单客服' })
+    expect(row.notifyBlockReason).toContain('关联主订单已不存在')
+    expect(row.materialRequests[0].status).toBe('pending')
+    expect(snapshot(state)).toEqual(before)
+    expect(() => owner.notifyAirDeclarationMaterials([targets[1]])).toThrow('关系失效后的报关处理待确认')
+    expect(await owner.getAirDeclarationFiles([targets[1]])[0].blob.text()).toBe('真实合成文本M-C')
+    expect(snapshot(state)).toEqual(before)
+    child.departureDate = '2026-09-15'
+    expect(deriveAirDeclarations(state).find(item => item.id === 'SERVICE-C').departureDate).toBe('2026-09-15')
   })
   it('八个筛选项共同生效，文本模糊查询忽略大小写，日期边界包含当日', () => {
     const rows = deriveAirDeclarations(state)
@@ -104,7 +140,7 @@ describe('第012篇报关材料下载与补齐通知', () => {
     expect(state.airOrders[0].services[1].materialRequests[0]).toMatchObject({ materialId: 'M-D', materialName: '材料M-D', status: 'pending', recipient: '直单建单客服' })
     expect(state.airChildren[0].serviceRecords[0].materialRequests[0]).toMatchObject({ serviceId: 'SERVICE-C', materialId: 'M-C', status: 'pending' })
     expect(state.messages).toHaveLength(2)
-    expect(state.messages[1]).toMatchObject({ recipient: '分单建单客服', status: '本地模拟', related: { path: '/fulfillment/air-orders/MAIN/supplement', query: { child: 'CHILD', customs: 'SERVICE-C' } } })
+    expect(state.messages[1]).toMatchObject({ recipient: '分单建单客服', status: '本地模拟', related: { path: '/fulfillment/declarations/SERVICE-C/source' } })
     expect(deriveAirDeclarations(state)[0].materialRequests).toHaveLength(1)
     expect(state.airChildren[0].serviceRecords[0]).toMatchObject({ customsStatus: '报关查验', status: '服务中' })
     expect(state.airOrders[0].services[1].customsStatus).toBeUndefined()
@@ -136,6 +172,39 @@ describe('第012篇报关材料下载与补齐通知', () => {
     expect(() => owner.notifyAirDeclarationMaterials([targets[0]])).toThrow('服务不存在或标识不唯一')
     expect(state.messages).toHaveLength(0)
   })
+  it.each([
+    ['服务取消', 'service', 'status', '服务已取消'],
+    ['服务异常取消', 'service', 'status', '异常取消'],
+    ['服务异常结束', 'service', 'status', '异常结束'],
+    ['服务删除', 'service', 'deleted', true],
+    ['分单取消', 'child', 'orderStatus', '已取消'],
+    ['分单删除', 'child', 'deleted', true],
+    ['主单作废', 'parent', 'orderStatus', '已作废'],
+    ['主单删除', 'parent', 'deleted', true],
+  ])('%s时统一阻止新增通知，整批拒绝且保留历史与真实下载', async (_label, source, key, value) => {
+    owner.notifyAirDeclarationMaterials([targets[1]])
+    const entity = source === 'service' ? state.airChildren[0].serviceRecords[0] : source === 'child' ? state.airChildren[0] : state.airOrders[1]
+    entity[key] = value
+    const before = snapshot(state), row = deriveAirDeclarations(state).find(item => item.id === 'SERVICE-C')
+    expect(row.notifyBlockReason).toContain('不能新增材料补齐通知')
+    expect(() => buildAirDeclarationMaterialNotice(row, row.materials[0])).toThrow(row.notifyBlockReason)
+    expect(() => owner.notifyAirDeclarationMaterials(targets)).toThrow(row.notifyBlockReason)
+    expect(await owner.getAirDeclarationFiles([targets[1]])[0].blob.text()).toBe('真实合成文本M-C')
+    expect(row.materialRequests).toHaveLength(1)
+    expect(row.materialRequests[0].status).toBe('pending')
+    expect(snapshot(state)).toEqual(before)
+  })
+  it('直单作废与删除也不可新增通知，正常服务完成不被当成取消', () => {
+    const direct = state.airOrders[0], service = direct.services[1]
+    service.status = '服务已完成'
+    expect(owner.notifyAirDeclarationMaterials([targets[0]])).toHaveLength(1)
+    for (const values of [{ orderStatus: '已废除' }, { orderStatus: '异常作废' }, { orderStatus: '', deleted: true }]) {
+      Object.assign(direct, values)
+      const before = snapshot(state)
+      expect(() => owner.notifyAirDeclarationMaterials([targets[0]])).toThrow('来源已取消、作废或删除')
+      expect(snapshot(state)).toEqual(before)
+    }
+  })
 })
 
 describe('第012篇显式载入的已收指令示例', () => {
@@ -145,7 +214,7 @@ describe('第012篇显式载入的已收指令示例', () => {
     const result = owner.loadAirDeclarationExamples()
     expect(result).toMatchObject({ addedOrders: 2, addedChildren: 2, addedServices: 3 })
     expect(state.airOrders.slice(0, 2)).toEqual(before.airOrders)
-    expect(state.airChildren.slice(0, 2)).toEqual(before.airChildren)
+    expect(state.airChildren.slice(0, before.airChildren.length)).toEqual(before.airChildren)
     expect(result.rows).toHaveLength(3)
     expect(result.rows.map(row => row.materials.length).sort()).toEqual([0, 1, 2])
     expect(result.rows.every(row => row.exampleLabel === '已收指令示例' && row.customsStatus === '单证预审' && row.serviceStatus === '待服务' && row.creator === '周倩')).toBe(true)
@@ -163,7 +232,7 @@ describe('第012篇显式载入的已收指令示例', () => {
     expect(owner.loadAirDeclarationExamples()).toMatchObject({ addedOrders: 0, addedChildren: 0, addedServices: 0 })
     expect(exampleOrder.supplement.marks).toBe('保留用户修改')
     expect(state.airOrders).toHaveLength(4)
-    expect(state.airChildren).toHaveLength(4)
+    expect(state.airChildren).toHaveLength(before.airChildren.length + 2)
     expect(state.messages).toEqual([])
   })
   it('样例订单/分单/服务标识冲突均在任何写入之前拒绝', () => {
@@ -179,5 +248,27 @@ describe('第012篇显式载入的已收指令示例', () => {
       expect(snapshot(state)).toEqual(before)
       Object.assign(state, original)
     }
+  })
+  it.each([
+    ['orderNo', 'GJ-DEMO-CUSTOMS-DIRECT', '订单号'],
+    ['orderNo', 'gj-demo-customs-child-01', '订单号'],
+    ['housebillNo', 'democust0001', '分单号'],
+    ['housebillNo', 'DEMOCUST0002', '分单号'],
+    ['waybillNo', '781-90001201', '提单号'],
+    ['waybillNo', '781-90001202', '提单号'],
+  ])('载入前检查业务编号 %s=%s，冲突时不新增任何样例记录', (key, value, label) => {
+    state.airChildren.push({ id: 'EXISTING-USER-RECORD', [key]: value, serviceRecords: [] })
+    const before = snapshot(state)
+    expect(() => owner.loadAirDeclarationExamples()).toThrow(`示例${label}与现有记录冲突`)
+    expect(snapshot(state)).toEqual(before)
+  })
+  it('已载入示例再次载入完全幂等，不重建移单关系或覆盖用户修改的业务编号', () => {
+    owner.loadAirDeclarationExamples()
+    const child = state.airChildren.find(item => item.id === 'DEMO-CUSTOMS-CHILD-01')
+    Object.assign(child, { parentId: '', housebillNo: 'USERCUST0001' })
+    state.airOrders.find(item => item.id === 'DEMO-CUSTOMS-DIRECT').waybillNo = '781-99999999'
+    const before = snapshot(state)
+    expect(owner.loadAirDeclarationExamples()).toMatchObject({ addedOrders: 0, addedChildren: 0, addedServices: 0 })
+    expect(snapshot(state)).toEqual(before)
   })
 })

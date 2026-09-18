@@ -17,7 +17,7 @@ export const moduleCatalog = {
   declarations: { label: '报关单管理', path: '/fulfillment/declarations', domain: 'fulfillment', group: '空运履约', icon: OfficeBuilding },
   tracking: { label: '在途跟踪', path: '/fulfillment/tracking', domain: 'fulfillment', group: '空运履约', icon: MapLocation },
   clearance: { label: '清关派送', path: '/fulfillment/clearance', domain: 'fulfillment', group: '空运履约', icon: Guide },
-  groundDispatch: { label: '用车调度', path: '/fulfillment/ground-dispatch', domain: 'fulfillment', group: '地面运输', icon: Van },
+  groundDispatch: { label: '用车订单', path: '/fulfillment/ground-dispatch', domain: 'fulfillment', group: '地面运输', icon: Van },
   groundWaybills: { label: '运输运单', path: '/fulfillment/ground-waybills', domain: 'fulfillment', group: '地面运输', icon: Van },
   fleet: { label: '车队管理', path: '/fulfillment/fleet', domain: 'fulfillment', group: '地面运输', icon: Ship },
   driver: { label: '司机端任务', path: '/fulfillment/driver', domain: 'fulfillment', group: '地面运输', icon: Connection },
@@ -58,7 +58,7 @@ export const navigationByDomain = Object.fromEntries(domains.map((domain) => {
 }))
 
 export const genericModuleKeys = Object.keys(moduleCatalog).filter((key) => ![
-  'dashboard', 'financeWorkspace', 'airOrders', 'airChildren', 'booking', 'airwayBills', 'declarations', 'groundDispatch', 'groundWaybills', 'fleet', 'warehouseOrders', 'costs', 'partners', 'airMasterData', 'customerQuotes', 'warehouseQuotes', 'airSupplierRates', 'airCapacity', 'pallet', 'messages', 'integrations',
+  'dashboard', 'financeWorkspace', 'airOrders', 'airChildren', 'booking', 'airwayBills', 'declarations', 'clearance', 'tracking', 'groundDispatch', 'groundWaybills', 'fleet', 'warehouseOrders', 'costs', 'partners', 'airMasterData', 'customerQuotes', 'warehouseQuotes', 'airSupplierRates', 'airCapacity', 'pallet', 'messages', 'integrations',
 ].includes(key))
 
 export function getModuleByPath(path) {

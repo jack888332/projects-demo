@@ -82,10 +82,10 @@ export function createAirDeclarationActions(state, getSession) {
       if (matches.length !== 1) throw new Error('报关服务不存在或标识不唯一，请刷新后重试')
       const row = matches[0], materials = row.materials.filter(material => material.id === target?.materialId)
       if (materials.length !== 1) throw new Error('所选材料已变化或标识不唯一，请刷新后重试')
-      const order = state.airOrders.find(item => item.id === row.orderId)
-      const child = row.childId ? state.airChildren.find(item => item.id === row.childId && item.parentId === order.id) : null
+      const order = array(state.airOrders).find(item => item.id === row.orderId)
+      const child = row.childId ? array(state.airChildren).find(item => item.id === row.childId) : null
       const service = (child ? child.serviceRecords : order.services).find(item => item.id === row.id && item.type === 'customs')
-      return { row, material: materials[0], order, service }
+      return { row, material: materials[0], entity: child || order, service }
     })
   }
   function getAirDeclarationFiles(targets) {
@@ -102,10 +102,10 @@ export function createAirDeclarationActions(state, getSession) {
       return { id, serviceId: row.id, recipient, createdAt: GROUND_NOW, materialId: material.id, materialName: material.name, content, status: 'pending' }
     })
     state.messages ||= []
-    prepared.forEach(({ row, order, service }, index) => {
+    prepared.forEach(({ row, entity, service }, index) => {
       service.materialRequests ||= []
       service.materialRequests.push(requests[index])
-      appendAirNotification(state, order, '报关材料补齐', requests[index].recipient, requests[index].content, row.target)
+      appendAirNotification(state, entity, '报关材料补齐', requests[index].recipient, requests[index].content, row.target)
     })
     return requests
   }
@@ -128,6 +128,14 @@ export function createAirDeclarationActions(state, getSession) {
     }
     const addedOrders = orders.filter(order => !currentOrders.some(row => row.id === order.id))
     const addedChildren = children.filter(child => !currentChildren.some(row => row.id === child.id))
+    const businessKey = value => typeof value === 'string' ? value.trim().toUpperCase() : ''
+    const currentEntities = [...currentOrders, ...currentChildren]
+    for (const example of [...addedOrders, ...addedChildren]) {
+      for (const [key, label] of [['orderNo', '订单号'], ['housebillNo', '分单号'], ['waybillNo', '提单号']]) {
+        const value = businessKey(example[key])
+        if (value && currentEntities.some(entity => businessKey(entity[key]) === value)) throw new Error(`报关示例${label}与现有记录冲突，未载入示例`)
+      }
+    }
     state.airOrders ||= []
     state.airChildren ||= []
     state.airOrders.push(...addedOrders)

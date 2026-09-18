@@ -1,7 +1,7 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, Search, Refresh } from '@element-plus/icons-vue'
+import { Plus, Search, Refresh, MapLocation } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '../components/PageHeader.vue'
 import DataTableFrame from '../components/DataTableFrame.vue'
@@ -12,6 +12,7 @@ import { getAirPriceRestriction } from '../data/airOrderActions.js'
 import { getAirSupplementRestriction } from '../domain/airOrderSupplement.js'
 import { usePrototypeData } from '../data/usePrototypeData.js'
 import { AIR_PRODUCTS } from '../domain/airOperations.js'
+import { canViewAirTrackingOrder } from '../domain/airTracking.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -137,7 +138,7 @@ watch(selected, order => { if (!order) detailVisible.value = false })
           <div v-for="[key, label] in bookingDetailFields" :key="key"><dt>{{ label }}</dt><dd>{{ displayValue(selected.booking[key]) }}</dd></div>
           <div><dt>允许亏损</dt><dd>{{ selected.booking.allowLoss ? '是' : '否' }}</dd></div>
         </dl></div>
-        <div class="detail-section"><h3>服务单据</h3><el-table :data="selected.services || []" aria-label="订单服务单据"><el-table-column prop="id" label="服务单号" min-width="180" /><el-table-column prop="name" label="服务" width="90" /><el-table-column label="状态" min-width="110"><template #default="{ row }"><StatusTag :label="row.status" /></template></el-table-column></el-table></div>
+        <div class="detail-section"><h3>服务单据</h3><el-button v-if="canViewAirTrackingOrder(selected, airSession)" :icon="MapLocation" @click="detailVisible = false; router.push({ path: '/fulfillment/tracking', query: { number: selected.orderNo } })">在途跟踪</el-button><el-table :data="selected.services || []" aria-label="订单服务单据"><el-table-column prop="id" label="服务单号" min-width="180" /><el-table-column prop="name" label="服务" width="90" /><el-table-column label="状态" min-width="110"><template #default="{ row }"><StatusTag :label="row.status" /></template></el-table-column></el-table></div>
         <div v-if="selected.services?.some(service => service.type === 'warehouse')" class="detail-section"><h3>仓储服务信息</h3><dl class="detail-grid"><div><dt>仓储操作</dt><dd>{{ displayValue(selected.warehouseOperations) }}</dd></div></dl></div>
         <div v-if="selected.services?.some(service => service.type === 'pickup')" class="detail-section"><h3>提货服务信息</h3><dl class="detail-grid">
           <div><dt>供应商</dt><dd>{{ displayValue(selected.pickup?.supplier) }}</dd></div><div><dt>提货时间</dt><dd>{{ displayValue(selected.pickup?.time) }}</dd></div>

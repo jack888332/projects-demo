@@ -58,13 +58,14 @@ export function validateAirClearanceAttachments(files, { required = true } = {})
 
 function serviceDrafts(order = {}) {
   const cargo = Object.fromEntries(cargoKeys.map(key => [key, order[key] ?? '']))
+  const waybillCargo = Object.fromEntries(cargoKeys.map(key => [key, order.waybill?.[key] ?? '']))
   const waybillNo = order.waybillNo || '', flight = order.booking?.flight || order.flight || ''
   const customsMode = order.booking?.routeType === '直航' ? '预报关' : order.booking?.routeType === '国内中转' ? '非预报关' : ''
   return {
     transfer: { warehouseArea: '', documentStatus: '', customsMode, waybillNo, flight, ...cargo, pickupPoint: '', deliveryPoint: '' },
     customs: { choice: '', documentType: '', attachments: [], remark: '', phone: '', ...cargo, goodsName: order.englishGoodsName || order.goodsName || '' },
     security: { customsMode, ...cargo, customer: order.customer || '', waybillNo, origin: order.origin || '', destination: order.destination || '', flight, cutoffTime: order.booking?.cutoffTime || '', housebillNo: order.housebillNo || '', goodsName: order.englishGoodsName || order.goodsName || '', arrivalDate: '' },
-    clearance: { waybillNo, ...cargo, departureDate: order.booking?.departureDate || order.departureDate || '', secondDepartureDate: '', expectedArrival: '', deliveryAddress: '', phone: '', contact: '', remark: '', attachments: [] },
+    clearance: { waybillNo, ...waybillCargo, departureDate: order.booking?.departureDate || order.departureDate || '', secondDepartureDate: '', expectedArrival: '', deliveryAddress: '', phone: '', contact: '', remark: '', attachments: [] },
   }
 }
 
@@ -115,7 +116,7 @@ export function createHouseBillDraft(order = {}) {
     shipper: order.shipper || order.supplement?.shipper || '', consignee: order.consignee || order.supplement?.consignee || '',
     currency: '', freightTerms: 'FREIGHT PREPAID', otherCharges: 'FREIGHT PREPAID', paymentMethod: 'PP', rate: undefined, destination: '', warehouseInstruction: '',
     pieces: undefined, grossWeight: undefined, volume: undefined, services: { pickup: false, warehouse: false, customs: true, clearance: false },
-    pickup: createAirDraft().pickup, warehouseOperations: [], ...serviceDrafts(order),
+    pickup: createAirDraft().pickup, warehouseOperations: [], ...serviceDrafts({ ...order, waybill: isChild ? order.waybill : null }),
   }
   if (!isChild) return draft
   for (const key of [...houseTextFields, ...cargoKeys]) if (Object.hasOwn(order, key)) draft[key] = houseValue(key, order[key])
@@ -132,7 +133,7 @@ export function normalizeHouseBillDraft(payload, order = {}) {
   else draft.services = payload?.services
   if (record(payload?.pickup)) for (const key of Object.keys(draft.pickup)) if (Object.hasOwn(payload.pickup, key)) draft.pickup[key] = clone(payload.pickup[key])
   if (Object.hasOwn(payload || {}, 'warehouseOperations')) draft.warehouseOperations = clone(payload.warehouseOperations)
-  Object.assign(draft, serviceDrafts({ ...order, ...draft }))
+  Object.assign(draft, serviceDrafts({ ...order, ...draft, waybill: order.isChild || order.housebillNo || order.parentId ? order.waybill : null }))
   return copyServiceInputs(draft, payload)
 }
 

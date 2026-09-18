@@ -8,7 +8,7 @@ const editableTypes = ['pickup', 'warehouse', 'transfer', 'security', 'clearance
 const clone = cloneAirSupplementValue
 const sourceFor = (order, child) => {
   const englishGoodsName = child ? child.englishGoodsName || '' : order.supplement?.englishGoodsName || order.englishGoodsName || ''
-  return { ...order, ...(child || {}), booking: order.booking, waybillNo: order.waybillNo,
+  return { ...order, ...(child || {}), booking: order.booking, waybillNo: order.waybillNo, waybill: child ? child.waybill : order.waybill,
     englishGoodsName, supplement: { englishGoodsName } }
 }
 

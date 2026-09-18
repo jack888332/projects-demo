@@ -135,7 +135,7 @@ export function createGroundWaybill(order, draft, { serial, vehicleCount, actor,
     specialVehicle: order.specialVehicle, tailLift: order.tailLift, regulated: order.regulated,
     cost: quote?.cost ?? null, costStatus: quote ? '合成报价匹配' : '待确认：未匹配报价',
     status: '待提货', exceptionStatus: '', cargoDocuments: '', sealNo: '', expectedArrival: '',
-    createdAt: time, updatedAt: time, dispatchedBy: actor,
+    createdAt: time, updatedAt: time, dispatchUpdatedAt: time, dispatchedBy: actor,
     settlementStatus: '未覆盖：自动费用尚未实现',
     trajectory: [{ id: `${waybillNo}-T1`, event: '调度完成', status: '待提货', time, remark: draft.remark || '', actor, role: '航晟客服' }],
   }

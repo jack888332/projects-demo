@@ -5,6 +5,7 @@ import { deriveAirDeclarations } from './airDeclarations.js'
 export const WORKBENCH_PERSONAS = [
   { id: 'service', scope: 'air', role: 'service', name: '周倩', label: '空运客服' },
   { id: 'customsService', scope: 'customs', role: 'customsService', name: '报关演示客服', label: '报关行客服' },
+  { id: 'overseasService', scope: 'clearance', role: 'overseasService', name: '海外演示客服', label: '海外部客服' },
   { id: 'waybillClerk', scope: 'air', role: 'waybillClerk', name: '提单演示专员', label: '打单员' },
   { id: 'templateProduct', scope: 'airTemplate', role: 'product', name: '模板演示产品人员', label: '提单模板产品人员' },
   { id: 'templateTechnical', scope: 'airTemplate', role: 'technical', name: '模板演示技术人员', label: '提单模板技术人员' },
@@ -16,6 +17,7 @@ export const WORKBENCH_PERSONAS = [
   { id: 'divisionGeneral', scope: 'air', role: 'divisionGeneral', name: '事业部总经理', label: '事业部总经理' },
   { id: 'hangsheng', scope: 'ground', role: 'hangsheng', name: '陈楠', label: '航晟客服' },
   { id: 'groundSupervisor', scope: 'ground', role: 'supervisor', name: '陈楠', label: '航晟主管' },
+  { id: 'groundTransportSupervisor', scope: 'ground', role: 'transportSupervisor', name: '陆运演示主管', label: '航晟陆运主管' },
   { id: 'warehouseService', scope: 'warehouse', role: 'service', name: '仓库演示客服', label: '仓库客服' },
   { id: 'warehouseSupervisor', scope: 'warehouse', role: 'supervisor', name: '仓库演示主管', label: '仓库主管' },
   { id: 'finance', scope: 'finance', role: 'finance', name: '财务演示人员', label: '财务人员' },
@@ -176,7 +178,9 @@ const link = (label, path = '', reason = '尚未覆盖') => ({ label, target: pa
 export function getWorkbenchQuickLinks(persona) {
   const session = resolvePersona(persona)
   if (!session) return []
+  if (session.scope === 'ground' && session.role === 'transportSupervisor') return [link('航晟陆运月报', '/fulfillment/ground-monthly')]
   if (session.scope === 'customs' && session.role === 'customsService') return [link('报关单管理', '/fulfillment/declarations')]
+  if (session.scope === 'clearance' && session.role === 'overseasService') return [link('清关派送', '/fulfillment/clearance')]
   if (session.scope === 'airTemplate') return [link('提单模板管理', '/fulfillment/airway-bill-templates')]
   if (session.role === 'waybillClerk') return [link('提单制作', '/fulfillment/airway-bills')]
   if (session.scope === 'air' && ['service', 'supervisor'].includes(session.role)) {
@@ -186,7 +190,7 @@ export function getWorkbenchQuickLinks(persona) {
     return [link('订舱管理', '/fulfillment/booking'), link('舱位产品'), link('舱位实时查询'), link('配板管理'), ...(['director', 'deputyGeneral', 'divisionGeneral'].includes(session.role) ? [link('核算订单成本')] : [link('提单号')]), link('结算订单成本')]
   }
   if (session.scope === 'ground' && ['hangsheng', 'supervisor'].includes(session.role)) {
-    return [link('运输订单', '/fulfillment/ground-dispatch'), link('中转订单'), link('供应商报价'), link('客户报价'), link('运输运单', '/fulfillment/ground-waybills'), link('中转运单')]
+    return [link('运输订单', '/fulfillment/ground-dispatch'), {label:'中转订单',target:{path:'/fulfillment/ground-dispatch',query:{tab:'transfer'}},disabled:false}, link('供应商报价'), link('客户报价'), link('运输运单', '/fulfillment/ground-waybills'), link('中转运单')]
   }
   if (session.scope === 'warehouse' && ['service', 'supervisor'].includes(session.role)) {
     return ['仓库订单', '运输订单预报看板', '运输运单预报看板', '货物管理', '退货管理'].map(label => link(label))

@@ -42,7 +42,7 @@ export function createAirOrderSupplementActions(state, getSession) {
     const sequence = nextEvent()
     const services = createAirServiceRecords(order.id, draft.groundServices, draft, sequence, order.services || [])
     const childUpdates = order.orderType === '合成主订单' ? [] : children.filter(row => row.orderStatus === '子订单暂存').map(child => {
-      const serviceDraft = normalizeHouseBillDraft(child, { ...order, ...child, booking: order.booking, waybillNo: order.waybillNo })
+      const serviceDraft = normalizeHouseBillDraft(child, { ...order, ...child, booking: order.booking, waybillNo: order.waybillNo, waybill: child.waybill })
       return { child, updates: {
         orderStatus: '子订单完成', completedAt: GROUND_NOW, updatedAt: GROUND_NOW,
         serviceRecords: [...(child.serviceRecords || []), ...createAirServiceRecords(child.id, child.services, serviceDraft, sequence, child.serviceRecords || [])],
@@ -76,7 +76,7 @@ export function createAirOrderSupplementActions(state, getSession) {
     const existing = childId ? state.airChildren.find(row => row.id === childId) : null
     if (childId && !existing) throw new Error('分单不存在')
     reject(getHouseBillEditRestriction(order, existing, getSession()))
-    const draft = normalizeHouseBillDraft(payload, existing ? { ...order, ...existing, booking: order.booking, waybillNo: order.waybillNo } : order)
+    const draft = normalizeHouseBillDraft(payload, existing ? { ...order, ...existing, booking: order.booking, waybillNo: order.waybillNo, waybill: existing.waybill } : order)
     check(validateHouseBillDraft(draft, state.airMaster))
     if (draft.housebillNo && state.airChildren.some(row => row.id !== childId && row.housebillNo?.toUpperCase() === draft.housebillNo.toUpperCase())) throw Object.assign(new Error('分单号已存在'), { fields: { housebillNo: '分单号已存在' } })
     let sequence = Number.isSafeInteger(state.airChildSequence) && state.airChildSequence >= 0 ? state.airChildSequence : 0

@@ -24,6 +24,7 @@ const detailId = ref(''), detailVisible = ref(false), failure = ref('')
 const detail = computed(() => allRows.value.find(row => row.id === detailId.value))
 const selectedRows = computed(() => allRows.value.filter(row => selected.value.includes(row.id)))
 const hasSelectedMaterials = computed(() => selectedRows.value.some(row => row.materials.length))
+const selectedNotifyReason = computed(() => selectedRows.value.find(row => row.notifyBlockReason)?.notifyBlockReason || '')
 const display = value => value === undefined || value === null || value === '' ? '未提供' : value
 const statusLimit = AIR_DECLARATION_STATUS_BLOCK_REASON
 
@@ -47,16 +48,20 @@ function openMaterials(ids, purpose = 'materials') {
 }
 function loadExamples() {
   failure.value = ''
-  try { loadAirDeclarationExamples(); resetQuery(); ElMessage.success('已载入报关指令示例，可查询材料并演示补齐通知') }
+  try { loadAirDeclarationExamples(); resetQuery(); followServiceLink(); ElMessage.success('已载入报关指令示例，可查询材料并演示补齐通知') }
   catch (error) { failure.value = error.message }
 }
 function source(row) { router.push({ ...row.target, query: { ...row.target.query, inspect: 'service' } }) }
-function waybill(row) { router.push({ path: `/fulfillment/airway-bills/${row.orderId}`, query: row.childId ? { child: row.childId } : {} }) }
+function waybill(row) {
+  if (!row.orderId || !row.waybillNo) return false
+  router.push({ path: `/fulfillment/airway-bills/${row.orderId}`, query: row.childId ? { child: row.childId } : {} })
+  return true
+}
 function followServiceLink() {
   if (!route.query.service) return
   const row = allRows.value.find(item => item.id === route.query.service)
   if (row) { resetQuery(); filters.serviceNo = row.id; query(); openDetail(row) }
-  else failure.value = '该报关服务当前不存在；刷新或恢复数据后，演示期间新增的记录会清空。'
+  else { detailId.value = ''; detailVisible.value = false; failure.value = '该报关服务当前不存在；刷新或恢复数据后，演示期间新增的记录会清空。' }
 }
 watch(() => route.query.service, followServiceLink, { immediate: true })
 watch(() => [state.airOrders, state.airChildren, unref(declarationSession).role, unref(declarationSession).name], () => {
@@ -84,7 +89,7 @@ watch(() => [state.airOrders, state.airChildren, unref(declarationSession).role,
       <div class="declaration-actions"><el-button type="primary" native-type="submit" :icon="Search">查询</el-button><el-button :icon="Refresh" @click="resetQuery">重置</el-button></div>
     </form>
     <DataTableFrame :key="queryVersion" :rows="rows" :page-size="10" :page-sizes="[10, 20, 50]" selectable :selected-count="selected.length">
-      <template #actions><div class="declaration-actions"><el-button v-if="selected.length" link @click="selected = []">清除选择</el-button><el-button :disabled="!allowed || !hasSelectedMaterials" @click="openMaterials(selected)">批量下载材料</el-button><el-button type="primary" :disabled="!allowed || !hasSelectedMaterials" @click="openMaterials(selected, 'notify')">批量补齐通知</el-button></div></template>
+      <template #actions><div class="declaration-actions"><el-button v-if="selected.length" link @click="selected = []">清除选择</el-button><el-button :disabled="!allowed || !hasSelectedMaterials" @click="openMaterials(selected)">批量下载材料</el-button><el-button type="primary" :disabled="!allowed || !hasSelectedMaterials || Boolean(selectedNotifyReason)" :title="selectedNotifyReason" @click="openMaterials(selected, 'notify')">批量补齐通知</el-button></div></template>
       <template #default="{ rows: pageRows }">
         <el-table :data="pageRows" row-key="id" aria-label="报关单列表" empty-text="暂无符合条件的报关服务；可载入已收指令示例演示。">
           <el-table-column width="48"><template #header><el-checkbox :disabled="!allowed || !pageRows.length" :model-value="pageSelected(pageRows)" :indeterminate="pagePartSelected(pageRows)" aria-label="选择本页报关服务" @change="value => togglePage(pageRows, value)" /></template><template #default="{ row }"><el-checkbox :disabled="!allowed" :model-value="selected.includes(row.id)" :aria-label="`选择报关服务${row.id}`" @change="value => toggle(row.id, value)" /></template></el-table-column>
@@ -97,7 +102,7 @@ watch(() => [state.airOrders, state.airChildren, unref(declarationSession).role,
           <el-table-column label="报关状态" width="115"><template #default="{ row }"><StatusTag :label="row.customsStatus" /></template></el-table-column>
           <el-table-column label="已上传材料" width="110"><template #default="{ row }">{{ row.materials.length }} 份</template></el-table-column>
           <el-table-column prop="creator" label="建单客服" width="100" /><el-table-column prop="createdAt" label="创建时间" min-width="175" />
-          <el-table-column label="操作" fixed="right" width="180"><template #default="{ row }"><el-button link type="primary" @click="openMaterials([row.id])">查看材料</el-button><el-button link type="primary" :disabled="!allowed || !row.materials.length" @click="openMaterials([row.id], 'notify')">补齐通知</el-button></template></el-table-column>
+          <el-table-column label="操作" fixed="right" width="180"><template #default="{ row }"><el-button link type="primary" @click="openMaterials([row.id])">查看材料</el-button><el-button link type="primary" :disabled="!allowed || !row.materials.length || Boolean(row.notifyBlockReason)" :title="row.notifyBlockReason" @click="openMaterials([row.id], 'notify')">补齐通知</el-button></template></el-table-column>
         </el-table>
       </template>
     </DataTableFrame>

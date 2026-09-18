@@ -5,14 +5,22 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '../components/PageHeader.vue'
 import DataTableFrame from '../components/DataTableFrame.vue'
 import StatusTag from '../components/StatusTag.vue'
+import GroundOrderEditor from '../components/GroundOrderEditor.vue'
+import GroundRelatedOrders from '../components/GroundRelatedOrders.vue'
+import { Plus } from '@element-plus/icons-vue'
+import { groundOrderPermissions, potentialGroundOrders, groundChangeText } from '../domain/groundOrders.js'
 import { usePrototypeData } from '../data/usePrototypeData.js'
 import { GROUND_VEHICLES, GROUND_SUPPLIERS, createDispatchDraft, getGroundQuotes, validateDispatchDraft, validateBatchGroundOrders } from '../domain/groundOperations.js'
 
 const router = useRouter()
 const route = useRoute()
-const { state, groundSession, dispatchGroundOrders } = usePrototypeData()
+const { state, groundSession, dispatchGroundOrders, closeGroundOrder, modifyGroundDispatch } = usePrototypeData()
+const editor = ref()
+const detailTab = ref('order'), orderExpanded = ref(true), modifyingBillId = ref('')
+const access = order => groundOrderPermissions(order, groundSession.role)
 const canDispatch = computed(() => ['hangsheng', 'supervisor'].includes(groundSession.role))
-const defaults = () => ({ keyword:'', customer:'', pickup:'', delivery:'', status:'未调度', createdDate:'', pickupDate:'' })
+const listKind = ref(route.query.tab === 'transfer' ? 'transfer' : 'transport')
+const defaults = () => ({ keyword:'', searchKey:'orderNo', orderType:'', customer:'', pickup:'', delivery:'', status:listKind.value === 'transfer' ? '' : '未调度', createdDate:'', pickupDate:'' })
 const filters = reactive(defaults())
 const sort = reactive({ prop:'', order:'' })
 const selectedIds = ref([])
@@ -28,13 +36,18 @@ const detailId = ref('')
 const detailVisible = ref(false)
 const routeError = ref('')
 const selected = computed(() => state.groundOrders.find(order => order.id === detailId.value))
-const bills = computed(() => state.groundWaybills.filter(bill => bill.orderId === detailId.value))
+const bills = computed(() => state.groundWaybills.filter(bill => bill.orderId === detailId.value).slice().sort((a,b) => (a.dispatchUpdatedAt || a.createdAt).localeCompare(b.dispatchUpdatedAt || b.createdAt)))
+const orderCosts = computed(() => state.costs.filter(cost => cost.groundOrderId === selected.value?.id || bills.value.some(bill => bill.id === cost.waybillId)))
 const targets = computed(() => state.groundOrders.filter(order => targetIds.value.includes(order.id)))
 const region = (order, key) => [...new Set((order[key + 'Points'] || []).map(p => p.province + ' / ' + p.city))].join('; ')
-const places = key => [...new Set(state.groundOrders.map(order => region(order, key)))]
-const rows = computed(() => state.groundOrders.filter(order =>
-  (!filters.keyword || [order.orderNo,order.childNo,order.batchNo].includes(filters.keyword.trim())) &&
-  (!filters.customer || order.customer === filters.customer) &&
+const listOrders = computed(() => state.groundOrders.filter(order => (order.orderType === '中转订单') === (listKind.value === 'transfer')))
+const customerName = order => order.source === '航晟手工创建' ? order.customer : '高捷物流集团-空运事业部'
+const showOrderType = computed(() => Boolean(state.groundUpsPartnerId) && state.partners.some(partner => partner.id === state.groundUpsPartnerId && partner.name === filters.customer))
+const places = key => [...new Set(listOrders.value.map(order => region(order, key)))]
+const rows = computed(() => listOrders.value.filter(order =>
+  (!filters.keyword || order[filters.searchKey] === filters.keyword.trim()) &&
+  (!filters.customer || customerName(order) === filters.customer) &&
+  (!showOrderType.value || !filters.orderType || order.orderType === filters.orderType) &&
   (!filters.status || order.dispatchStatus === filters.status) &&
   (!filters.pickup || region(order,'pickup') === filters.pickup) &&
   (!filters.delivery || region(order,'delivery') === filters.delivery) &&
@@ -43,9 +56,12 @@ const rows = computed(() => state.groundOrders.filter(order =>
 ).slice().sort((a,b) => {
   if (sort.prop && sort.order) {
     const numeric = ['pieces','weight','volume'].includes(sort.prop)
-    const compare = numeric ? Number(a[sort.prop] ?? -Infinity) - Number(b[sort.prop] ?? -Infinity) : String(a[sort.prop] || '').localeCompare(String(b[sort.prop] || ''),'zh-CN')
+    const left = sort.prop === 'customer' ? customerName(a) : a[sort.prop]
+    const right = sort.prop === 'customer' ? customerName(b) : b[sort.prop]
+    const compare = numeric && Number.isFinite(Number(left)) && Number.isFinite(Number(right)) ? Number(left) - Number(right) : String(left ?? '').localeCompare(String(right ?? ''),'zh-CN')
     return sort.order === 'ascending' ? compare : -compare
   }
+  if (listKind.value === 'transfer') return (a.dispatchStatus !== '未调度') - (b.dispatchStatus !== '未调度') || b.createdAt.localeCompare(a.createdAt)
   return (a.dispatchStatus !== '未调度') - (b.dispatchStatus !== '未调度') ||
     (a.dispatchStatus === '未调度' ? a.pickupTime.localeCompare(b.pickupTime) : b.updatedAt.localeCompare(a.updatedAt))
 }))
@@ -74,7 +90,19 @@ function choosePlate(draft, item, index) {
   expanded.value[index] = moreFields.some(([key]) => draft[key] !== '' && draft[key] != null)
 }
 function addVehicle() { drafts.value.push(createDispatchDraft()); expanded.value.push(false) }
-function openDetail(order) { detailId.value = order.id; detailVisible.value = true }
+function openDetail(order, tab = 'order') { detailId.value = order.id; detailTab.value = tab; orderExpanded.value = true; detailVisible.value = true }
+async function openRelated(order) {
+  if (!await allowDiscard()) return
+  visible.value = false; openDetail(order)
+}
+function switchList(value) { router.replace({ path: '/fulfillment/ground-dispatch', query: value === 'transfer' ? { tab: 'transfer' } : {} }) }
+watch(() => route.query.tab, value => { listKind.value = value === 'transfer' ? 'transfer' : 'transport'; Object.assign(filters, defaults()); selectedIds.value = []; table.value?.clearSelection() })
+watch(showOrderType, value => { if (!value) filters.orderType = '' })
+function editOrder(order) { detailVisible.value = false; editor.value.open(order) }
+function savedOrder(order) { filters.status = ''; filters.keyword = order.orderNo; openDetail(order) }
+async function closeOrder(order) {
+  try { await ElMessageBox.confirm('关闭后不可再编辑，未调度订单不产生费用。', '关闭订单', { confirmButtonText: '关闭订单', cancelButtonText: '取消', type: 'warning' }); closeGroundOrder(order.id); ElMessage.success('订单已关闭') } catch (error) { if (error instanceof Error) ElMessage.error(error.message) }
+}
 async function showAll() {
   if (!await router.replace('/fulfillment/ground-dispatch')) Object.assign(filters, defaults(), { status: '' })
 }
@@ -90,7 +118,17 @@ async function openDispatch(order) {
     catch { return }
   }
   targetIds.value = [...ids]; drafts.value = []; expanded.value = []; addVehicle()
+  modifyingBillId.value = ''
   initial.value = JSON.stringify(drafts.value); visible.value = true
+}
+function canModify(bill) {
+  return canDispatch.value && selected.value?.source === '航晟手工创建' && selected.value?.dispatchStatus === '已调度' && !['已卸货','已取消','异常中'].includes(bill.status) && bill.exceptionStatus !== '异常中'
+}
+function openModify(bill) {
+  if (!canModify(bill)) return
+  targetIds.value = [bill.orderId]; modifyingBillId.value = bill.id
+  drafts.value = [Object.fromEntries(Object.keys(createDispatchDraft()).map(key => [key, JSON.parse(JSON.stringify(bill[key] ?? createDispatchDraft()[key]))]))]
+  expanded.value = [true]; initial.value = JSON.stringify(drafts.value); detailVisible.value = false; visible.value = true
 }
 async function allowDiscard() {
   if (busy.value) return false
@@ -111,11 +149,18 @@ watch(() => [route.query.order, route.query.action], async ([id, action]) => {
   detailVisible.value = false
   detailId.value = ''
   if (!id) return
-  const order = state.groundOrders.find(item => item.id === id || item.orderNo === id)
+  const matches = state.groundOrders.filter(item => item.id === id || item.orderNo === id)
+  if (matches.length > 1) {
+    Object.assign(filters, defaults(), {status:'',keyword:id})
+    routeError.value = '该单号对应多笔订单，请从列表选择具体订单。'
+    return
+  }
+  const order = matches[0]
   if (!order) {
     routeError.value = '未找到对应运输订单，请返回来源页面重新选择或查看全部订单。'
     return
   }
+  listKind.value = order.orderType === '中转订单' ? 'transfer' : 'transport'
   Object.assign(filters, defaults(), { status: '', keyword: order.orderNo })
   if (action === 'dispatch' && order.dispatchStatus === '未调度') await openDispatch(order)
   else openDetail(order)
@@ -129,9 +174,9 @@ function submit() {
   if (invalid.value || busy.value) return
   busy.value = true
   try {
-    const result = dispatchGroundOrders(targetIds.value, JSON.parse(JSON.stringify(drafts.value)), {specialConfirmed:specialConfirmed.value})
+    const result = modifyingBillId.value ? [modifyGroundDispatch(modifyingBillId.value, JSON.parse(JSON.stringify(drafts.value[0])))] : dispatchGroundOrders(targetIds.value, JSON.parse(JSON.stringify(drafts.value)), {specialConfirmed:specialConfirmed.value})
     visible.value = false; selectedIds.value = []; table.value?.clearSelection(); filters.status = ''
-    openDetail(targets.value[0]); ElMessage.success('调度提交成功！已生成 ' + result.length + ' 张独立运输运单。')
+    openDetail(targets.value[0], 'dispatch'); ElMessage.success(modifyingBillId.value ? '调度已修改，保留原运单。' : '调度提交成功！已生成 ' + result.length + ' 张独立运输运单。')
   } catch (error) { ElMessage.error(error.message) }
   finally { busy.value = false }
 }
@@ -139,17 +184,20 @@ function submit() {
 
 <template>
   <div class="module-view">
-    <PageHeader title="用车调度" description="航晟客服 · 运输订单调度、车辆司机录入与关联运单">
-      <template #actions><el-button type="primary" :disabled="!canDispatch || !selectedIds.length" @click="openDispatch()">批量调度</el-button></template>
+    <PageHeader title="用车订单" description="航晟物流 · 订单管理">
+      <template #actions><el-button v-if="groundSession.role === 'transportSupervisor'" @click="router.push('/fulfillment/ground-monthly')">陆运月报</el-button><el-button v-if="access().create && listKind === 'transport'" :icon="Plus" type="primary" @click="editor.open()">新建订单</el-button><el-button :disabled="!canDispatch || !selectedIds.length" @click="openDispatch()">批量调度</el-button></template>
     </PageHeader>
-    <el-alert class="ground-notice" title="当前覆盖：调度 → 独立运单 → 客服状态管理。手工建单、修改/取消调度、异常上报与费用结算尚未覆盖；不会发送真实通知。" type="info" :closable="false" />
+    <el-tabs :model-value="listKind" @update:model-value="switchList"><el-tab-pane label="运输订单" name="transport" /><el-tab-pane label="中转订单" name="transfer" /></el-tabs>
+    <el-alert class="ground-notice" title="取消调度、已调度关闭及费用结算待确认；外部接口和通知未连接。" type="info" :closable="false" />
     <el-alert v-if="!canDispatch" class="ground-notice" title="当前角色只读，请从顶部切换为航晟客服或主管处理运输订单。" type="warning" :closable="false" />
     <el-alert v-if="routeError" class="ground-notice" type="warning" :closable="false" :title="routeError"><el-button link type="primary" @click="showAll">查看全部订单</el-button></el-alert>
     <form class="ground-filters" aria-label="运输订单筛选" @submit.prevent>
-      <label>订单号 / 子单号 / 批次号<el-input v-model="filters.keyword" placeholder="精确查询" clearable aria-label="运输订单编号查询" /></label>
-      <label>委托方<el-select v-model="filters.customer" clearable placeholder="全部" aria-label="运输订单委托方"><el-option v-for="value in [...new Set(state.groundOrders.map(o => o.customer))]" :key="value" :value="value" /></el-select></label>
+      <label>查询字段<el-select v-model="filters.searchKey" aria-label="运输订单查询字段"><el-option v-for="[value,label] in [['orderNo','订单号'],['childNo','分单号'],['batchNo','批次号']]" :key="value" :value="value" :label="label" /></el-select></label>
+      <label>精确查询<el-input v-model="filters.keyword" placeholder="输入完整编号" clearable aria-label="运输订单编号查询" /></label>
+      <label>委托方<el-select v-model="filters.customer" clearable placeholder="全部" aria-label="运输订单委托方"><el-option v-for="value in [...new Set(listOrders.map(customerName))]" :key="value" :value="value" /></el-select></label>
+      <label v-if="showOrderType">订单类型<el-select v-model="filters.orderType" clearable placeholder="全部" aria-label="UPS订单类型"><el-option v-for="value in ['空运部','海运部']" :key="value" :value="value" /></el-select></label>
       <label v-for="key in ['pickup','delivery']" :key="key">{{ key === 'pickup' ? '提货省市' : '送货省市' }}<el-select v-model="filters[key]" clearable placeholder="全部" :aria-label="key === 'pickup' ? '提货省市' : '送货省市'"><el-option v-for="value in places(key)" :key="value" :value="value" /></el-select></label>
-      <label>订单状态<el-select v-model="filters.status" clearable placeholder="全部" aria-label="运输订单状态"><el-option v-for="value in ['未调度','已调度','异常中','已完成','已取消']" :key="value" :value="value" /></el-select></label>
+      <label>订单状态<el-select v-model="filters.status" clearable placeholder="全部" aria-label="运输订单状态"><el-option v-for="value in ['未调度','已调度','异常中','已完成','已取消','已关闭']" :key="value" :value="value" /></el-select></label>
       <label>下单日期<el-date-picker v-model="filters.createdDate" value-format="YYYY-MM-DD" aria-label="下单日期" /></label>
       <label>提货日期<el-date-picker v-model="filters.pickupDate" value-format="YYYY-MM-DD" aria-label="订单提货日期" /></label>
       <el-button @click="Object.assign(filters, defaults())">重置</el-button>
@@ -160,15 +208,16 @@ function submit() {
         <el-table-column type="selection" reserve-selection width="48" :selectable="row => row.dispatchStatus === '未调度'" />
         <el-table-column prop="orderNo" label="订单号" width="185" sortable="custom" fixed="left"><template #default="{row}"><button class="link-button" @click="openDetail(row)">{{ row.orderNo }}</button></template></el-table-column>
         <el-table-column prop="dispatchStatus" label="订单状态" width="115" sortable="custom"><template #default="{row}"><StatusTag :label="row.dispatchStatus" /></template></el-table-column>
-        <el-table-column v-for="[key,label,width] in columns" :key="key" :prop="key" :label="label" :min-width="width" sortable="custom" />
+        <el-table-column v-for="[key,label,width] in columns" :key="key" :prop="key" :label="label" :min-width="width" sortable="custom"><template #default="{row}">{{ key === 'customer' ? customerName(row) : row[key] }}</template></el-table-column>
         <el-table-column label="尺寸（cm）" width="145"><template #default="{row}">{{ [row.length,row.width,row.height].filter(v => v != null).join(' × ') }}</template></el-table-column>
         <el-table-column v-for="key in ['pickup','delivery']" :key="key" :label="key === 'pickup' ? '提货联系人及联系方式' : '送货联系人及联系方式'" width="195"><template #default="{row}">{{ (row[key+'Points'] || []).map(p => [p.contact,p.phone].filter(Boolean).join('：')).join('；') }}</template></el-table-column>
-        <el-table-column prop="specialVehicle" label="特种车" width="100" /><el-table-column prop="remark" label="备注" min-width="180" />
-        <el-table-column label="操作" width="155" fixed="right"><template #default="{row}"><el-button v-if="row.dispatchStatus === '未调度'" link type="primary" @click="openDispatch(row)">调度派车</el-button><el-button link type="primary" @click="openDetail(row)">详情</el-button></template></el-table-column>
+        <el-table-column prop="specialVehicle" label="特种车" width="100" /><el-table-column v-if="listKind==='transfer'" prop="regulated" label="监管车" width="100" /><el-table-column label="备注" min-width="200"><template #default="{row}"><div>{{ row.remark }}</div><el-button v-if="potentialGroundOrders(row,state.groundOrders).length" link type="warning" @click="openDetail(row,'potential')">有潜在同类订单</el-button></template></el-table-column>
+        <el-table-column label="操作" width="235" fixed="right"><template #default="{row}"><el-button v-if="canDispatch && row.dispatchStatus === '未调度'" link type="primary" @click="openDispatch(row)">调度派车</el-button><el-button v-if="access(row).edit" link type="primary" @click="editOrder(row)">修改订单</el-button><el-button link type="primary" @click="openDetail(row)">详情</el-button></template></el-table-column>
       </el-table></template>
     </DataTableFrame>
-    <el-dialog v-model="visible" :title="'调度派车 · ' + targets.length + ' 笔订单'" width="min(1120px, 96vw)" class="ground-dialog" align-center destroy-on-close :close-on-click-modal="false" :before-close="close">
-      <p>每笔订单、每辆车各生成一张运单；本次将生成 <strong>{{ targets.length * drafts.length }}</strong> 张。</p>
+    <el-dialog v-model="visible" :title="modifyingBillId ? '修改调度' : '调度派车 · ' + targets.length + ' 笔订单'" width="min(1120px, 96vw)" class="ground-dialog" align-center destroy-on-close :close-on-click-modal="false" :before-close="close">
+      <p v-if="!modifyingBillId">本次生成运单：<strong>{{ targets.length * drafts.length }}</strong> 张</p>
+      <p v-else>运单号：{{ modifyingBillId }}</p>
       <el-table :data="targets" size="small" aria-label="本次调度订单"><el-table-column prop="orderNo" label="订单号" min-width="180" /><el-table-column prop="customer" label="委托方" min-width="140" /><el-table-column prop="pickup" label="提货点" min-width="180" /><el-table-column prop="delivery" label="卸货点" min-width="180" /></el-table>
       <el-form label-position="top" @submit.prevent="submit">
         <section v-for="(draft,index) in drafts" :key="index" class="dispatch-vehicle">
@@ -195,21 +244,42 @@ function submit() {
           <h4>特定提货毛件体与尺寸</h4><p class="ground-help">选填；未指定毛件体按订单总车辆数分配，未指定尺寸留空。</p>
           <div class="dispatch-grid"><el-form-item v-for="[key,label,precision] in specificFields" :key="key" :label="label" :error="errors[index]?.[key]"><el-input-number v-model="draft[key]" :precision="precision" :min="precision ? 0.01 : 1" controls-position="right" :aria-label="'车辆'+(index+1)+'特定'+label" /></el-form-item></div>
           <el-form-item label="备注" :error="errors[index]?.remark"><el-input v-model="draft.remark" type="textarea" maxlength="800" show-word-limit :aria-label="'车辆'+(index+1)+'备注'" /></el-form-item>
-          <el-button v-if="index === drafts.length-1" @click="addVehicle">新增调度</el-button>
+          <el-button v-if="!modifyingBillId && index === drafts.length-1" @click="addVehicle">新增调度</el-button>
         </section>
       </el-form>
-      <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button type="primary" :disabled="invalid" :loading="busy" @click="submit">提交调度并生成运单</el-button></template>
+      <section v-if="!modifyingBillId && targets.length===1" class="detail-section"><h3>潜在关联订单</h3><GroundRelatedOrders :order="targets[0]" dispatch @open="openRelated" /></section>
+      <template #footer><el-button :disabled="busy" @click="close">取消</el-button><el-button type="primary" :disabled="invalid" :loading="busy" @click="submit">{{ modifyingBillId ? '保存调度' : '提交调度并生成运单' }}</el-button></template>
     </el-dialog>
+    <GroundOrderEditor ref="editor" @saved="savedOrder" />
     <el-drawer v-model="detailVisible" title="运输订单详情" size="min(1050px, 96vw)">
       <template v-if="selected">
-        <div class="detail-hero"><div><small>订单号</small><h2>{{ selected.orderNo }}</h2><span>{{ selected.customer }}</span></div><StatusTag :label="selected.dispatchStatus" /></div>
+        <div class="detail-hero"><div><small>{{ selected.orderNo ? '订单号' : selected.childNo ? '分单号' : '用车单号' }}</small><h2>{{ selected.orderNo || selected.childNo || selected.systemOrderNo }}</h2><span>{{ customerName(selected) }}</span></div><StatusTag :label="selected.dispatchStatus" /></div>
+        <div class="order-detail-actions"><el-button @click="orderExpanded = !orderExpanded">{{ orderExpanded ? '收起订单信息' : '展开订单信息' }}</el-button><el-button :disabled="!access(selected).edit" @click="editOrder(selected)">修改订单</el-button><el-button :disabled="!access(selected).close" @click="closeOrder(selected)">关闭订单</el-button><el-button @click="detailVisible = false">返回</el-button></div>
+        <el-tabs v-model="detailTab">
+        <el-tab-pane label="订单详情" name="order">
+        <template v-if="orderExpanded">
         <section class="detail-section"><h3>订单信息</h3><dl class="detail-grid">
-          <div v-for="[key,label] in [...columns,['customerOrderNo','客户订单号'],['customerContact','委托方联系人'],['customerPhone','联系电话'],['customerEmail','邮箱地址'],['length','长度（cm）'],['width','宽度（cm）'],['height','高度（cm）'],['businessType','业务类型'],['source','订单来源'],['regulated','监管车'],['tailLift','尾板车'],['specialVehicle','特种车'],['remark','备注']]" :key="key"><dt>{{ label }}</dt><dd>{{ selected[key] }}</dd></div>
+          <div v-for="[key,label] in [...columns,['systemOrderNo','系统用车单号'],['customerOrderNo','客户订单号'],['length','长度（cm）'],['width','宽度（cm）'],['height','高度（cm）'],['businessType','业务类型'],['source','订单来源'],['regulated','监管车'],['tailLift','尾板车'],['specialVehicle','特种车'],['remark','备注']]" :key="key"><dt>{{ label }}</dt><dd>{{ key === 'customer' ? customerName(selected) : selected[key] }}</dd></div>
         </dl></section>
-        <section class="detail-section" v-for="key in ['pickup','delivery']" :key="key"><h3>{{ key === 'pickup' ? '提货信息' : '送货信息' }}</h3><el-table :data="selected[key+'Points']"><el-table-column prop="province" label="省" /><el-table-column prop="city" label="市" /><el-table-column prop="district" label="区" /><el-table-column prop="address" label="详细地址" min-width="150" /><el-table-column prop="contact" label="联系人" /><el-table-column prop="phone" label="联系电话" min-width="150" /></el-table></section>
-        <section class="detail-section"><h3>调度记录（{{ bills.length }}）</h3><el-table :data="bills" aria-label="订单调度记录" empty-text="尚未调度"><el-table-column prop="waybillNo" label="运单号" width="180" /><el-table-column prop="supplier" label="供应商" min-width="120" /><el-table-column prop="vehicleType" label="车型" width="115" /><el-table-column prop="plate" label="车牌号" width="120" /><el-table-column prop="status" label="运单状态" width="115" /><el-table-column prop="dispatchedBy" label="调度人" width="110" /><el-table-column prop="updatedAt" label="调度更新时间" width="170" /></el-table></section>
-        <div class="drawer-actions"><el-button type="primary" @click="toBills(selected)">查看关联运输运单</el-button></div>
+        <section class="detail-section"><h3>委托方联系人</h3><el-table :data="selected.customerContacts || [{name:selected.customerContact,phone:selected.customerPhone,email:selected.customerEmail}]"><el-table-column prop="name" label="姓名" min-width="120" /><el-table-column prop="phone" label="联系电话" min-width="150" /><el-table-column prop="email" label="邮箱" min-width="240" /></el-table></section>
+        <section class="detail-section" v-for="key in ['pickup','delivery']" :key="key"><h3>{{ key === 'pickup' ? '提货信息' : '送货信息' }}</h3><el-table :data="selected[key+'Points']"><el-table-column prop="province" label="省" min-width="100" /><el-table-column prop="city" label="市" min-width="100" /><el-table-column prop="district" label="区" min-width="100" /><el-table-column prop="address" label="详细地址" min-width="180" /><el-table-column prop="contact" label="联系人" min-width="120" /><el-table-column prop="phone" label="联系电话" min-width="150" /><template v-if="key==='pickup'"><el-table-column prop="regulated" label="监管类型" width="110" /><el-table-column prop="specialVehicle" label="特种车" width="110" /><el-table-column prop="tailLift" label="尾板车" width="100" /></template></el-table></section>
+        </template></el-tab-pane>
+        <el-tab-pane label="调度记录" name="dispatch">
+        <section class="detail-section"><h3>调度记录（{{ bills.length }}）</h3><el-table :data="bills" aria-label="订单调度记录" empty-text="尚未调度">
+          <el-table-column prop="waybillNo" label="运单号" width="180" /><el-table-column prop="supplier" label="供应商" min-width="120" /><el-table-column prop="vehicleType" label="车型" width="115" /><el-table-column prop="plate" label="车牌号" width="120" />
+          <el-table-column label="司机及联系方式" min-width="210"><template #default="{row}">{{ row.drivers.map(d => [d.name,d.phone].filter(Boolean).join('：')).join('；') }}</template></el-table-column>
+          <el-table-column v-for="[key,label,specific] in [['pieces','提货件数（件）','specificPieces'],['weight','重量（kg）','specificWeight'],['volume','体积（m³）','specificVolume']]" :key="key" :label="label" width="140"><template #default="{row}">{{ row[specific] ?? selected[key] }}</template></el-table-column>
+          <el-table-column label="备注" min-width="180"><template #default>{{ selected.remark }}</template></el-table-column><el-table-column prop="status" label="运单状态" width="115" /><el-table-column prop="dispatchedById" label="调度人账户" width="145" /><el-table-column label="调度更新时间" width="175"><template #default="{row}">{{ (row.dispatchUpdatedAt || row.createdAt)?.slice(0,16) }}</template></el-table-column>
+          <el-table-column label="操作" fixed="right" width="190"><template #default="{row}"><el-button :disabled="!canModify(row)" link type="primary" @click="openModify(row)">修改调度</el-button><el-tooltip content="返空费及取消规则待确认"><span><el-button link disabled>取消调度</el-button></span></el-tooltip></template></el-table-column>
+        </el-table></section>
+        </el-tab-pane>
+        <el-tab-pane label="调度邮件" name="mails"><el-table :data="selected.dispatchMails || []" empty-text="暂无调度邮件记录"><el-table-column prop="subject" label="主题" min-width="220" /><el-table-column label="收件人" min-width="200"><template #default="{row}">{{ row.to.join('；') }}</template></el-table-column><el-table-column prop="status" label="状态" width="165" /><el-table-column label="邮件内容" min-width="220"><template #default="{row}"><details><summary>查看邮件</summary><p>抄送：{{ row.cc.join('；') }}</p><div class="change-row">{{ row.body }}</div></details></template></el-table-column></el-table></el-tab-pane>
+        <el-tab-pane label="订单记录" name="history"><el-table :data="selected.history || []" aria-label="订单操作记录" empty-text="暂无已记录的操作"><el-table-column prop="event" label="事件" width="110" /><el-table-column label="内容" min-width="260"><template #default="{row}">{{ row.content }}<details v-if="row.changes?.length"><summary>查看修改前后</summary><div v-for="(change,index) in row.changes" :key="index" class="change-row"><strong>{{ change.field }}</strong><div>修改前：{{ groundChangeText(change.before) }}</div><div>修改后：{{ groundChangeText(change.after) }}</div></div></details></template></el-table-column><el-table-column prop="actor" label="操作人账户" width="145" /><el-table-column label="操作时间" width="175"><template #default="{row}">{{ row.time?.slice(0,16) }}</template></el-table-column></el-table></el-tab-pane>
+        <el-tab-pane label="应收付账单" name="costs"><el-alert title="订单应收写入口径待确认；以下仅列已明确关联的费用。" type="info" :closable="false" /><el-table :data="orderCosts" empty-text="暂无明确关联的应收付记录"><el-table-column v-for="[key,label] in [['direction','方向'],['feeItem','费用科目'],['settlementParty','结算对象'],['currency','币种'],['amount','金额'],['status','审批状态']]" :key="key" :prop="key" :label="label" min-width="130" /></el-table></el-tab-pane>
+        <el-tab-pane label="潜在关联订单" name="potential"><GroundRelatedOrders :order="selected" @open="openDetail" /></el-tab-pane>
+        </el-tabs>
       </template>
+      <template #footer><el-button v-if="selected" type="primary" @click="toBills(selected)">查看关联运输运单</el-button></template>
     </el-drawer>
   </div>
 </template>
@@ -228,4 +298,7 @@ function submit() {
 .driver-row { margin-top:16px; }
 .ground-help { font-size:12px; color:var(--muted); line-height:1.7; }
 summary { color:var(--primary); cursor:pointer; padding:8px 0; }
+.order-detail-actions { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
+.order-detail-actions .el-button { margin-left:0; }
+.change-row { white-space:pre-wrap; overflow-wrap:anywhere; margin:12px 0; }
 </style>

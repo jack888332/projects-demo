@@ -91,4 +91,30 @@ describe('GJ-012 报关页面与中央 owner', () => {
     expect(view.failure.value).toContain('不存在')
     expect(view.detailVisible.value).toBe(false)
   })
+  it('先打开示例深链再载入数据，仍定位指定服务；未知链接不冒充成功', () => {
+    route.query = { service: 'DEMO-CUSTOMS-SERVICE-CHILD-01' }
+    const view = setup()
+    expect(view.failure.value).toContain('不存在')
+    view.loadExamples()
+    expect(view.failure.value).toBe('')
+    expect(view.detailVisible.value).toBe(true)
+    expect(view.rows.value.map(row => row.id)).toEqual([route.query.service])
+    route.query = { service: 'removed' }
+    view.loadExamples()
+    expect(view.failure.value).toContain('不存在')
+    expect(view.detailVisible.value).toBe(false)
+  })
+  it('移单后的服务仍能定位，未关联提单不跳转空订单；取消来源提示禁止新通知', () => {
+    const view = setup(); view.loadExamples()
+    const child = data.state.airChildren.find(row => row.id === 'DEMO-CUSTOMS-CHILD-01')
+    child.parentId = ''
+    const row = view.allRows.value.find(item => item.childId === child.id)
+    expect(row.orderId).toBe('')
+    expect(view.waybill(row)).toBe(false)
+    expect(push).not.toHaveBeenCalled()
+    child.orderStatus = '已取消'
+    view.toggle(row.id, true)
+    expect(view.selectedNotifyReason.value).toBeTruthy()
+    expect(view.hasSelectedMaterials.value).toBe(true)
+  })
 })

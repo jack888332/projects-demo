@@ -200,6 +200,19 @@ describe('GJ-012 报关材料弹窗', () => {
     expect(state.messages).toHaveLength(0)
   })
 
+  it('确认期间服务取消阻止补齐通知，历史原文件仍可读取', () => {
+    const view = setup()
+    expect(view.prepareNotification([{ serviceId: 'DECL-MAIN', materialId: 'A' }])).toBe(true)
+    state.airOrders[0].services[0].status = '服务已取消'
+    expect(view.pendingError.value).toBeTruthy()
+    expect(view.confirmNotification()).toBe(false)
+    expect(state.messages).toHaveLength(0)
+    view.cancelNotification()
+    view.toggle(view.materialKey('DECL-MAIN', 'A'), true)
+    expect(view.notifyError.value).toBeTruthy()
+    expect(view.downloadError.value).toBe('')
+  })
+
   it.each(['role', 'reset', 'selection'])('确认期间%s变化会清理旧选择，旧确认不会发通知', change => {
     const view = setup()
     view.prepareNotification([{ serviceId: 'DECL-MAIN', materialId: 'A' }])

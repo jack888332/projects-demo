@@ -1,24 +1,22 @@
+import { projectAirServiceMaterial, getAirServiceMaterialFile } from './airServiceMaterials.js'
+
 export const DECLARATION_STATUSES = ['单证预审', '报关审结', '报关查验', '放行', '已结关']
 export const AIR_DECLARATION_STATUS_BLOCK_REASON = '接单条件、报关状态流转及其与翌飞审结、服务状态的关系待确认，暂不能接单或修改状态。'
 export const AIR_DECLARATION_MATERIAL_BLOCK_REASON = '各单证类型的必备材料、上传限制和补齐接收规则待确认，暂不能新增或替换报关材料。'
 
 const text = value => typeof value === 'string' ? value.trim() : ''
 const entries = value => Array.isArray(value) ? value : []
-const isBlob = value => typeof Blob !== 'undefined' && value instanceof Blob
 
 export function canManageAirDeclarations(session = {}) {
-  return session.role === 'customsService'
+  return session?.role === 'customsService'
 }
 
-function projectMaterial(attachment, serviceId, index) {
-  const source = attachment && typeof attachment === 'object' ? attachment : {}
-  const content = isBlob(attachment) ? attachment : source.content ?? source.file ?? null
-  const fileName = text(source.fileName) || text(source.name) || text(content?.name)
-  return {
-    id: text(source.id) || `${serviceId}-MATERIAL-${index + 1}`,
-    name: text(source.materialName) || text(source.name) || fileName,
-    fileName, content, type: text(source.type) || text(content?.type),
-  }
+function notificationRestriction(order, child, service) {
+  if (service.deleted || ['服务已取消', '异常取消', '异常结束'].includes(service.status)) return '报关服务已取消或结束，不能新增材料补齐通知；历史记录和材料仍可查看。'
+  const inactive = entity => entity && (entity.deleted || ['已取消', '已作废', '已废除', '异常作废'].includes(entity.orderStatus))
+  if (inactive(child) || inactive(order)) return '报关服务来源已取消、作废或删除，不能新增材料补齐通知；历史记录和材料仍可查看。'
+  if (child?.parentId && !order) return '关联主订单已不存在，关系失效后的报关处理待确认，不能新增材料补齐通知；历史记录和材料仍可查看。'
+  return ''
 }
 
 export function deriveAirDeclarations(state = {}) {
@@ -27,24 +25,27 @@ export function deriveAirDeclarations(state = {}) {
     if (!service || service.type !== 'customs') return
     const details = service.details || {}, entity = child || order
     rows.push({
-      id: service.id, orderId: order.id, childId: child?.id || '', orderNo: order.orderNo || '',
-      housebillNo: child?.housebillNo || '', waybillNo: order.waybillNo || '',
-      origin: child?.origin || order.origin || '', destination: child?.destination || order.destination || '',
-      customer: entity.customer || order.customer || '', departureDate: order.booking?.departureDate || order.departureDate || '',
+      id: service.id, orderId: order?.id || '', childId: child?.id || '', orderNo: order?.orderNo || '',
+      housebillNo: child?.housebillNo || '', waybillNo: order?.waybillNo || '',
+      origin: child?.origin || order?.origin || '', destination: child?.destination || order?.destination || '',
+      customer: entity.customer || order?.customer || '', departureDate: order?.booking?.departureDate || order?.departureDate || child?.departureDate || '',
       createdAt: service.createdAt || '', customsStatus: service.customsStatus || '单证预审', serviceStatus: service.status || '',
       choice: details.choice || '', documentType: details.documentType || '',
-      materials: entries(details.attachments).map((attachment, index) => projectMaterial(attachment, service.id, index)),
+      materials: entries(details.attachments).map((attachment, index) => projectAirServiceMaterial(attachment, service.id, index)),
       details, creator: entity.creator || '', materialRequests: entries(service.materialRequests),
       exampleLabel: service.declarationExample === 'chapter012' ? '已收指令示例' : '',
       blockReason: AIR_DECLARATION_STATUS_BLOCK_REASON, materialBlockReason: AIR_DECLARATION_MATERIAL_BLOCK_REASON,
-      target: { path: `/fulfillment/air-orders/${order.id}/supplement`, query: { customs: service.id, ...(child ? { child: child.id } : {}) } },
+      notifyBlockReason: notificationRestriction(order, child, service),
+      target: child ? { path: `/fulfillment/declarations/${service.id}/source` }
+        : { path: `/fulfillment/air-orders/${order.id}/supplement`, query: { customs: service.id } },
     })
   }
   for (const order of entries(state.airOrders)) {
     for (const service of entries(order.services)) append(order, null, service)
-    for (const child of entries(state.airChildren).filter(row => row.parentId === order.id)) {
-      for (const service of entries(child.serviceRecords)) append(order, child, service)
-    }
+  }
+  for (const child of entries(state.airChildren)) {
+    const order = child.parentId ? entries(state.airOrders).find(row => row.id === child.parentId) : null
+    for (const service of entries(child.serviceRecords)) append(order, child, service)
   }
   return rows.sort((left, right) => left.createdAt.localeCompare(right.createdAt) || String(left.id).localeCompare(String(right.id)))
 }
@@ -62,16 +63,10 @@ export function filterAirDeclarations(rows, filters = {}) {
     && inRange(row.departureDate, filters.departure) && inRange(row.createdAt, filters.created) && exact(row.customsStatus, filters.status))
 }
 
-export function getAirDeclarationMaterialFile(material) {
-  if (!material || !text(material.fileName)) throw new Error('该材料没有可下载的文件')
-  const content = material.content
-  const blob = isBlob(content) ? content : typeof content === 'string' && content.length
-    ? new Blob([content], { type: material.type || 'text/plain;charset=utf-8' }) : null
-  if (!blob?.size) throw new Error('该材料没有可下载的文件内容')
-  return { name: material.fileName, blob }
-}
+export const getAirDeclarationMaterialFile = getAirServiceMaterialFile
 
 export function buildAirDeclarationMaterialNotice(row, material) {
+  if (row?.notifyBlockReason) throw new Error(row.notifyBlockReason)
   const recipient = text(row?.creator), materialName = text(material?.name)
   if (!recipient) throw new Error('建单客服未确定，暂不能发起补齐通知')
   if (!materialName) throw new Error('材料名称缺失，暂不能发起补齐通知')

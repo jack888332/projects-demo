@@ -41,13 +41,18 @@ const selectedChild = computed(() => children.value.find(row => row.id === child
 const customsRequestId = computed(() => typeof route.query.customs === 'string' ? route.query.customs : '')
 const customsChildId = computed(() => typeof route.query.child === 'string' ? route.query.child : '')
 const inspectingCustomsSource = computed(() => route.query.inspect === 'service')
+const legacyCustomsSource = computed(() => {
+  if (!customsRequestId.value || !customsChildId.value) return null
+  const matches = (unref(airDeclarations) || []).filter(row => row.id === customsRequestId.value && row.childId === customsChildId.value)
+  return matches.length === 1 ? matches[0] : null
+})
 const sourceDeclaration = computed(() => {
-  if (!inspectingCustomsSource.value || !order.value || session.value.role !== 'viewer' || unref(declarationSession)?.role !== 'customsService') return null
+  if (legacyCustomsSource.value || !inspectingCustomsSource.value || !order.value || session.value.role !== 'viewer' || unref(declarationSession)?.role !== 'customsService') return null
   return (unref(airDeclarations) || []).find(row => row.id === customsRequestId.value && row.orderId === order.value.id
     && (row.childId || '') === customsChildId.value) || null
 })
 const customsDeclaration = computed(() => {
-  if (inspectingCustomsSource.value || !order.value || !customsRequestId.value || !['service', 'supervisor'].includes(session.value.role)) return null
+  if (legacyCustomsSource.value || inspectingCustomsSource.value || !order.value || !customsRequestId.value || !['service', 'supervisor'].includes(session.value.role)) return null
   return (unref(airDeclarations) || []).find(row => row.id === customsRequestId.value && row.orderId === order.value.id
     && (row.childId || '') === customsChildId.value && row.creator === session.value.name
     && row.materialRequests?.some(request => request.recipient === session.value.name)) || null
@@ -152,6 +157,7 @@ function returnToCustoms() {
   return router.push({ path: '/fulfillment/declarations', query: { service: declaration.id } })
 }
 watch(() => [route.params.orderId, customsRequestId.value, customsChildId.value, inspectingCustomsSource.value], openCustomsSource, { immediate: true, flush: 'post' })
+watch(legacyCustomsSource, value => { if (value) router.replace(value.target) }, { immediate: true, flush: 'post' })
 function openImport() { if (busy.value || houseManagementRestriction.value) return false; importIds.value = []; importVisible.value = true; return true }
 function selectImports(rows) { importIds.value = rows.map(row => row.id) }
 function importSelected() {
@@ -199,8 +205,9 @@ function saveCode() {
 
 <template>
   <div class="module-view supplement-view">
-    <PageHeader title="订单补录" :description="order ? `${order.orderNo} · ${order.customer}` : ''"><template #actions><el-button v-if="['待出提单', '已出提单', '已交单'].includes(order?.orderStatus)" @click="router.push(`/fulfillment/airway-bills/${order.id}`)">进入提单</el-button><el-button :icon="ArrowLeft" @click="back">返回主订单</el-button></template></PageHeader>
-    <el-empty v-if="!order" description="订单不存在或当前角色无权查看" />
+    <PageHeader :title="legacyCustomsSource ? '分单报关来源' : '订单补录'" :description="order && !legacyCustomsSource ? `${order.orderNo} · ${order.customer}` : ''"><template v-if="!legacyCustomsSource" #actions><el-button v-if="['待出提单', '已出提单', '已交单'].includes(order?.orderStatus)" @click="router.push(`/fulfillment/airway-bills/${order.id}`)">进入提单</el-button><el-button :icon="ArrowLeft" @click="back">返回主订单</el-button></template></PageHeader>
+    <el-alert v-if="legacyCustomsSource" title="正在转到分单报关来源" type="info" :closable="false"><el-button link type="primary" @click="router.replace(legacyCustomsSource.target)">查看分单报关来源</el-button></el-alert>
+    <el-empty v-else-if="!order" description="订单不存在或当前角色无权查看" />
     <template v-else-if="draft">
       <div class="order-context"><StatusTag :label="order.orderStatus" /><span>{{ order.origin }} / {{ order.destination }}</span><span>{{ display(order.waybillNo) }}</span><span>{{ display(order.flight) }} · {{ display(order.departureDate) }}</span></div>
       <el-alert v-if="restriction" :title="restrictionMessage" type="info" :closable="false" />

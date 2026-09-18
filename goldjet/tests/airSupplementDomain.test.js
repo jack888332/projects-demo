@@ -27,6 +27,16 @@ function owner() {
 }
 
 describe('GJ-009 补录、分单业务边界', () => {
+  it('清关指令的提单货量不借用预计货量，新分单也不继承主提单总量', () => {
+    const order = makeOrder()
+    expect(createAirSupplementDraft(order).clearance.pieces).toBe('')
+    order.waybill = { pieces: 8, grossWeight: 20, volume: 0.5 }
+    expect(createAirSupplementDraft(order).clearance).toMatchObject(order.waybill)
+    expect(createHouseBillDraft(order).clearance.pieces).toBe('')
+    expect(normalizeHouseBillDraft(house(order), order).clearance.pieces).toBe('')
+    const child = { ...order, isChild: true, housebillNo: 'HAWB001', waybill: { pieces: 2, grossWeight: 5, volume: 0.1 } }
+    expect(normalizeHouseBillDraft(house(child), child).clearance).toMatchObject(child.waybill)
+  })
   it('新建与读取空数值分单保持未填，必填毛件体不靠控件最小值变为有效', () => {
     const keys = ['pieces', 'grossWeight', 'volume', 'rate']
     const draft = createHouseBillDraft(makeOrder())

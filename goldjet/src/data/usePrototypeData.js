@@ -32,6 +32,10 @@ import { createAirWaybillActions } from './airWaybillActions.js'
 import { createAirWaybillTemplateActions } from './airWaybillTemplateActions.js'
 import { createAirDeclarationActions } from './airDeclarationActions.js'
 import { deriveAirDeclarations } from '../domain/airDeclarations.js'
+import { createAirClearanceActions } from './airClearanceActions.js'
+import { deriveAirClearances } from '../domain/airClearances.js'
+import { loadAirTrackingExamples as loadTrackingExamples } from './airTrackingExamples.js'
+import { createGroundOrderActions } from './groundOrderActions.js'
 
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
@@ -73,7 +77,7 @@ function seedGroundData() {
     { id: 'CAR-260908-024', customer: '华越国际商贸', customerOrderNo: 'HY-DEMO-0924', childNo: '', batchNo: '', vehicleType: '3T/4.2', pieces: 80, weight: 1600, volume: 7, length: 70, width: 50, height: 50, pickupPoints: [point('上海市', '上海市', '浦东新区', '外高桥演示仓库', '提货联系人丙', '000-00002003')], deliveryPoints: [kunshan], pickupTime: '2026-09-09 09:00', deliveryTime: '2026-09-09 12:00', specialVehicle: '冷藏车', tailLift: '是', regulated: '否', remark: '有特殊车型要求，与普通订单合批需二次确认。' },
   ].map((value, index) => ({
     orderNo: `GJ-${value.id}`, customerContact: `业务联系人${index + 1}`, customerPhone: `000-0000400${index + 1}`, customerEmail: `ground${index + 1}@example.invalid`,
-    source: '航晟手工创建', businessType: '陆运', orderType: '', specialVehicle: '', tailLift: '否', regulated: '否',
+    source: '航晟手工创建', customerPartnerId: `PT-${String(18 + index).padStart(5, '0')}`, businessType: '陆运', orderType: '', specialVehicle: '', tailLift: '否', regulated: '否',
     dispatchStatus: '未调度', createDate: '2026-09-08', createdAt: `2026-09-08 0${8 + Math.floor(index / 2)}:${index % 2 ? '30' : '00'}`, updatedAt: `2026-09-08 1${index}:00`,
     ...value,
     pickup: value.pickupPoints.map(item => `${item.province}${item.city === item.province ? '' : item.city}${item.district}${item.address}`).join('；'),
@@ -83,7 +87,8 @@ function seedGroundData() {
   const seedDispatch = { ...createDispatchDraft(), ...clone(GROUND_PLATE_PRESETS[0]), vehicleType: '8T/7.6', supplier: '申捷车队', companyAddress: '上海市浦东新区演示路 18 号', remark: '已完成调度，等待前往提货。' }
   const waybill = createGroundWaybill(orders[2], seedDispatch, { serial: 1, vehicleCount: 1, actor: '陈楠', time: '2026-09-08 12:05' })
   orders[2].dispatchStatus = deriveGroundOrderStatus([waybill])
-  return { groundOrders: orders, groundWaybills: [waybill], groundPlateHistory: clone(GROUND_PLATE_PRESETS), groundSequence: 1 }
+  return { groundOrders: orders, groundWaybills: [waybill], groundPlateHistory: clone(GROUND_PLATE_PRESETS), groundSequence: 1,
+    groundOrderSequence: 0, groundOrderEventSequence: 0, groundCustomerPartnerIds: ['PT-00018', 'PT-00019', 'PT-00020', 'PT-00021'], groundUpsPartnerId: '' }
 }
 
 function createSeed() {
@@ -128,7 +133,7 @@ function createSeed() {
     costs: [
       { id: 'COST-260908-101', orderNo: 'GJ-AIR-260908-001', feeItem: '空运费', direction: '应付', settlementParty: '东方航空', currency: 'CNY', amount: 12860, status: '审批通过', applicant: '周倩', updatedAt: '2026-09-08 13:30' },
       { id: 'COST-260908-102', orderNo: 'GJ-AIR-260908-001', feeItem: '空运服务费', direction: '应收', settlementParty: '启航跨境贸易', currency: 'CNY', amount: 15680, status: '待审批', applicant: '周倩', updatedAt: '2026-09-08 13:31' },
-      { id: 'COST-260908-103', orderNo: 'GJ-CAR-260908-023', feeItem: '提货车费', direction: '应付', settlementParty: '申捷车队', currency: 'CNY', amount: 1860, status: '待审批', applicant: '陈楠', updatedAt: '2026-09-08 12:05' },
+      { id: 'COST-260908-103', groundOrderId: 'CAR-260908-023', orderNo: 'GJ-CAR-260908-023', feeItem: '提货车费', direction: '应付', settlementParty: '申捷车队', currency: 'CNY', amount: 1860, status: '待审批', applicant: '陈楠', updatedAt: '2026-09-08 12:05' },
       { id: 'COST-260907-087', orderNo: 'GJ-AIR-260907-018', feeItem: '报关服务费', direction: '应收', settlementParty: '华越国际商贸', currency: 'CNY', amount: 780, status: '审批拒绝', applicant: '王晴', updatedAt: '2026-09-08 09:56', rejectReason: '缺少费用依据' },
     ],
     partners: [
@@ -157,7 +162,8 @@ function createSeed() {
 
 const state = reactive(createSeed())
 const airSession = reactive({ role: 'service', name: '周倩' })
-const groundSession = reactive({ role: 'viewer', name: '周倩' })
+const groundSession = reactive({ role: 'viewer', name: '周倩', accountId: 'DEMO-service' })
+const groundOrderActions = createGroundOrderActions(state, () => groundSession)
 const workbenchSession = reactive({ personaId: 'service' })
 const partnerSession = computed(() => {
   const persona=WORKBENCH_PERSONAS.find(item=>item.id===workbenchSession.personaId) || WORKBENCH_PERSONAS[0]
@@ -206,6 +212,12 @@ const declarationSession = computed(() => {
 })
 const airDeclarationActions = createAirDeclarationActions(state, () => declarationSession.value)
 const airDeclarations = computed(() => deriveAirDeclarations(state))
+const clearanceSession = computed(() => {
+  const persona = WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId)
+  return { role: persona?.scope === 'clearance' ? persona.role : 'viewer', name: persona?.name || '' }
+})
+const airClearanceActions = createAirClearanceActions(state, () => clearanceSession.value)
+const airClearances = computed(() => deriveAirClearances(state))
 
 // Store only the last progress-change timestamp, never a second task status.
 watch(() => WORKBENCH_PERSONAS.map(persona => {
@@ -227,7 +239,7 @@ export function usePrototypeData() {
     const seed = createSeed()
     for (const key of Object.keys(seed)) state[key] = clone(seed[key])
     Object.assign(airSession, { role: 'service', name: '周倩' })
-    Object.assign(groundSession, { role: 'viewer', name: '周倩' })
+    Object.assign(groundSession, { role: 'viewer', name: '周倩', accountId: 'DEMO-service' })
     workbenchSession.personaId = 'service'
     state.progressSequence = 0
     state.workbenchProgress = Object.fromEntries(WORKBENCH_PERSONAS.map(persona => [persona.id, {
@@ -240,7 +252,7 @@ export function usePrototypeData() {
     if (!persona) throw new Error('未找到演示角色')
     workbenchSession.personaId = id
     Object.assign(airSession, { role: persona.scope === 'air' ? persona.role : 'viewer', name: persona.name })
-    Object.assign(groundSession, { role: persona.scope === 'ground' ? persona.role : 'viewer', name: persona.name })
+    Object.assign(groundSession, { role: persona.scope === 'ground' ? persona.role : 'viewer', name: persona.name, accountId: 'DEMO-' + persona.id })
   }
 
   function createAirOrder(payload) {
@@ -282,8 +294,10 @@ export function usePrototypeData() {
       const errors = validateDispatchDraft(draft)
       if (Object.keys(errors).length) throw Object.assign(new Error(`第 ${index + 1} 辆车：${Object.values(errors)[0]}`), { fields: errors, vehicleIndex: index })
     }
+    if (orders.some(order => ['pieces', 'weight', 'volume'].some(key => order[key] !== '' && order[key] != null && (!Number.isFinite(Number(order[key])) || Number(order[key]) <= 0)))) throw new Error('手工货量的数值规则待确认，当前值无法进行运单分配')
     let serial = state.groundSequence
     const generated = orders.flatMap(order => drafts.map(draft => createGroundWaybill(order, draft, { serial: ++serial, vehicleCount: drafts.length, actor: groundSession.name })))
+    for (const bill of generated) bill.dispatchedById = groundSession.accountId || groundSession.role
     const nextHistory = clone(state.groundPlateHistory)
     for (const draft of drafts) {
       // Cargo allocations belong to the current order, not the reusable vehicle record.
@@ -298,7 +312,9 @@ export function usePrototypeData() {
     state.groundPlateHistory = nextHistory
     for (const order of orders) {
       order.dispatchStatus = deriveGroundOrderStatus(state.groundWaybills.filter(item => item.orderId === order.id), order.dispatchStatus)
-      order.updatedAt = GROUND_NOW
+      order.firstDispatchedAt ||= GROUND_NOW
+      groundOrderActions.recordGroundOrder(order, '完成调度', generated.filter(bill => bill.orderId === order.id).map(bill => bill.waybillNo).join('；'))
+      groundOrderActions.recordGroundDispatchMail(order)
     }
     return generated
   }
@@ -314,7 +330,9 @@ export function usePrototypeData() {
     waybill.trajectory.push(record)
     const order = state.groundOrders.find(item => item.id === waybill.orderId)
     if (order) {
+      const previous = order.dispatchStatus
       order.dispatchStatus = deriveGroundOrderStatus(state.groundWaybills.filter(item => item.orderId === order.id), order.dispatchStatus)
+      if (order.dispatchStatus === '已完成' && previous !== '已完成') order.completedAt = GROUND_NOW
       order.updatedAt = GROUND_NOW
     }
     return waybill
@@ -379,11 +397,13 @@ export function usePrototypeData() {
   }))
 
   return {
-    state, airSession, groundSession, workbenchSession, selectWorkbenchPersona, dashboard, reset, createAirOrder, bookingSession, ...airBookingActions, dispatchGroundOrders, updateGroundWaybillStatus, advanceWarehouseOrder,
+    state, airSession, groundSession, workbenchSession, selectWorkbenchPersona, dashboard, reset, createAirOrder, bookingSession, ...airBookingActions, ...groundOrderActions, dispatchGroundOrders, updateGroundWaybillStatus, advanceWarehouseOrder,
     ...airOrderSupplementActions, ...airOrderActions, airChildSession, ...airChildOrderActions, ...airServiceActions,
     ...airWaybillActions, advanceAirWaybillClock,
     airTemplateSession, ...airWaybillTemplateActions,
     declarationSession, airDeclarations, ...airDeclarationActions,
+    clearanceSession, airClearances, ...airClearanceActions,
+    loadAirTrackingExamples: () => loadTrackingExamples(state, airSession),
     addCost, reviewCost, partnerSession, ...partnerActions, airMasterSession, airCatalog, ...airMasterActions,
     ...fleetActions, ...transportQuoteActions, ...warehouseQuoteActions, ...airSupplierRateActions, capacitySession, ...capacityActions, ...palletActions, ensureGenericRows, addGenericRow,
   }
