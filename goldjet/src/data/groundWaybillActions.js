@@ -2,11 +2,11 @@ import { GROUND_NOW, deriveGroundOrderStatus } from '../domain/groundOperations.
 import { groundExceptionErrors, groundExceptionCloseReason, groundRemarkError, groundDocumentErrors } from '../domain/groundWaybills.js'
 
 const clone = value => JSON.parse(JSON.stringify(value))
-export function syncGroundWaybillOrder(state, bill) {
+export function syncGroundWaybillOrder(state, bill, time = GROUND_NOW) {
   const order = state.groundOrders.find(row => row.id === bill.orderId)
   if (!order) return
   const bills = state.groundWaybills.filter(row => row.orderId === order.id)
-  order.updatedAt = GROUND_NOW
+  order.updatedAt = time
   if (bills.some(row => row.exceptionStatus === '异常中' || row.status === '异常中')) {
     order.statusPendingReason = '存在未关闭异常，订单汇总状态待确认（035）'
     return
@@ -14,7 +14,7 @@ export function syncGroundWaybillOrder(state, bill) {
   order.statusPendingReason = ''
   const previous = order.dispatchStatus
   order.dispatchStatus = deriveGroundOrderStatus(bills, previous)
-  if (order.dispatchStatus === '已完成' && previous !== '已完成') order.completedAt = GROUND_NOW
+  if (order.dispatchStatus === '已完成' && previous !== '已完成') order.completedAt = time
 }
 export function createGroundWaybillActions(state, getSession) {
   function find(id) {
@@ -54,6 +54,7 @@ export function createGroundWaybillActions(state, getSession) {
     record.status = '已关闭'; record.closedAt = GROUND_NOW; record.closedBy = getSession().accountId; record.closeRemark = remark.trim()
     bill.status = record.previousStatus; bill.fulfillmentStatus = record.previousStatus; bill.exceptionStatus = '异常已关闭'
     trajectory(bill, '取消异常', remark.trim())
+    bill.trajectory.at(-1).exceptionId = record.id
     return record
   }
   function saveGroundDocument(id, draft, documentId = '') {

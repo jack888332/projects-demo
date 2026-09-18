@@ -41,6 +41,9 @@ import { loadAirTrackingExamples as loadTrackingExamples } from './airTrackingEx
 import { createGroundOrderActions } from './groundOrderActions.js'
 import { createGroundWaybillActions, syncGroundWaybillOrder } from './groundWaybillActions.js'
 import { loadGroundWaybillExamples as loadGroundExamples } from './groundWaybillExamples.js'
+import { createDriverActions } from './driverActions.js'
+import { loadDriverExamples } from './driverExamples.js'
+import { createDriverFulfillmentActions } from './driverFulfillmentActions.js'
 
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
@@ -101,6 +104,7 @@ function createSeed() {
   return initializePartnerState({
     airMaster: createAirMasterSeed(),
     airMasterSequence: 0,
+    driverClockMs: Date.UTC(2026, 8, 8, 14, 30),
     transportQuotes: createTransportQuoteSeed(),
     transportQuoteSequence: 2,
     warehouseQuotes: createWarehouseQuoteSeed(),
@@ -169,6 +173,8 @@ function createSeed() {
 }
 
 const state = reactive(createSeed())
+const driverActions = createDriverActions(state, () => workbenchSession.personaId)
+const driverFulfillmentActions = createDriverFulfillmentActions(state, () => driverActions.driverSession, () => workbenchSession.personaId)
 const airSession = reactive({ role: 'service', name: '周倩' })
 const groundSession = reactive({ role: 'viewer', name: '周倩', accountId: 'DEMO-service' })
 const groundOrderActions = createGroundOrderActions(state, () => groundSession)
@@ -248,9 +254,11 @@ export function usePrototypeData() {
     createAirDeclarationActions(state, () => ({ role: 'customsService', name: '报关演示客服' })).loadAirDeclarationExamples()
     loadTrackingExamples(state, { role: 'service', name: '周倩' })
     loadGroundExamples(state, { role: 'hangsheng', name: '陈楠', accountId: 'DEMO-hangsheng' })
+    loadDriverExamples(state)
   }
   function advanceAirWaybillClock() { state.airWaybillClockMs += 121000 }
   function reset() {
+    driverActions.logoutDriver().catch(() => {})
     resetAccessControl()
     const seed = createSeed()
     for (const key of Object.keys(seed)) state[key] = clone(seed[key])
@@ -266,6 +274,7 @@ export function usePrototypeData() {
   function selectWorkbenchPersona(id) {
     const persona = WORKBENCH_PERSONAS.find(item => item.id === id)
     if (!persona) throw new Error('未找到演示角色')
+    if (id !== workbenchSession.personaId && workbenchSession.personaId === 'driver') driverActions.leaveDriver()
     workbenchSession.personaId = id
     Object.assign(airSession, { role: isSuperAdmin() ? 'superAdmin' : persona.scope === 'air' ? persona.role : 'viewer', name: persona.name, readAll: isSuperAdmin() })
     Object.assign(groundSession, { role: isSuperAdmin() ? 'superAdmin' : persona.scope === 'ground' ? persona.role : 'viewer', name: persona.name, accountId: 'DEMO-' + persona.id, readAll: isSuperAdmin() })
@@ -420,6 +429,8 @@ export function usePrototypeData() {
 
   return {
     state, airSession, groundSession, workbenchSession, selectWorkbenchPersona, dashboard, reset, loadDemoOverview, bookingSession,
+    ...driverActions,
+    ...driverFulfillmentActions,
     ...guardModuleActions('airOrders', { createAirOrder, ...airOrderSupplementActions, ...airOrderActions, ...airServiceActions }),
     ...guardModuleActions('booking', airBookingActions),
     ...guardModuleActions('groundDispatch', { ...groundOrderActions, dispatchGroundOrders }),

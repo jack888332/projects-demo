@@ -12,6 +12,7 @@ const selected = ref('service'), keyword = ref(''), domain = ref(''), tab = ref(
 const draft = ref(rolePermissionDraft(selected.value)), baseline = ref(JSON.stringify(draft.value))
 const dirty = computed(() => JSON.stringify(draft.value) !== baseline.value)
 const locked = computed(() => selected.value === 'superAdmin' || !isSuperAdmin())
+const moduleLocked = key => locked.value || key === 'permissions' || selected.value === 'driver' && key !== 'driver'
 const roles = computed(() => WORKBENCH_PERSONAS.filter(role => !keyword.value || `${role.label} ${role.name}`.includes(keyword.value.trim())))
 const rows = computed(() => Object.entries(moduleCatalog).filter(([, item]) => !domain.value || item.domain === domain.value).map(([key, item]) => ({ key, ...item })))
 const role = computed(() => WORKBENCH_PERSONAS.find(item => item.id === selected.value))
@@ -56,10 +57,10 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
           <el-select v-model="domain" clearable placeholder="全部业务域" aria-label="筛选业务域"><el-option v-for="item in domains" :key="item.id" :label="item.label" :value="item.id" /></el-select>
           <div class="permission-table"><el-table :data="rows" row-key="key" max-height="calc(100vh - 370px)" aria-label="角色权限配置">
             <el-table-column label="模块" min-width="170"><template #default="{ row }"><strong>{{ row.label }}</strong><small>{{ domains.find(item => item.id === row.domain)?.label }}</small></template></el-table-column>
-            <el-table-column label="菜单可见" width="115"><template #default="{ row }"><el-switch v-model="draft[row.key].menu" :disabled="locked || row.key === 'permissions'" :aria-label="`${row.label}菜单可见`" /></template></el-table-column>
-            <el-table-column label="页面访问" width="115"><template #default="{ row }"><el-switch v-model="draft[row.key].page" :disabled="locked || row.key === 'permissions'" :aria-label="`${row.label}页面访问`" /></template></el-table-column>
-            <el-table-column label="数据查看" width="115"><template #default="{ row }"><el-switch v-model="draft[row.key].data" :disabled="locked || row.key === 'permissions'" :aria-label="`${row.label}数据查看`" /></template></el-table-column>
-            <el-table-column label="业务操作" width="115"><template #default="{ row }"><el-switch v-model="draft[row.key].write" :disabled="locked || row.key === 'permissions'" :aria-label="`${row.label}业务操作`" /></template></el-table-column>
+            <el-table-column label="菜单可见" width="115"><template #default="{ row }"><el-switch v-model="draft[row.key].menu" :disabled="moduleLocked(row.key)" :aria-label="`${row.label}菜单可见`" /></template></el-table-column>
+            <el-table-column label="页面访问" width="115"><template #default="{ row }"><el-switch v-model="draft[row.key].page" :disabled="moduleLocked(row.key)" :aria-label="`${row.label}页面访问`" /></template></el-table-column>
+            <el-table-column label="数据查看" width="115"><template #default="{ row }"><el-switch v-model="draft[row.key].data" :disabled="moduleLocked(row.key)" :aria-label="`${row.label}数据查看`" /></template></el-table-column>
+            <el-table-column label="业务操作" width="115"><template #default="{ row }"><el-switch v-model="draft[row.key].write" :disabled="moduleLocked(row.key)" :aria-label="`${row.label}业务操作`" /></template></el-table-column>
           </el-table></div>
         </template>
         <el-table v-else :data="history" aria-label="权限变更记录"><el-table-column prop="id" label="序号" width="80" /><el-table-column prop="actor" label="操作人" width="130" /><el-table-column prop="action" label="操作" width="120" /><el-table-column label="变更模块" min-width="240"><template #default="{ row }">{{ row.modules.map(key => moduleCatalog[key].label).join('、') }}</template></el-table-column><template #empty>暂无权限变更</template></el-table>

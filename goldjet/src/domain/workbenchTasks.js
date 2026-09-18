@@ -4,6 +4,7 @@ import { deriveAirDeclarations } from './airDeclarations.js'
 // Personnel are synthetic demo identities; product bindings are explicit, never inferred from an order owner.
 export const WORKBENCH_PERSONAS = [
   { id: 'superAdmin', scope: 'system', role: 'superAdmin', name: '演示管理员', label: '超级管理员' },
+  { id: 'driver', scope: 'driver', role: 'driver', name: '演示司机十八', label: '司机' },
   { id: 'service', scope: 'air', role: 'service', name: '周倩', label: '空运客服' },
   { id: 'customsService', scope: 'customs', role: 'customsService', name: '报关演示客服', label: '报关行客服' },
   { id: 'overseasService', scope: 'clearance', role: 'overseasService', name: '海外演示客服', label: '海外部客服' },

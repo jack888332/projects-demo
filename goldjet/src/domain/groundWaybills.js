@@ -19,8 +19,8 @@ export function groundRemarkError(value) {
   const length = [...String(value || '').trim()].length
   return length && (length < 2 || length > 500) ? '备注须为2～500个字符或留空' : ''
 }
-export function groundImagesError(images) {
-  if (!Array.isArray(images) || images.length > 9) return '最多上传9张图片'
+export function groundImagesError(images, maxImages = 9) {
+  if (!Array.isArray(images) || images.length > maxImages) return `最多上传${maxImages}张图片`
   for (const image of images) {
     const error = validateDriverAttachment(image)
     if (error) return error

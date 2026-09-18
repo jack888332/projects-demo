@@ -95,6 +95,7 @@ export function createGroundOrderActions(state, getSession) {
     Object.assign(bill, update, calculateGroundAllocation(order, update, state.groundWaybills.filter(row => row.orderId === order.id && row.status !== '已取消').length))
     const time = now()
     bill.dispatchUpdatedAt = time; bill.updatedAt = time; bill.dispatchedBy = getSession().name; bill.dispatchedById = getSession().accountId || getSession().role
+    bill.trajectory.push({ id: `${bill.id}-T${bill.trajectory.length + 1}`, event: '修改调度', status: bill.status, time, actor: getSession().accountId, actorName: getSession().name, role: '航晟客服', remark: update.remark || '' })
     bill.costStatus = quote ? '合成报价匹配' : '待确认：未匹配报价'
     const labels = { vehicleType:'车型',supplier:'供应商',cost:'成本价格',plate:'车牌号',drivers:'司机',companyAddress:'公司地址',customsNo:'海关编号',vehicleWeight:'车自重',containerNo:'柜号',frameWeight:'架重',containerWeight:'柜重',customerPassword:'客户密码',remark:'备注',specificPieces:'特定件数',specificVolume:'特定体积',specificWeight:'特定重量',specificLength:'特定长度',specificWidth:'特定宽度',specificHeight:'特定高度' }
     recordGroundOrder(order, '修改调度', bill.waybillNo, time, fields.filter(key => JSON.stringify(before[key]) !== JSON.stringify(update[key])).map(key => ({ field: labels[key], before: before[key], after: update[key] })))

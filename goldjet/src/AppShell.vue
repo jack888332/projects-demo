@@ -40,6 +40,7 @@ async function changeAirRole(id) {
   try {
     await ElMessageBox.confirm('切换角色会关闭或重载当前表单，尚未提交的输入将丢弃。', '切换演示角色？', { confirmButtonText: '切换角色', cancelButtonText: '保留当前角色', type: 'warning' })
     selectWorkbenchPersona(id)
+    if (id === 'driver' && route.meta.moduleKey !== 'driver') await router.push('/fulfillment/driver')
   } catch { /* Keep the active role and draft. */ }
 }
 </script>

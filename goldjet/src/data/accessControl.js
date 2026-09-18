@@ -11,6 +11,7 @@ export function getModuleAccess(key, personaId = workbenchSession.personaId) {
   if (!Object.hasOwn(moduleCatalog, key)) return { menu: false, page: false, data: false, write: false }
   if (personaId === 'superAdmin') return { menu: true, page: true, data: true, write: key === 'permissions' }
   if (key === 'permissions') return { menu: false, page: false, data: false, write: false }
+  if (personaId === 'driver' && key !== 'driver') return { menu: false, page: false, data: false, write: false }
   return { ...defaults(key), ...accessState.policies[personaId]?.[key] }
 }
 
@@ -44,6 +45,7 @@ export function saveRolePermissions(personaId, draft) {
     const rule = draft?.[key]
     if (!rule || ['menu', 'page', 'data', 'write'].some(field => typeof rule[field] !== 'boolean')) throw new Error('权限配置不完整')
     if (key === 'permissions' && (rule.menu || rule.page || rule.data || rule.write)) throw new Error('权限管理仅向超级管理员开放')
+    if (personaId === 'driver' && key !== 'driver' && Object.values(rule).some(Boolean)) throw new Error('司机仅可访问本人司机端任务，不能授权后台模块')
     next[key] = { menu: rule.menu, page: rule.page, data: rule.data, write: rule.write }
   }
   const before = rolePermissionDraft(personaId)
@@ -56,7 +58,7 @@ export function saveRolePermissions(personaId, draft) {
 }
 
 export function resetRolePermissions(personaId) {
-  const draft = Object.fromEntries(Object.keys(moduleCatalog).map(key => [key, defaults(key)]))
+  const draft = Object.fromEntries(Object.keys(moduleCatalog).map(key => [key, personaId === 'driver' && key !== 'driver' ? { menu: false, page: false, data: false, write: false } : defaults(key)]))
   return saveRolePermissions(personaId, draft)
 }
 

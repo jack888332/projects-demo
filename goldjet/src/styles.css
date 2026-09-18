@@ -223,7 +223,7 @@ button { -webkit-tap-highlight-color: transparent; }
 
 @media (max-width: 680px) {
   .brand { min-width: 56px; width: 56px; padding: 0 var(--space-3); }
-  .brand-name, .user-name, .top-actions .icon-button:first-child, .top-actions .icon-button:nth-child(2) { display: none; }
+  .brand-name, .user-name, .top-actions .icon-button:first-child { display: none; }
   .top-actions { padding: 0 var(--space-2); }
   .top-menu button { min-width: 90px; padding: 0 var(--space-2); gap: 4px; }
   .top-menu button .el-icon { display: none; }
