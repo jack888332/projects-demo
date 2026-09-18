@@ -36,6 +36,13 @@ function approveCredit(partner, amount = 1000) {
 beforeEach(() => data.reset())
 
 describe('GJ-003 owner：档案—审批—授信—空运下单', () => {
+  it('已被客户开票资料引用的档案不能删除', () => {
+    data.selectWorkbenchPersona('business')
+    const partner = data.savePartner(validPartner())
+    data.state.financeBasics.invoiceProfiles.push({ id: 'INV-PROFILE-TEST', partnerId: partner.id, status: '已生效' })
+    expect(() => data.deletePartner(partner.id)).toThrow('开票资料引用')
+    expect(partner.status).toBe('新建')
+  })
   it('从业务保存、提交到财务通过与额度批复，空运消费同一客户结果', () => {
     data.selectWorkbenchPersona('business')
     const payload = validPartner({ status: '已生效', creditLimit: 999999, availableCredit: 999999, code: 'FORGED' })
@@ -111,6 +118,18 @@ describe('GJ-003 owner：档案—审批—授信—空运下单', () => {
     data.deletePartner(partner.id)
     expect(partner.status).toBe('已删除')
     expect(() => data.submitPartner(partner.id)).toThrow('合作方不存在')
+  })
+  it('打板订单及报价保护其引用客户，拒绝删除不产生副作用', () => {
+    const partner = createActivePartner()
+    data.setPartnerActive(partner.id, false)
+    data.state.stationOrders.push({id:'STATION-REF',partnerId:partner.id})
+    const before = JSON.stringify(data.state)
+    expect(() => data.deletePartner(partner.id)).toThrow('存在打板订单')
+    expect(JSON.stringify(data.state)).toBe(before)
+    data.state.stationOrders.pop()
+    data.state.stationQuotes.push({id:'QUOTE-REF',partnerId:partner.id})
+    expect(() => data.deletePartner(partner.id)).toThrow('打板报价引用')
+    expect(partner.status).toBe('已失效')
   })
 })
 

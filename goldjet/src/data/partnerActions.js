@@ -105,9 +105,12 @@ export function createPartnerActions(state, getSession) {
   }
   function deletePartner(id) {
     const partner=find(id);requireAction(partner,'delete')
+    if (state.financeBasics?.invoiceProfiles.some(row => row.partnerId === id)) throw new Error('该客户已被开票资料引用；删除后的关联处理待确认（183），暂不能删除')
     if (state.airMaster?.airlines.some(row => row.supplierIds.includes(id))) throw new Error('该供应商已被航司主数据引用；删除后的关联处理待确认，暂不能删除')
     if (state.transportQuotes?.some(row => row.partnerId === id)) throw new Error('该合作方已被运输报价引用；删除后的关联处理待确认，暂不能删除')
     if (state.warehouseQuotes?.some(row => row.partnerId === id)) throw new Error('该合作方已被仓库报价引用；删除后的关联处理待确认，暂不能删除')
+    if (state.stationQuotes?.some(row => row.partnerId === id)) throw new Error('该合作方已被打板报价引用；删除后的关联处理待确认，暂不能删除')
+    if (state.stationOrders?.some(row => row.partnerId === id || row.customer === partner.name)) throw new Error('该合作方存在打板订单，不能删除')
     if (state.airSupplierRates?.some(row => row.partnerId === id)) throw new Error('该合作方已被空运供应商价格引用；删除后的关联处理待确认，暂不能删除')
     const used=[...state.airOrders,...(state.airChildren || []).filter(row=>!row.deleted),...state.groundOrders,...state.warehouseOrders].some(row=>row.customerId===id || row.customer===partner.name || row.supplier===partner.name)
       || state.groundWaybills.some(row=>row.supplier===partner.name || row.customer===partner.name)

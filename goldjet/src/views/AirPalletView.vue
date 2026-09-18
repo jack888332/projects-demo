@@ -1,16 +1,18 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Connection, Download, RefreshLeft } from '@element-plus/icons-vue'
 import PageHeader from '../components/PageHeader.vue'
 import DataTableFrame from '../components/DataTableFrame.vue'
 import { usePrototypeData } from '../data/usePrototypeData.js'
+import { canReadModule } from '../data/accessControl.js'
 import { validCapacityDate, getCapacityQueryRestriction } from '../domain/airCapacity.js'
 import { getPalletCandidates, getPalletFlightRows, getPalletAllocatedRows, getPalletAllocationRestriction, getPalletSplitRestriction, getPalletUnloadRestriction, getPalletWithdrawRestriction, getPalletWriteRestriction, canEditAirAllocationNote, validatePalletSplit } from '../domain/airPallets.js'
 
 const { state, capacitySession, allocateAirOrders, unloadAirAllocations, splitAirAllocation, withdrawAirSplit, saveAirAllocationNote, reallocateAirFlight } = usePrototypeData()
 const session = computed(() => capacitySession.value ?? capacitySession)
+const router = useRouter()
 const canRead = computed(() => session.value.readAll || ['operator', 'handler'].includes(session.value.role))
 const writeReason = computed(() => getPalletWriteRestriction(session.value))
 const clone = value => JSON.parse(JSON.stringify(value))
@@ -134,7 +136,7 @@ watch(() => state.palletAllocations.map(row => row.id), () => { if (editingId.va
 
 <template>
   <div class="module-view pallet-view">
-    <PageHeader title="配板管理" :description="session.label + ' · ' + session.name" />
+    <PageHeader title="配板管理" :description="session.label + ' · ' + session.name"><template #actions><el-button v-if="canReadModule('stationPallet')&&canRead" @click="router.push({path:'/fulfillment/station-pallet',query:{tab:'plans'}})">打板计划</el-button></template></PageHeader>
     <el-alert v-if="!canRead" title="配板管理仅向本人负责航线的航线运营、航线操作开放" type="info" :closable="false" />
     <template v-else>
       <el-alert v-if="writeReason" :title="writeReason" type="info" :closable="false" />

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Plus, Search, Refresh, MapLocation } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -8,6 +8,9 @@ import DataTableFrame from '../components/DataTableFrame.vue'
 import StatusTag from '../components/StatusTag.vue'
 import AirOrderCreateDialog from '../components/AirOrderCreateDialog.vue'
 import AirOrderPriceDialog from '../components/AirOrderPriceDialog.vue'
+import WarehouseOrderEditor from '../components/WarehouseOrderEditor.vue'
+import { warehousePermissions } from '../domain/warehouseOrders.js'
+import { canWriteModule } from '../data/accessControl.js'
 import { getAirPriceRestriction } from '../data/airOrderActions.js'
 import { getAirSupplementRestriction } from '../domain/airOrderSupplement.js'
 import { usePrototypeData } from '../data/usePrototypeData.js'
@@ -16,7 +19,8 @@ import { canViewAirTrackingOrder } from '../domain/airTracking.js'
 
 const route = useRoute()
 const router = useRouter()
-const { state, airSession, airChildSession, airCatalog } = usePrototypeData()
+const { state, airSession, airChildSession, airCatalog, workbenchSession } = usePrototypeData()
+const warehouseEditor = ref()
 const createVisible = ref(false)
 const priceVisible = ref(false)
 const priceOrderId = ref('')
@@ -62,6 +66,7 @@ function openBooking(order) {
 }
 function created(order) { resetFilters(); openDetail(order) }
 watch(() => route.query, query => {
+  if (query.action === 'createWarehouse' && warehousePermissions(workbenchSession.personaId).create && canWriteModule('airOrders') && canWriteModule('warehouseOrders')) nextTick(() => warehouseEditor.value?.open())
   if (query.action === 'create' && canCreate.value) createVisible.value = true
   if (query.order) {
     const order = visibleOrders.value.find(item => item.id === query.order)
@@ -76,7 +81,7 @@ watch(selected, order => { if (!order) detailVisible.value = false })
 <template>
   <div class="module-view">
     <PageHeader title="主订单管理" description="客服受理、服务指令与航线订舱共享同一订单">
-      <template #actions><el-button v-business-write="'airOrders'" type="primary" :icon="Plus" :disabled="!canCreate" @click="createVisible = true">新建主订单</el-button></template>
+      <template #actions><el-button v-if="warehousePermissions(workbenchSession.personaId).create && canWriteModule('airOrders') && canWriteModule('warehouseOrders')" :icon="Plus" @click="warehouseEditor.open()">创建仓库订单</el-button><el-button v-business-write="'airOrders'" type="primary" :icon="Plus" :disabled="!canCreate" @click="createVisible = true">新建主订单</el-button></template>
     </PageHeader>
     <div v-if="!canCreate" class="air-context">当前角色不能新建主订单。航线人员可进入订舱管理，航晟客服可从子订单管理创建及合成订单。</div>
     <form class="air-filters" aria-label="主订单筛选" @submit.prevent>
@@ -151,6 +156,7 @@ watch(selected, order => { if (!order) detailVisible.value = false })
       </template>
     </el-drawer>
   </div>
+  <WarehouseOrderEditor ref="warehouseEditor" @saved="row => router.push({path:'/fulfillment/warehouse-orders',query:{order:row.id}})" />
 </template>
 
 <style scoped>

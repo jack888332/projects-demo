@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onBeforeUnmount, reactive, ref, nextTick } from 'vue'
+import { computed, onMounted, ref, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, UserFilled, Van, Location, Grid } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -7,16 +7,17 @@ import { usePrototypeData } from '../data/usePrototypeData.js'
 import { isSuperAdmin, canWriteModule } from '../data/accessControl.js'
 import { driverTasks, driverStatus, driverIdentifier, driverTerminalTime, driverCargo, driverExpected, driverWindow, driverAccount, DRIVER_DEMO } from '../domain/driverTasks.js'
 import DriverTaskOperations from '../components/DriverTaskOperations.vue'
+import MiniProgramLogin from '../components/MiniProgramLogin.vue'
 import { driverConfig } from '../data/driverConfig.js'
 import QRCode from 'qrcode'
 const data = usePrototypeData(), route = useRoute(), router = useRouter()
-const login = reactive({ phone: '', code: '', remember: true })
-const loading = ref(true), busy = ref(false), error = ref(''), clock = ref(Date.now())
+const loading = ref(true), error = ref('')
 const history = computed(() => route.query.tab === 'history')
 const status = computed(() => route.query.status || '全部')
 const preview = computed(isSuperAdmin)
 const permitted = computed(() => preview.value || data.workbenchSession.personaId === 'driver')
 const ready = computed(() => preview.value || Boolean(data.driverSession.phone))
+const groundServiceTab = computed(() => preview.value || (data.workbenchSession.personaId === 'driver' && ready.value))
 const rows = computed(() => driverTasks(data.state.groundWaybills, data.driverSession.phone, history.value, status.value, preview.value))
 const selected = computed(() => rows.value.find(bill => bill.id === route.query.bill))
 const pane = computed(() => route.query.pane || 'detail')
@@ -24,10 +25,7 @@ const operations = ref()
 const accountVisible = ref(false), infoTitle = ref(''), infoContent = ref(''), infoVisible = ref(false), helpVisible = ref(false), qrVisible = ref(false), qrImage = ref(''), qrValue = ref(''), mapAddress = ref(''), mapVisible = ref(false)
 const account = computed(() => driverAccount(data.state.groundWaybills,data.driverSession.phone))
 const mapUrl = computed(() => `https://www.amap.com/search?query=${encodeURIComponent(mapAddress.value)}`)
-const remaining = computed(() => data.driverChallenge.sentAt === null ? 0 : Math.max(0, Math.ceil((60000 - (clock.value - data.driverChallenge.sentAt)) / 1000)))
-const timer = setInterval(() => { clock.value = Date.now() }, 500)
 onMounted(async () => { try { if (!preview.value && permitted.value) await data.enterDriver() } catch { error.value = '无法读取记住的登录信息，请重新登录' } finally { loading.value = false } })
-onBeforeUnmount(() => { clearInterval(timer); data.leaveDriver() })
 function navigate(query) { router.push({ path: route.path, query }) }
 async function upload(bill) { await router.push({path:route.path,query:{...route.query,bill:bill.id,pane:'documents'}}); await nextTick(); operations.value?.openDocument() }
 function completed(result) { if (['已卸货','已取消'].includes(result.status)) navigate({...route.query,tab:'history',status:'全部'}) }
@@ -36,7 +34,7 @@ async function showAccount() { if (!operations.value || await operations.value.a
 async function logout() {
   try {
     await ElMessageBox.confirm('退出后需重新验证手机号。','退出登录',{confirmButtonText:'退出登录',cancelButtonText:'取消'})
-    await data.logoutDriver(); accountVisible.value=false; login.phone=''; login.code=''; login.remember=true; navigate({})
+    await data.logoutDriver(); accountVisible.value=false; navigate({})
   } catch(cause) { if (cause instanceof Error) ElMessage.error('未能清除登录记录，请重试退出') }
 }
 async function showQr() {
@@ -45,44 +43,20 @@ async function showQr() {
   try { qrImage.value=await QRCode.toDataURL(value,{width:280,margin:2,errorCorrectionLevel:'M'}); qrValue.value=value; qrVisible.value=true } catch { ElMessage.error('二维码生成失败，请重试') }
 }
 function showMap(point) { mapAddress.value=address(point); mapVisible.value=true }
-async function sendCode() {
-  error.value = ''
-  try {
-    const result = await ElMessageBox.prompt('请输入 GJ18（本地图形校验模拟）', '图形校验', { confirmButtonText: '校验并获取', cancelButtonText: '取消', inputValidator: value => Boolean(value) || '请输入图形字符' })
-    data.sendDriverCode(login.phone.trim(), result.value)
-    clock.value = Date.now()
-    ElMessage.success(`本地模拟验证码：${DRIVER_DEMO.code}，未发送短信`)
-  } catch (cause) { if (cause instanceof Error) error.value = cause.message }
-}
-async function submitLogin(method = 'sms') {
-  busy.value = true; error.value = ''
-  try {
-    if (method === 'wechat') await ElMessageBox.confirm(`模拟微信授权使用绑定手机号 ${DRIVER_DEMO.phone}，不连接微信。`, '微信授权（模拟）', { confirmButtonText: '授权登录', cancelButtonText: '拒绝' })
-    const done = await data.loginDriver({ ...login, phone: method === 'wechat' ? DRIVER_DEMO.phone : login.phone.trim(), method })
-    if (done) navigate({})
-  } catch (cause) { if (cause instanceof Error) error.value = cause.message }
-  finally { busy.value = false }
-}
 const address = point => [point.province, point.city === point.province ? '' : point.city, point.district, point.address].filter(Boolean).join('')
 </script>
 <template>
   <section class="driver-app" v-loading="loading">
     <header class="driver-header"><div><span class="driver-kicker">司机端</span><h1>高捷物流</h1></div><el-tag v-if="preview" type="info">超级管理员 · 只读</el-tag><el-button v-else-if="ready" :icon="UserFilled" circle aria-label="我的账户" title="我的账户" @click="showAccount" /><el-icon v-else :size="26"><Van /></el-icon></header>
     <el-empty v-if="!permitted" description="请切换司机角色登录，或使用超级管理员预览" />
-    <form v-else-if="!ready" class="driver-login" @submit.prevent="submitLogin()">
-      <h2>司机登录</h2>
-      <el-form label-position="top"><el-form-item label="手机号"><el-input v-model="login.phone" aria-label="手机号" maxlength="11" inputmode="numeric" autocomplete="tel" /></el-form-item>
-        <el-form-item label="验证码"><div class="driver-code"><el-input v-model="login.code" aria-label="验证码" inputmode="numeric" autocomplete="one-time-code" /><el-button :disabled="remaining > 0 || busy" @click="sendCode">{{ remaining ? `${remaining}秒后重发` : '获取验证码' }}</el-button></div></el-form-item>
-      </el-form>
-      <el-checkbox v-model="login.remember">保持登录状态</el-checkbox>
+    <MiniProgramLogin v-else-if="!ready" title="司机登录" @logged-in="navigate({})">
       <p v-if="error" class="driver-error" role="alert">{{ error }}</p>
-      <el-button native-type="submit" type="primary" size="large" :loading="busy">登录</el-button>
-      <el-button size="large" :disabled="busy" @click="submitLogin('wechat')">微信快捷登录（模拟）</el-button>
       <nav class="driver-support" aria-label="登录帮助"><el-button link @click="helpVisible=true">帮助</el-button><el-button link @click="info('隐私说明',driverConfig.privacy)">隐私</el-button><el-button link @click="info('条款说明',driverConfig.terms)">条款</el-button></nav>
-    </form>
+    </MiniProgramLogin>
     <template v-else>
       <template v-if="!selected">
         <el-radio-group :model-value="history ? 'history' : 'current'" aria-label="任务视图" @change="value => navigate({tab:value})"><el-radio-button value="current">当前任务</el-radio-button><el-radio-button value="history">历史任务</el-radio-button></el-radio-group>
+        <el-button v-if="groundServiceTab" @click="router.push('/fulfillment/ground-service')">地面服务</el-button>
         <div class="driver-list-tools"><span>{{ history ? '历史' : '当前' }}任务 · {{ rows.length }}</span><el-select v-if="history" :model-value="status" aria-label="历史任务状态" @change="value => navigate({tab:'history',status:value})"><el-option v-for="value in ['全部','已卸货','已取消']" :key="value" :value="value" /></el-select></div>
         <div class="driver-task-list">
           <article v-for="bill in rows" :key="bill.id" class="driver-task">

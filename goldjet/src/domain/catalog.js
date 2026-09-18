@@ -26,6 +26,11 @@ export const moduleCatalog = {
   warehouseOrders: { label: '仓库订单', path: '/fulfillment/warehouse-orders', domain: 'fulfillment', group: '仓储货站', icon: House },
   stationPallet: { label: '货站打板', path: '/fulfillment/station-pallet', domain: 'fulfillment', group: '仓储货站', icon: Box },
   costs: { label: '订单成本', path: '/finance/costs', domain: 'finance', group: '结算业务', icon: Coin },
+  exchangeRates: { label: '即期汇率', path: '/finance/exchange-rates', domain: 'finance', group: '基本信息管理', icon: Money },
+  costItems: { label: '成本项目', path: '/finance/cost-items', domain: 'finance', group: '基本信息管理', icon: Coin },
+  departmentCosts: { label: '部门成本项目', path: '/finance/department-costs', domain: 'finance', group: '基本信息管理', icon: OfficeBuilding },
+  invoiceEntities: { label: '客户开票单位', path: '/finance/invoice-entities', domain: 'finance', group: '基本信息管理', icon: Document },
+  bankAccounts: { label: '银行账户', path: '/finance/bank-accounts', domain: 'finance', group: '基本信息管理', icon: Wallet },
   reconciliation: { label: '对账管理', path: '/finance/reconciliation', domain: 'finance', group: '结算业务', icon: Tickets },
   paymentRequests: { label: '收付款申请', path: '/finance/payment-requests', domain: 'finance', group: '结算业务', icon: Wallet },
   writeoffs: { label: '收付款核销', path: '/finance/writeoffs', domain: 'finance', group: '结算业务', icon: DocumentChecked },
@@ -59,7 +64,7 @@ export const navigationByDomain = Object.fromEntries(domains.map((domain) => {
 }))
 
 export const genericModuleKeys = Object.keys(moduleCatalog).filter((key) => ![
-  'permissions', 'driver',
+  'permissions', 'driver', 'groundService', 'stationPallet', 'exchangeRates', 'costItems', 'departmentCosts', 'invoiceEntities', 'bankAccounts',
   'dashboard', 'financeWorkspace', 'airOrders', 'airChildren', 'booking', 'airwayBills', 'declarations', 'clearance', 'tracking', 'groundDispatch', 'groundWaybills', 'fleet', 'warehouseOrders', 'costs', 'partners', 'airMasterData', 'customerQuotes', 'warehouseQuotes', 'airSupplierRates', 'airCapacity', 'pallet', 'messages', 'integrations',
 ].includes(key))
 

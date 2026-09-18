@@ -5,6 +5,9 @@ import { deriveAirDeclarations } from './airDeclarations.js'
 export const WORKBENCH_PERSONAS = [
   { id: 'superAdmin', scope: 'system', role: 'superAdmin', name: '演示管理员', label: '超级管理员' },
   { id: 'driver', scope: 'driver', role: 'driver', name: '演示司机十八', label: '司机' },
+  { id: 'groundWarehouse', scope: 'groundService', role: 'warehouseOperator', name: '地面仓库演示员', label: '地面仓库人员' },
+  { id: 'groundStation', scope: 'groundService', role: 'stationOperator', name: '地面货站演示员', label: '地面货站人员' },
+  { id: 'stationPallet', scope: 'station', role: 'palletOperator', name: '打板演示人员', label: '货站打板人员' },
   { id: 'service', scope: 'air', role: 'service', name: '周倩', label: '空运客服' },
   { id: 'customsService', scope: 'customs', role: 'customsService', name: '报关演示客服', label: '报关行客服' },
   { id: 'overseasService', scope: 'clearance', role: 'overseasService', name: '海外演示客服', label: '海外部客服' },
@@ -23,6 +26,10 @@ export const WORKBENCH_PERSONAS = [
   { id: 'warehouseService', scope: 'warehouse', role: 'service', name: '仓库演示客服', label: '仓库客服' },
   { id: 'warehouseSupervisor', scope: 'warehouse', role: 'supervisor', name: '仓库演示主管', label: '仓库主管' },
   { id: 'finance', scope: 'finance', role: 'finance', name: '财务演示人员', label: '财务人员' },
+  { id: 'financeAccountant', scope: 'financeBasics', role: 'accountant', name: '财务会计演示员', label: '财务会计' },
+  { id: 'financeAdmin', scope: 'financeBasics', role: 'admin', name: '财务基础演示管理员', label: '财务基础管理员' },
+  { id: 'financeInformation', scope: 'financeBasics', role: 'information', name: '信息部演示员', label: '信息部' },
+  { id: 'financeClerk', scope: 'financeBasics', role: 'finance', name: '财务基础演示员', label: '财务（基础资料）' },
   { id: 'business', scope: 'finance', role: 'business', name: '周倩', label: '业务人员' },
   { id: 'businessSupervisor', scope: 'finance', role: 'businessSupervisor', name: '业务演示主管', label: '业务主管' },
   { id: 'masterAdmin', scope: 'airMaster', role: 'admin', name: '主数据演示管理员', label: '空运主数据管理员' },
@@ -183,13 +190,18 @@ const link = (label, path = '', reason = '尚未覆盖') => ({ label, target: pa
 export function getWorkbenchQuickLinks(persona) {
   const session = resolvePersona(persona)
   if (!session) return []
+  if (session.scope === 'station') return [link('货站打板', '/fulfillment/station-pallet')]
+  if (session.id === 'financeAccountant') return [link('即期汇率', '/finance/exchange-rates'),link('部门成本项目', '/finance/department-costs'),link('银行账户', '/finance/bank-accounts')]
+  if (session.id === 'financeAdmin') return [link('成本项目', '/finance/cost-items')]
+  if (session.id === 'financeInformation') return [link('部门成本项目', '/finance/department-costs')]
+  if (session.id === 'financeClerk') return [link('客户开票单位', '/finance/invoice-entities')]
   if (session.scope === 'ground' && session.role === 'transportSupervisor') return [link('航晟陆运月报', '/fulfillment/ground-monthly')]
   if (session.scope === 'customs' && session.role === 'customsService') return [link('报关单管理', '/fulfillment/declarations')]
   if (session.scope === 'clearance' && session.role === 'overseasService') return [link('清关派送', '/fulfillment/clearance')]
   if (session.scope === 'airTemplate') return [link('提单模板管理', '/fulfillment/airway-bill-templates')]
   if (session.role === 'waybillClerk') return [link('提单制作', '/fulfillment/airway-bills')]
   if (session.scope === 'air' && ['service', 'supervisor'].includes(session.role)) {
-    return [link('主订单', '/fulfillment/air-orders'), link('子订单', '/fulfillment/air-children'), link('提单制作', '/fulfillment/airway-bills'), link('自建仓库订单'), link('结算订单成本'), link('核算订单成本')]
+    return [link('主订单', '/fulfillment/air-orders'), link('子订单', '/fulfillment/air-children'), link('提单制作', '/fulfillment/airway-bills'), {label:'自建仓库订单',target:{path:'/fulfillment/air-orders',query:{action:'createWarehouse'}},disabled:false}, link('结算订单成本'), link('核算订单成本')]
   }
   if (session.scope === 'air' && ['operator', 'handler', 'director', 'deputyGeneral', 'divisionGeneral'].includes(session.role)) {
     return [link('订舱管理', '/fulfillment/booking'), link('舱位产品'), link('舱位实时查询'), link('配板管理'), ...(['director', 'deputyGeneral', 'divisionGeneral'].includes(session.role) ? [link('核算订单成本')] : [link('提单号')]), link('结算订单成本')]
@@ -198,7 +210,7 @@ export function getWorkbenchQuickLinks(persona) {
     return [link('运输订单', '/fulfillment/ground-dispatch'), {label:'中转订单',target:{path:'/fulfillment/ground-dispatch',query:{tab:'transfer'}},disabled:false}, link('供应商报价'), link('客户报价'), link('运输运单', '/fulfillment/ground-waybills'), link('中转运单')]
   }
   if (session.scope === 'warehouse' && ['service', 'supervisor'].includes(session.role)) {
-    return ['仓库订单', '运输订单预报看板', '运输运单预报看板', '货物管理', '退货管理'].map(label => link(label))
+    return [['仓库订单','orders'],['运输订单预报看板','transportOrders'],['运输运单预报看板','transportBills'],['货物管理','pallets'],['退货管理','returns'],...(session.role === 'supervisor' ? [['仓库月报','monthly']] : [])].map(([label,tab]) => ({label,target:{path:'/fulfillment/warehouse-orders',query:{tab}},disabled:false}))
   }
   if (session.scope === 'finance') {
     return [

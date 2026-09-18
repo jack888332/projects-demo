@@ -5,7 +5,13 @@ import { initializePartnerState, createPartnerActions } from './partnerActions.j
 import { createAirMasterActions } from './airMasterActions.js'
 import { createAirMasterSeed, deriveAirCatalog } from '../domain/airMasterData.js'
 import { calculateChargeWeight } from '../domain/chargeWeight.js'
-import { WAREHOUSE_FLOW } from '../domain/workflows.js'
+import { createWarehouseSeed, loadWarehouseExamples } from './warehouseExamples.js'
+import { createWarehouseOrderActions } from './warehouseOrderActions.js'
+import { createStationPalletSeed, loadStationPalletExamples } from './stationPalletExamples.js'
+import { createStationPalletActions } from './stationPalletActions.js'
+import { createFinanceBasicSeed } from './financeBasicExamples.js'
+import { createFinanceBasicActions } from './financeBasicActions.js'
+import { FINANCE_BASIC_ACCOUNTS } from '../domain/financeBasicAccess.js'
 import {
   createAirDraft, createBookingDraft, validateAirDraft,
 } from '../domain/airOperations.js'
@@ -44,6 +50,8 @@ import { loadGroundWaybillExamples as loadGroundExamples } from './groundWaybill
 import { createDriverActions } from './driverActions.js'
 import { loadDriverExamples } from './driverExamples.js'
 import { createDriverFulfillmentActions } from './driverFulfillmentActions.js'
+import { createGroundServiceSeed } from './groundServiceExamples.js'
+import { createGroundServiceActions } from './groundServiceActions.js'
 
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
@@ -69,7 +77,7 @@ function seedAirOrder(values) {
     supplier: booking.airline, flight: booking.flight, waybillNo: submitted ? `781-9000${values.id.slice(-3)}0` : '', booking,
     services: [
       { id: `${values.id}-BOOKING`, type: 'booking', name: '订舱', status: values.bookingStatus },
-      { id: `${values.id}-WAREHOUSE`, type: 'warehouse', name: '仓储', status: '待服务' },
+      { id: `${values.id}-WAREHOUSE`, type: 'warehouse', name: '仓储', status: values.warehouseStatus || '待服务' },
     ],
   }
 }
@@ -126,22 +134,20 @@ function createSeed() {
     airChildSequence: 0,
     airOrderEventSequence: 0,
     airOrders: [
-      seedAirOrder({ id: 'AIR-260908-001', customer: '启航跨境贸易', owner: '周倩', origin: 'PVG', destination: 'LAX', grossWeight: 186.5, volume: 1.28, pieces: 42, departureDate: '2026-09-10', orderStatus: '待补录', bookingStatus: '服务已完成', bookingRequirement: '优先晚班' }),
+      seedAirOrder({ id: 'AIR-260908-001', customer: '启航跨境贸易', owner: '周倩', origin: 'PVG', destination: 'LAX', grossWeight: 186.5, volume: 1.28, pieces: 42, departureDate: '2026-09-10', orderStatus: '待补录', bookingStatus: '服务已完成', warehouseStatus: '服务中', bookingRequirement: '优先晚班' }),
       seedAirOrder({ id: 'AIR-260908-002', customer: '云帆供应链', owner: '陈楠', origin: 'SZX', destination: 'FRA', grossWeight: 320, volume: 1.4, pieces: 68, departureDate: '2026-09-11', orderStatus: '待订舱', bookingStatus: '待服务', bookingRequirement: '需恒温操作' }),
       seedAirOrder({ id: 'AIR-260908-003', customer: '远洲电子商务', owner: '李明', origin: 'PVG', destination: 'LAX', grossWeight: 96, volume: 0.72, pieces: 24, departureDate: '2026-09-09', orderStatus: '待订舱', bookingStatus: '待服务', bookingRequirement: '到港后转仓' }),
       seedAirOrder({ id: 'AIR-260907-018', customer: '华越国际商贸', owner: '周倩', origin: 'PVG', destination: 'AMS', grossWeight: 246.8, volume: 1.1, pieces: 51, departureDate: '2026-09-09', orderStatus: '待审核', bookingStatus: '待审核', bookingRequirement: '分单报关' }),
       seedAirOrder({ id: 'AIR-260906-011', customer: '星瀚品牌管理', owner: '王晴', origin: 'PVG', destination: 'SIN', grossWeight: 138, volume: 0.58, pieces: 30, departureDate: '2026-09-08', orderStatus: '待订舱', bookingStatus: '服务中', bookingRequirement: '常规' }),
     ],
     ...seedGroundData(),
+    ...createGroundServiceSeed(),
     fleetDrivers: createFleetSeed(),
     fleetVehicles: createVehicleSeed(),
     ...createFleetRecordSeeds(),
-    warehouseOrders: [
-      { id: 'WH-260908-006', serviceNo: 'GJ-WH-260908-006', customer: '启航跨境贸易', warehouse: '昆山中转仓', inboundType: '备货入库', forecastQty: 320, actualQty: 288, goodQty: 272, damagedQty: 10, abnormalQty: 6, status: '部分收货', updatedAt: '2026-09-08 13:42' },
-      { id: 'WH-260908-007', serviceNo: 'GJ-WH-260908-007', customer: '云帆供应链', warehouse: '松江保税仓', inboundType: '备货入库', forecastQty: 180, actualQty: 180, goodQty: 174, damagedQty: 4, abnormalQty: 2, status: '待确认', updatedAt: '2026-09-08 12:18' },
-      { id: 'WH-260907-019', serviceNo: 'GJ-WH-260907-019', customer: '远洲电子商务', warehouse: '太仓仓库', inboundType: '集货入库', forecastQty: 96, actualQty: 96, goodQty: 96, damagedQty: 0, abnormalQty: 0, status: '待上架', updatedAt: '2026-09-08 10:36' },
-      { id: 'WH-260906-031', serviceNo: 'GJ-WH-260906-031', customer: '星瀚品牌管理', warehouse: '昆山中转仓', inboundType: '备货入库', forecastQty: 240, actualQty: 240, goodQty: 235, damagedQty: 3, abnormalQty: 2, status: '已完成', updatedAt: '2026-09-07 18:20' },
-    ],
+    ...createWarehouseSeed(),
+    ...createStationPalletSeed(),
+    ...createFinanceBasicSeed(),
     costs: [
       { id: 'COST-260908-101', orderNo: 'GJ-AIR-260908-001', feeItem: '空运费', direction: '应付', settlementParty: '东方航空', currency: 'CNY', amount: 12860, status: '审批通过', applicant: '周倩', updatedAt: '2026-09-08 13:30' },
       { id: 'COST-260908-102', orderNo: 'GJ-AIR-260908-001', feeItem: '空运服务费', direction: '应收', settlementParty: '启航跨境贸易', currency: 'CNY', amount: 15680, status: '待审批', applicant: '周倩', updatedAt: '2026-09-08 13:31' },
@@ -175,6 +181,10 @@ function createSeed() {
 const state = reactive(createSeed())
 const driverActions = createDriverActions(state, () => workbenchSession.personaId)
 const driverFulfillmentActions = createDriverFulfillmentActions(state, () => driverActions.driverSession, () => workbenchSession.personaId)
+const groundServiceActions = createGroundServiceActions(state, () => driverActions.driverSession, () => workbenchSession.personaId)
+const warehouseOrderActions = createWarehouseOrderActions(state, () => workbenchSession.personaId)
+const stationPalletActions = createStationPalletActions(state, () => workbenchSession.personaId)
+const financeBasicActions = createFinanceBasicActions(state, () => ({...FINANCE_BASIC_ACCOUNTS[workbenchSession.personaId],id:workbenchSession.personaId,name:WORKBENCH_PERSONAS.find(row=>row.id===workbenchSession.personaId)?.name||''}))
 const airSession = reactive({ role: 'service', name: '周倩' })
 const groundSession = reactive({ role: 'viewer', name: '周倩', accountId: 'DEMO-service' })
 const groundOrderActions = createGroundOrderActions(state, () => groundSession)
@@ -255,6 +265,8 @@ export function usePrototypeData() {
     loadTrackingExamples(state, { role: 'service', name: '周倩' })
     loadGroundExamples(state, { role: 'hangsheng', name: '陈楠', accountId: 'DEMO-hangsheng' })
     loadDriverExamples(state)
+    loadWarehouseExamples(state)
+    loadStationPalletExamples(state)
   }
   function advanceAirWaybillClock() { state.airWaybillClockMs += 121000 }
   function reset() {
@@ -274,7 +286,7 @@ export function usePrototypeData() {
   function selectWorkbenchPersona(id) {
     const persona = WORKBENCH_PERSONAS.find(item => item.id === id)
     if (!persona) throw new Error('未找到演示角色')
-    if (id !== workbenchSession.personaId && workbenchSession.personaId === 'driver') driverActions.leaveDriver()
+    if (id !== workbenchSession.personaId) driverActions.leaveDriver()
     workbenchSession.personaId = id
     Object.assign(airSession, { role: isSuperAdmin() ? 'superAdmin' : persona.scope === 'air' ? persona.role : 'viewer', name: persona.name, readAll: isSuperAdmin() })
     Object.assign(groundSession, { role: isSuperAdmin() ? 'superAdmin' : persona.scope === 'ground' ? persona.role : 'viewer', name: persona.name, accountId: 'DEMO-' + persona.id, readAll: isSuperAdmin() })
@@ -361,15 +373,6 @@ export function usePrototypeData() {
     return waybill
   }
 
-  function advanceWarehouseOrder(id) {
-    const order = state.warehouseOrders.find((item) => item.id === id)
-    const index = WAREHOUSE_FLOW.indexOf(order?.status)
-    if (!order || index < 0 || index === WAREHOUSE_FLOW.length - 1) return null
-    order.status = WAREHOUSE_FLOW[index + 1]
-    order.updatedAt = '2026-09-08 14:30'
-    return order
-  }
-
   function addCost(payload) {
     const cost = { id: `COST-260908-${110 + state.costs.length}`, status: '待审批', updatedAt: '2026-09-08 14:30', ...payload }
     state.costs.unshift(cost)
@@ -422,7 +425,7 @@ export function usePrototypeData() {
   const dashboard = computed(() => ({
     pendingAir: state.airOrders.filter((item) => ['待订舱', '待补录', '待出提单', '待审核'].includes(item.orderStatus)).length,
     undispatched: state.groundOrders.filter((item) => item.dispatchStatus === '未调度').length,
-    warehousePending: state.warehouseOrders.filter((item) => item.status !== '已完成').length,
+    warehousePending: state.warehouseOrders.filter((item) => !['已出库', '已取消'].includes(item.status)).length,
     costPending: state.costs.filter((item) => item.status === '待审批').length,
     integrationFailures: [...state.airOrders, ...state.airChildren].filter(item => item.waybillTransmission?.status === '异常中').length,
   }))
@@ -431,11 +434,14 @@ export function usePrototypeData() {
     state, airSession, groundSession, workbenchSession, selectWorkbenchPersona, dashboard, reset, loadDemoOverview, bookingSession,
     ...driverActions,
     ...driverFulfillmentActions,
+    ...groundServiceActions,
     ...guardModuleActions('airOrders', { createAirOrder, ...airOrderSupplementActions, ...airOrderActions, ...airServiceActions }),
     ...guardModuleActions('booking', airBookingActions),
     ...guardModuleActions('groundDispatch', { ...groundOrderActions, dispatchGroundOrders }),
     ...guardModuleActions('groundWaybills', { ...groundWaybillActions, updateGroundWaybillStatus }),
-    ...guardModuleActions('warehouseOrders', { advanceWarehouseOrder }),
+    ...warehouseOrderActions,
+    ...stationPalletActions,
+    ...financeBasicActions,
     ...guardModuleReads('groundWaybills', { loadGroundWaybillExamples: () => loadGroundExamples(state, groundSession) }),
     airChildSession, ...guardModuleActions('airChildren', airChildOrderActions),
     ...guardModuleActions('airwayBills', airWaybillActions), advanceAirWaybillClock,

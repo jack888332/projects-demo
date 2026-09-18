@@ -132,10 +132,7 @@ export function filterAirSupplierRates(rows, filters = {}, state = {}) {
     .slice().sort((left, right) => clean(right.updatedAt).localeCompare(clean(left.updatedAt)) || (right.updateSequence || 0) - (left.updateSequence || 0))
 }
 
-export function createFinanceCostItemSeed() {
-  return ['运费成本', '提货', '中转', '仓储', '预配发送', '报关', '货站安检', '清关派送', '提单费', '燃油附加费', '安全附加费', '燃油费', '信息费', '分单费']
-    .map((name, index) => ({ id: `FC-${String(index + 1).padStart(4, '0')}`, code: `F${String(index + 1).padStart(3, '0')}`, name, status: '已生效' }))
-}
+export { createFinanceCostItemSeed } from '../data/financeBasicExamples.js'
 
 export function createAirSupplierRateSeed() {
   return [

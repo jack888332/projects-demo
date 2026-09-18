@@ -1,17 +1,24 @@
 import { reactive } from 'vue'
 import { moduleCatalog } from '../domain/catalog.js'
 import { WORKBENCH_PERSONAS } from '../domain/workbenchTasks.js'
+import { groundAccount } from '../domain/groundService.js'
+import { financeBasicCeiling } from '../domain/financeBasicAccess.js'
 
 export const workbenchSession = reactive({ personaId: 'service' })
-export const accessState = reactive({ policies: {}, revision: 0, history: [] })
+export const accessState = reactive({ policies: {}, groundOperations: {}, revision: 0, history: [] })
 const defaults = key => ({ menu: key !== 'permissions', page: key !== 'permissions', data: key !== 'permissions', write: key !== 'permissions' })
 export const isSuperAdmin = () => workbenchSession.personaId === 'superAdmin'
+export const stationAccessCeiling = key => ({ menu: ['dashboard','stationPallet','messages'].includes(key), page: ['dashboard','stationPallet','messages'].includes(key), data: ['dashboard','stationPallet','messages','costs'].includes(key), write: key === 'stationPallet' })
 
 export function getModuleAccess(key, personaId = workbenchSession.personaId) {
   if (!Object.hasOwn(moduleCatalog, key)) return { menu: false, page: false, data: false, write: false }
   if (personaId === 'superAdmin') return { menu: true, page: true, data: true, write: key === 'permissions' }
   if (key === 'permissions') return { menu: false, page: false, data: false, write: false }
-  if (personaId === 'driver' && key !== 'driver') return { menu: false, page: false, data: false, write: false }
+  const financeCeiling = financeBasicCeiling(key,personaId)
+  if (financeCeiling) return Object.fromEntries(Object.entries(financeCeiling).map(([field,allowed]) => [field,allowed && accessState.policies[personaId]?.[key]?.[field] !== false]))
+  if (personaId === 'driver' && !['driver', 'groundService'].includes(key)) return { menu: false, page: false, data: false, write: false }
+  if (['groundWarehouse', 'groundStation'].includes(personaId) && key !== 'groundService') return { menu: false, page: false, data: false, write: false }
+  if (personaId === 'stationPallet') return Object.fromEntries(Object.entries(stationAccessCeiling(key)).map(([field,allowed]) => [field,allowed && accessState.policies[personaId]?.[key]?.[field] !== false]))
   return { ...defaults(key), ...accessState.policies[personaId]?.[key] }
 }
 
@@ -21,6 +28,18 @@ export const canReadModule = (key, personaId) => {
 }
 export const canWriteModule = key => canReadModule(key) && getModuleAccess(key).write
 export const canSeeMenu = key => getModuleAccess(key).menu && getModuleAccess(key).page
+export const groundServicePermissions = personaId => accessState.groundOperations[personaId] ?? groundAccount(personaId)?.operations ?? []
+export function saveGroundServicePermissions(personaId, operations) {
+  if (!isSuperAdmin()) throw new Error('仅超级管理员可配置操作权限')
+  const allowed = groundAccount(personaId)?.operations
+  if (!allowed || !Array.isArray(operations) || operations.some(id => !allowed.includes(id))) throw new Error('不能扩张当前岗位的业务授权')
+  const next = [...new Set(operations)]
+  if (JSON.stringify(next) === JSON.stringify(groundServicePermissions(personaId))) return false
+  accessState.groundOperations[personaId] = next
+  accessState.revision++
+  accessState.history.unshift({ id: accessState.revision, role: personaId, modules: ['groundService'], actor: '超级管理员', action: '配置地面操作项' })
+  return true
+}
 export function canReadTarget(target) {
   const path = typeof target === 'string' ? target.split('?')[0] : target?.path
   if (!path) return false
@@ -45,7 +64,11 @@ export function saveRolePermissions(personaId, draft) {
     const rule = draft?.[key]
     if (!rule || ['menu', 'page', 'data', 'write'].some(field => typeof rule[field] !== 'boolean')) throw new Error('权限配置不完整')
     if (key === 'permissions' && (rule.menu || rule.page || rule.data || rule.write)) throw new Error('权限管理仅向超级管理员开放')
-    if (personaId === 'driver' && key !== 'driver' && Object.values(rule).some(Boolean)) throw new Error('司机仅可访问本人司机端任务，不能授权后台模块')
+    const financeCeiling = financeBasicCeiling(key,personaId)
+    if (financeCeiling && Object.entries(rule).some(([field,value]) => value && !financeCeiling[field])) throw new Error('不能扩张财务基础资料的岗位权限')
+    if (personaId === 'driver' && !['driver', 'groundService'].includes(key) && Object.values(rule).some(Boolean)) throw new Error('司机仅可访问本人司机端任务和已授权地面操作，不能授权后台模块')
+    if (['groundWarehouse', 'groundStation'].includes(personaId) && key !== 'groundService' && Object.values(rule).some(Boolean)) throw new Error('地面服务岗位不能授权后台模块')
+    if (personaId === 'stationPallet' && Object.entries(rule).some(([field,value]) => value && !stationAccessCeiling(key)[field])) throw new Error('不能扩张货站打板岗位的模块权限')
     next[key] = { menu: rule.menu, page: rule.page, data: rule.data, write: rule.write }
   }
   const before = rolePermissionDraft(personaId)
@@ -58,12 +81,13 @@ export function saveRolePermissions(personaId, draft) {
 }
 
 export function resetRolePermissions(personaId) {
-  const draft = Object.fromEntries(Object.keys(moduleCatalog).map(key => [key, personaId === 'driver' && key !== 'driver' ? { menu: false, page: false, data: false, write: false } : defaults(key)]))
+  const draft = Object.fromEntries(Object.keys(moduleCatalog).map(key => [key, financeBasicCeiling(key,personaId) || (personaId === 'stationPallet' ? stationAccessCeiling(key) : (personaId === 'driver' && !['driver', 'groundService'].includes(key)) || (['groundWarehouse', 'groundStation'].includes(personaId) && key !== 'groundService') ? { menu: false, page: false, data: false, write: false } : defaults(key))]))
   return saveRolePermissions(personaId, draft)
 }
 
 export function resetAccessControl() {
   accessState.policies = {}
+  accessState.groundOperations = {}
   accessState.history = []
   accessState.revision++
 }
