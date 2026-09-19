@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import { genericModuleKeys, moduleCatalog } from '../domain/catalog.js'
 
 const coreRoutes = [
+  { key: 'reconciliation', component: () => import('../views/FinanceReconciliationView.vue') },
   { key: 'exchangeRates', component: () => import('../views/FinanceRatesView.vue') },
   { key: 'costItems', component: () => import('../views/FinanceCostItemsView.vue') },
   { key: 'departmentCosts', component: () => import('../views/FinanceDepartmentCostsView.vue') },

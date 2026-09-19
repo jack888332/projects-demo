@@ -1,5 +1,6 @@
 import { getBookingApproval } from './airOperations.js'
 import { deriveAirDeclarations } from './airDeclarations.js'
+import { COST_APPROVAL_STAGES } from './orderCostAccess.js'
 
 // Personnel are synthetic demo identities; product bindings are explicit, never inferred from an order owner.
 export const WORKBENCH_PERSONAS = [
@@ -29,7 +30,7 @@ export const WORKBENCH_PERSONAS = [
   { id: 'financeAccountant', scope: 'financeBasics', role: 'accountant', name: '财务会计演示员', label: '财务会计' },
   { id: 'financeAdmin', scope: 'financeBasics', role: 'admin', name: '财务基础演示管理员', label: '财务基础管理员' },
   { id: 'financeInformation', scope: 'financeBasics', role: 'information', name: '信息部演示员', label: '信息部' },
-  { id: 'financeClerk', scope: 'financeBasics', role: 'finance', name: '财务基础演示员', label: '财务（基础资料）' },
+  { id: 'financeClerk', scope: 'financeBasics', role: 'finance', name: '财务基础演示员', label: '财务' },
   { id: 'business', scope: 'finance', role: 'business', name: '周倩', label: '业务人员' },
   { id: 'businessSupervisor', scope: 'finance', role: 'businessSupervisor', name: '业务演示主管', label: '业务主管' },
   { id: 'masterAdmin', scope: 'airMaster', role: 'admin', name: '主数据演示管理员', label: '空运主数据管理员' },
@@ -166,6 +167,18 @@ export function deriveWorkbenchTasks(state, persona) {
         completed:application.status!=='已提交',actionLabel:'额度审批',target:{path:'/foundation/partners',query:{partner:partner.id,type:'客户',mode:'credit',application:application.id}},blockedReason:''})
     }
   }
+  if (COST_APPROVAL_STAGES[session.id]) {
+    const rows = [...(state.costs || []).filter(row => row.managementVersion === 23), ...(state.orderCostBook?.adjustments || [])]
+    for (const row of rows.filter(row => !row.deleted && row.status === COST_APPROVAL_STAGES[session.id])) {
+      tasks.push({
+        id: `cost-approval:${session.id}:${row.id}`, type: 'cost-approval', no: row.adjustmentNo || row.orderNo,
+        subject: row.adjustmentNo ? '调整单审批' : '订单成本审批', orderId: row.orderId,
+        createdAt: row.submittedAt || '', creator: row.createdBy, handler: session.name, completed: false,
+        actionLabel: '立即审批', blockedReason: '',
+        target: { path: '/finance/costs', query: { tab: 'approvals', order: row.orderId, ...(row.adjustmentNo ? { adjustment: row.id } : {}) } },
+      })
+    }
+  }
   return tasks.sort(compareTasks)
 }
 
@@ -191,7 +204,8 @@ export function getWorkbenchQuickLinks(persona) {
   const session = resolvePersona(persona)
   if (!session) return []
   if (session.scope === 'station') return [link('货站打板', '/fulfillment/station-pallet')]
-  if (session.id === 'financeAccountant') return [link('即期汇率', '/finance/exchange-rates'),link('部门成本项目', '/finance/department-costs'),link('银行账户', '/finance/bank-accounts')]
+  if (session.id === 'financeAccountant') return [link('即期汇率', '/finance/exchange-rates'),link('部门成本项目', '/finance/department-costs'),link('银行账户', '/finance/bank-accounts'),{label:'订单成本审批',target:{path:'/finance/costs',query:{tab:'approvals'}},disabled:false}]
+  if (session.id === 'business') return [link('订单成本', '/finance/costs')]
   if (session.id === 'financeAdmin') return [link('成本项目', '/finance/cost-items')]
   if (session.id === 'financeInformation') return [link('部门成本项目', '/finance/department-costs')]
   if (session.id === 'financeClerk') return [link('客户开票单位', '/finance/invoice-entities')]
@@ -201,7 +215,7 @@ export function getWorkbenchQuickLinks(persona) {
   if (session.scope === 'airTemplate') return [link('提单模板管理', '/fulfillment/airway-bill-templates')]
   if (session.role === 'waybillClerk') return [link('提单制作', '/fulfillment/airway-bills')]
   if (session.scope === 'air' && ['service', 'supervisor'].includes(session.role)) {
-    return [link('主订单', '/fulfillment/air-orders'), link('子订单', '/fulfillment/air-children'), link('提单制作', '/fulfillment/airway-bills'), {label:'自建仓库订单',target:{path:'/fulfillment/air-orders',query:{action:'createWarehouse'}},disabled:false}, link('结算订单成本'), link('核算订单成本')]
+    return [link('主订单', '/fulfillment/air-orders'), link('子订单', '/fulfillment/air-children'), link('提单制作', '/fulfillment/airway-bills'), {label:'自建仓库订单',target:{path:'/fulfillment/air-orders',query:{action:'createWarehouse'}},disabled:false}, link('结算订单成本', '/finance/costs'), link('核算订单成本')]
   }
   if (session.scope === 'air' && ['operator', 'handler', 'director', 'deputyGeneral', 'divisionGeneral'].includes(session.role)) {
     return [link('订舱管理', '/fulfillment/booking'), link('舱位产品'), link('舱位实时查询'), link('配板管理'), ...(['director', 'deputyGeneral', 'divisionGeneral'].includes(session.role) ? [link('核算订单成本')] : [link('提单号')]), link('结算订单成本')]

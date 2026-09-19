@@ -12,6 +12,11 @@ import { createStationPalletActions } from './stationPalletActions.js'
 import { createFinanceBasicSeed } from './financeBasicExamples.js'
 import { createFinanceBasicActions } from './financeBasicActions.js'
 import { FINANCE_BASIC_ACCOUNTS } from '../domain/financeBasicAccess.js'
+import { createOrderCostSeed, loadOrderCostExamples } from './orderCostExamples.js'
+import { createOrderCostActions } from './orderCostActions.js'
+import { createReconciliationSeed } from '../domain/reconciliation.js'
+import { createReconciliationActions } from './reconciliationActions.js'
+import { loadReconciliationExamples } from './reconciliationExamples.js'
 import {
   createAirDraft, createBookingDraft, validateAirDraft,
 } from '../domain/airOperations.js'
@@ -148,6 +153,8 @@ function createSeed() {
     ...createWarehouseSeed(),
     ...createStationPalletSeed(),
     ...createFinanceBasicSeed(),
+    ...createOrderCostSeed(),
+    ...createReconciliationSeed(),
     costs: [
       { id: 'COST-260908-101', orderNo: 'GJ-AIR-260908-001', feeItem: '空运费', direction: '应付', settlementParty: '东方航空', currency: 'CNY', amount: 12860, status: '审批通过', applicant: '周倩', updatedAt: '2026-09-08 13:30' },
       { id: 'COST-260908-102', orderNo: 'GJ-AIR-260908-001', feeItem: '空运服务费', direction: '应收', settlementParty: '启航跨境贸易', currency: 'CNY', amount: 15680, status: '待审批', applicant: '周倩', updatedAt: '2026-09-08 13:31' },
@@ -185,6 +192,8 @@ const groundServiceActions = createGroundServiceActions(state, () => driverActio
 const warehouseOrderActions = createWarehouseOrderActions(state, () => workbenchSession.personaId)
 const stationPalletActions = createStationPalletActions(state, () => workbenchSession.personaId)
 const financeBasicActions = createFinanceBasicActions(state, () => ({...FINANCE_BASIC_ACCOUNTS[workbenchSession.personaId],id:workbenchSession.personaId,name:WORKBENCH_PERSONAS.find(row=>row.id===workbenchSession.personaId)?.name||''}))
+const orderCostActions = createOrderCostActions(state, () => WORKBENCH_PERSONAS.find(row => row.id === workbenchSession.personaId))
+const reconciliationActions = createReconciliationActions(state, () => WORKBENCH_PERSONAS.find(row => row.id === workbenchSession.personaId))
 const airSession = reactive({ role: 'service', name: '周倩' })
 const groundSession = reactive({ role: 'viewer', name: '周倩', accountId: 'DEMO-service' })
 const groundOrderActions = createGroundOrderActions(state, () => groundSession)
@@ -267,6 +276,8 @@ export function usePrototypeData() {
     loadDriverExamples(state)
     loadWarehouseExamples(state)
     loadStationPalletExamples(state)
+    loadOrderCostExamples(state)
+    loadReconciliationExamples(state)
   }
   function advanceAirWaybillClock() { state.airWaybillClockMs += 121000 }
   function reset() {
@@ -374,18 +385,11 @@ export function usePrototypeData() {
   }
 
   function addCost(payload) {
-    const cost = { id: `COST-260908-${110 + state.costs.length}`, status: '待审批', updatedAt: '2026-09-08 14:30', ...payload }
-    state.costs.unshift(cost)
-    return cost
+    return orderCostActions.saveOrderCost(payload.orderId, '', payload)
   }
 
   function reviewCost(id, approved, reason = '') {
-    const cost = state.costs.find((item) => item.id === id)
-    if (!cost) return null
-    cost.status = approved ? '审批通过' : '审批拒绝'
-    cost.rejectReason = approved ? '' : reason
-    cost.updatedAt = '2026-09-08 14:32'
-    return cost
+    return orderCostActions.reviewOrderCosts([id], approved, { rowRemarks: { [id]: reason } })[0]
   }
 
   function ensureGenericRows(moduleKey, label) {
@@ -426,7 +430,7 @@ export function usePrototypeData() {
     pendingAir: state.airOrders.filter((item) => ['待订舱', '待补录', '待出提单', '待审核'].includes(item.orderStatus)).length,
     undispatched: state.groundOrders.filter((item) => item.dispatchStatus === '未调度').length,
     warehousePending: state.warehouseOrders.filter((item) => !['已出库', '已取消'].includes(item.status)).length,
-    costPending: state.costs.filter((item) => item.status === '待审批').length,
+    costPending: state.costs.filter((item) => !item.deleted && ['已提交', '业务审批通过'].includes(item.status)).length,
     integrationFailures: [...state.airOrders, ...state.airChildren].filter(item => item.waybillTransmission?.status === '异常中').length,
   }))
 
@@ -442,6 +446,8 @@ export function usePrototypeData() {
     ...warehouseOrderActions,
     ...stationPalletActions,
     ...financeBasicActions,
+    ...orderCostActions,
+    ...reconciliationActions,
     ...guardModuleReads('groundWaybills', { loadGroundWaybillExamples: () => loadGroundExamples(state, groundSession) }),
     airChildSession, ...guardModuleActions('airChildren', airChildOrderActions),
     ...guardModuleActions('airwayBills', airWaybillActions), advanceAirWaybillClock,

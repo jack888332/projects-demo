@@ -3,6 +3,8 @@ import { moduleCatalog } from '../domain/catalog.js'
 import { WORKBENCH_PERSONAS } from '../domain/workbenchTasks.js'
 import { groundAccount } from '../domain/groundService.js'
 import { financeBasicCeiling } from '../domain/financeBasicAccess.js'
+import { orderCostCeiling } from '../domain/orderCostAccess.js'
+import { reconciliationCeiling } from '../domain/reconciliationAccess.js'
 
 export const workbenchSession = reactive({ personaId: 'service' })
 export const accessState = reactive({ policies: {}, groundOperations: {}, revision: 0, history: [] })
@@ -14,7 +16,7 @@ export function getModuleAccess(key, personaId = workbenchSession.personaId) {
   if (!Object.hasOwn(moduleCatalog, key)) return { menu: false, page: false, data: false, write: false }
   if (personaId === 'superAdmin') return { menu: true, page: true, data: true, write: key === 'permissions' }
   if (key === 'permissions') return { menu: false, page: false, data: false, write: false }
-  const financeCeiling = financeBasicCeiling(key,personaId)
+  const financeCeiling = reconciliationCeiling(key,personaId) || orderCostCeiling(key,personaId) || financeBasicCeiling(key,personaId)
   if (financeCeiling) return Object.fromEntries(Object.entries(financeCeiling).map(([field,allowed]) => [field,allowed && accessState.policies[personaId]?.[key]?.[field] !== false]))
   if (personaId === 'driver' && !['driver', 'groundService'].includes(key)) return { menu: false, page: false, data: false, write: false }
   if (['groundWarehouse', 'groundStation'].includes(personaId) && key !== 'groundService') return { menu: false, page: false, data: false, write: false }
@@ -64,8 +66,8 @@ export function saveRolePermissions(personaId, draft) {
     const rule = draft?.[key]
     if (!rule || ['menu', 'page', 'data', 'write'].some(field => typeof rule[field] !== 'boolean')) throw new Error('权限配置不完整')
     if (key === 'permissions' && (rule.menu || rule.page || rule.data || rule.write)) throw new Error('权限管理仅向超级管理员开放')
-    const financeCeiling = financeBasicCeiling(key,personaId)
-    if (financeCeiling && Object.entries(rule).some(([field,value]) => value && !financeCeiling[field])) throw new Error('不能扩张财务基础资料的岗位权限')
+    const financeCeiling = reconciliationCeiling(key,personaId) || orderCostCeiling(key,personaId) || financeBasicCeiling(key,personaId)
+    if (financeCeiling && Object.entries(rule).some(([field,value]) => value && !financeCeiling[field])) throw new Error('不能扩张财务模块的岗位权限')
     if (personaId === 'driver' && !['driver', 'groundService'].includes(key) && Object.values(rule).some(Boolean)) throw new Error('司机仅可访问本人司机端任务和已授权地面操作，不能授权后台模块')
     if (['groundWarehouse', 'groundStation'].includes(personaId) && key !== 'groundService' && Object.values(rule).some(Boolean)) throw new Error('地面服务岗位不能授权后台模块')
     if (personaId === 'stationPallet' && Object.entries(rule).some(([field,value]) => value && !stationAccessCeiling(key)[field])) throw new Error('不能扩张货站打板岗位的模块权限')
@@ -81,7 +83,7 @@ export function saveRolePermissions(personaId, draft) {
 }
 
 export function resetRolePermissions(personaId) {
-  const draft = Object.fromEntries(Object.keys(moduleCatalog).map(key => [key, financeBasicCeiling(key,personaId) || (personaId === 'stationPallet' ? stationAccessCeiling(key) : (personaId === 'driver' && !['driver', 'groundService'].includes(key)) || (['groundWarehouse', 'groundStation'].includes(personaId) && key !== 'groundService') ? { menu: false, page: false, data: false, write: false } : defaults(key))]))
+  const draft = Object.fromEntries(Object.keys(moduleCatalog).map(key => [key, reconciliationCeiling(key,personaId) || orderCostCeiling(key,personaId) || financeBasicCeiling(key,personaId) || (personaId === 'stationPallet' ? stationAccessCeiling(key) : (personaId === 'driver' && !['driver', 'groundService'].includes(key)) || (['groundWarehouse', 'groundStation'].includes(personaId) && key !== 'groundService') ? { menu: false, page: false, data: false, write: false } : defaults(key))]))
   return saveRolePermissions(personaId, draft)
 }
 

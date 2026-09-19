@@ -24,7 +24,7 @@ describe('GJ-022 finance basics',()=>{
     data.saveFinanceCostItem('FC-0001',{code:'F001',name:'合成更名运费成本'})
     expect(filterAirSupplierRates(data.state.airSupplierRates,{feeItem:'合成更名'},data.state)).toHaveLength(1)
     expect(()=>data.setFinanceCostStatus('FC-0001','已停用')).toThrow('179')
-    expect(getWorkbenchQuickLinks('financeAccountant').map(row=>row.target.path)).toEqual(['/finance/exchange-rates','/finance/department-costs','/finance/bank-accounts'])
+    expect(getWorkbenchQuickLinks('financeAccountant').map(row=>row.target.path)).toEqual(['/finance/exchange-rates','/finance/department-costs','/finance/bank-accounts','/finance/costs'])
     expect(getWorkbenchQuickLinks('financeClerk')[0].target.path).toBe('/finance/invoice-entities')
   })
   it('keeps bank company scope, leading zeros and atomic organization basic-account changes',()=>{
@@ -108,7 +108,7 @@ describe('GJ-022 finance basics',()=>{
   it('separates accountant from generic finance and admin; applies narrowing',()=>{
     for(const persona of ['finance','business','superAdmin']){data.selectWorkbenchPersona(persona);expect(()=>data.saveFinanceRates([draft()])).toThrow()}
     const permissions=rolePermissionDraft('financeAccountant');permissions.exchangeRates.write=false;saveRolePermissions('financeAccountant',permissions)
-    data.selectWorkbenchPersona('financeAccountant');expect(()=>data.saveFinanceRates([draft()])).toThrow();expect(canReadTarget('/finance/costs')).toBe(false)
+    data.selectWorkbenchPersona('financeAccountant');expect(()=>data.saveFinanceRates([draft()])).toThrow();expect(canReadTarget('/finance/costs')).toBe(true)
     data.selectWorkbenchPersona('superAdmin');resetRolePermissions('financeAccountant');data.selectWorkbenchPersona('financeAccountant');expect(data.saveFinanceRates([draft()])).toHaveLength(1)
   })
 })
