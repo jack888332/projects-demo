@@ -2,6 +2,14 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import { genericModuleKeys, moduleCatalog } from '../domain/catalog.js'
 
 const coreRoutes = [
+  { key: 'ddpFlows', component: () => import('../views/DdpFlowsView.vue') },
+  { key: 'bigscreen', component: () => import('../views/OperationsScreenView.vue') },
+  { key: 'reports', component: () => import('../views/ReportsView.vue') },
+  { key: 'statementTemplates', component: () => import('../views/StatementTemplatesView.vue') },
+  { key: 'invoices', component: () => import('../views/FinanceInvoicesView.vue') },
+  { key: 'reimbursements', component: () => import('../views/FinanceExpensesView.vue') },
+  { key: 'writeoffs', component: () => import('../views/FinanceWriteoffsView.vue') },
+  { key: 'paymentRequests', component: () => import('../views/FinanceApplicationsView.vue') },
   { key: 'reconciliation', component: () => import('../views/FinanceReconciliationView.vue') },
   { key: 'exchangeRates', component: () => import('../views/FinanceRatesView.vue') },
   { key: 'costItems', component: () => import('../views/FinanceCostItemsView.vue') },

@@ -6,6 +6,7 @@ import {
 } from '@element-plus/icons-vue'
 
 export const moduleCatalog = {
+  statementTemplates: {label:'对账单模板',path:'/finance/statement-templates',domain:'finance',group:'结算业务',icon:Tickets},
   permissions: { label: '角色权限', path: '/foundation/permissions', domain: 'foundation', group: '系统管理', icon: UserFilled },
   dashboard: { label: '运营总览', path: '/workspace', domain: 'workspace', icon: Grid },
   airOrders: { label: '空运订单', path: '/fulfillment/air-orders', domain: 'fulfillment', group: '空运履约', icon: Promotion },
@@ -64,7 +65,7 @@ export const navigationByDomain = Object.fromEntries(domains.map((domain) => {
 }))
 
 export const genericModuleKeys = Object.keys(moduleCatalog).filter((key) => ![
-  'reconciliation',
+  'reconciliation', 'paymentRequests', 'writeoffs', 'reimbursements', 'invoices', 'statementTemplates', 'reports', 'bigscreen', 'ddpFlows',
   'permissions', 'driver', 'groundService', 'stationPallet', 'exchangeRates', 'costItems', 'departmentCosts', 'invoiceEntities', 'bankAccounts',
   'dashboard', 'financeWorkspace', 'airOrders', 'airChildren', 'booking', 'airwayBills', 'declarations', 'clearance', 'tracking', 'groundDispatch', 'groundWaybills', 'fleet', 'warehouseOrders', 'costs', 'partners', 'airMasterData', 'customerQuotes', 'warehouseQuotes', 'airSupplierRates', 'airCapacity', 'pallet', 'messages', 'integrations',
 ].includes(key))

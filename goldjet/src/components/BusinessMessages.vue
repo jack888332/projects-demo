@@ -1,6 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import DataTableFrame from './DataTableFrame.vue'
+import { canReadTarget } from '../data/accessControl.js'
 defineProps({ messages:{type:Array,default:()=>[]} })
 const router=useRouter()
 </script>
@@ -11,7 +12,7 @@ const router=useRouter()
       <el-table-column prop="content" label="消息内容" min-width="260" />
       <el-table-column prop="channel" label="渠道" width="160" />
       <el-table-column prop="createdAt" label="发生时间" width="175" />
-      <el-table-column label="操作" width="95"><template #default="{row}"><el-button link type="primary" @click="router.push(row.related)">查看单据</el-button></template></el-table-column>
+      <el-table-column label="操作" width="95"><template #default="{row}"><el-button link type="primary" :disabled="!canReadTarget(row.related)" @click="router.push(row.related)">查看单据</el-button></template></el-table-column>
     </el-table></template>
   </DataTableFrame>
 </template>

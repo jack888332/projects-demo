@@ -17,6 +17,13 @@ import { createOrderCostActions } from './orderCostActions.js'
 import { createReconciliationSeed } from '../domain/reconciliation.js'
 import { createReconciliationActions } from './reconciliationActions.js'
 import { loadReconciliationExamples } from './reconciliationExamples.js'
+import { createFinanceApplicationSeed } from '../domain/financeApplications.js'
+import { createFinanceApplicationActions } from './financeApplicationActions.js'
+import { loadFinanceApplicationExamples } from './financeApplicationExamples.js'
+import { createWriteoffSeed } from '../domain/writeoffs.js'
+import { createExpenseSeed } from '../domain/reimbursements.js'
+import { createInvoiceSeed } from '../domain/invoices.js'
+import { createInvoiceActions } from './invoiceActions.js'
 import {
   createAirDraft, createBookingDraft, validateAirDraft,
 } from '../domain/airOperations.js'
@@ -155,6 +162,10 @@ function createSeed() {
     ...createFinanceBasicSeed(),
     ...createOrderCostSeed(),
     ...createReconciliationSeed(),
+    ...createFinanceApplicationSeed(),
+    ...createWriteoffSeed(),
+    ...createExpenseSeed(),
+    ...createInvoiceSeed(),
     costs: [
       { id: 'COST-260908-101', orderNo: 'GJ-AIR-260908-001', feeItem: '空运费', direction: '应付', settlementParty: '东方航空', currency: 'CNY', amount: 12860, status: '审批通过', applicant: '周倩', updatedAt: '2026-09-08 13:30' },
       { id: 'COST-260908-102', orderNo: 'GJ-AIR-260908-001', feeItem: '空运服务费', direction: '应收', settlementParty: '启航跨境贸易', currency: 'CNY', amount: 15680, status: '待审批', applicant: '周倩', updatedAt: '2026-09-08 13:31' },
@@ -194,6 +205,8 @@ const stationPalletActions = createStationPalletActions(state, () => workbenchSe
 const financeBasicActions = createFinanceBasicActions(state, () => ({...FINANCE_BASIC_ACCOUNTS[workbenchSession.personaId],id:workbenchSession.personaId,name:WORKBENCH_PERSONAS.find(row=>row.id===workbenchSession.personaId)?.name||''}))
 const orderCostActions = createOrderCostActions(state, () => WORKBENCH_PERSONAS.find(row => row.id === workbenchSession.personaId))
 const reconciliationActions = createReconciliationActions(state, () => WORKBENCH_PERSONAS.find(row => row.id === workbenchSession.personaId))
+const financeApplicationActions = createFinanceApplicationActions(state, () => WORKBENCH_PERSONAS.find(row => row.id === workbenchSession.personaId))
+const invoiceActions = createInvoiceActions(state)
 const airSession = reactive({ role: 'service', name: '周倩' })
 const groundSession = reactive({ role: 'viewer', name: '周倩', accountId: 'DEMO-service' })
 const groundOrderActions = createGroundOrderActions(state, () => groundSession)
@@ -278,6 +291,7 @@ export function usePrototypeData() {
     loadStationPalletExamples(state)
     loadOrderCostExamples(state)
     loadReconciliationExamples(state)
+    loadFinanceApplicationExamples(state)
   }
   function advanceAirWaybillClock() { state.airWaybillClockMs += 121000 }
   function reset() {
@@ -448,6 +462,8 @@ export function usePrototypeData() {
     ...financeBasicActions,
     ...orderCostActions,
     ...reconciliationActions,
+    ...financeApplicationActions,
+    ...invoiceActions,
     ...guardModuleReads('groundWaybills', { loadGroundWaybillExamples: () => loadGroundExamples(state, groundSession) }),
     airChildSession, ...guardModuleActions('airChildren', airChildOrderActions),
     ...guardModuleActions('airwayBills', airWaybillActions), advanceAirWaybillClock,

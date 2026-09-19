@@ -163,6 +163,7 @@ function openSource(row) { router.push({path:'/finance/costs',query:{tab:'summar
       <section v-if="!creating" class="statement-section"><h2>操作记录</h2><el-table :data="active.history"><el-table-column prop="action" label="操作"/><el-table-column prop="actor" label="操作人" min-width="140"/><el-table-column prop="time" label="时间" min-width="180"/></el-table></section>
       <div class="statement-actions">
         <el-button :icon="Back" :disabled="busy||uploading" @click="navigate(creating?'pending':'statements')">返回列表</el-button>
+        <el-button v-if="!creating&&direction==='应收'&&canReadModule('statementTemplates')" :icon="View" @click="router.push({path:'/finance/statement-templates',query:{statement:active.id}})">模板预览</el-button>
         <el-tooltip content="高捷标准模板及选用规则待确认（196）；明细列表可导出CSV"><span><el-button :icon="Download" disabled>导出标准对账单</el-button></span></el-tooltip>
         <template v-if="creating&&canCreate"><el-button :icon="Check" :disabled="busy||uploading" @click="save(false)">保存</el-button><el-button :icon="Check" type="primary" :disabled="busy||uploading" @click="save(true)">保存并确认</el-button></template>
       </div>

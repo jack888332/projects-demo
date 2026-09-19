@@ -27,6 +27,7 @@ export const WORKBENCH_PERSONAS = [
   { id: 'warehouseService', scope: 'warehouse', role: 'service', name: '仓库演示客服', label: '仓库客服' },
   { id: 'warehouseSupervisor', scope: 'warehouse', role: 'supervisor', name: '仓库演示主管', label: '仓库主管' },
   { id: 'finance', scope: 'finance', role: 'finance', name: '财务演示人员', label: '财务人员' },
+  { id: 'financeSupervisor', scope: 'reports', role: 'financeSupervisor', name: '财务主管演示员', label: '财务主管' },
   { id: 'financeAccountant', scope: 'financeBasics', role: 'accountant', name: '财务会计演示员', label: '财务会计' },
   { id: 'financeAdmin', scope: 'financeBasics', role: 'admin', name: '财务基础演示管理员', label: '财务基础管理员' },
   { id: 'financeInformation', scope: 'financeBasics', role: 'information', name: '信息部演示员', label: '信息部' },
@@ -176,6 +177,14 @@ export function deriveWorkbenchTasks(state, persona) {
         createdAt: row.submittedAt || '', creator: row.createdBy, handler: session.name, completed: false,
         actionLabel: '立即审批', blockedReason: '',
         target: { path: '/finance/costs', query: { tab: 'approvals', order: row.orderId, ...(row.adjustmentNo ? { adjustment: row.id } : {}) } },
+      })
+    }
+  }
+  if (session.id === 'financeAccountant') {
+    for (const row of (state.financeApplications?.rows || []).filter(row => row.kind === 'receipt' && !row.deleted && !row.demoOnly && row.status === '已提交')) {
+      tasks.push({ id: `receipt-approval:${row.id}`, type: 'receipt-approval', no: row.applicationNo, subject: `收款申请审批 · ${row.settlementParty}`,
+        createdAt: row.submittedAt, creator: row.createdBy, handler: session.name, completed: false, actionLabel: '立即审批', blockedReason: '',
+        target: { path: '/finance/payment-requests', query: { kind: 'receipt', application: row.id, view: 'approve' } },
       })
     }
   }

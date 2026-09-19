@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PageHeader from '../components/PageHeader.vue'
 import BusinessMessages from '../components/BusinessMessages.vue'
+import { businessNotifications } from '../domain/businessNotifications.js'
 import { canReadModule, canReadTarget, canSeeMenu, isSuperAdmin } from '../data/accessControl.js'
 import { moduleCatalog } from '../domain/catalog.js'
 import { usePrototypeData } from '../data/usePrototypeData.js'
@@ -16,7 +17,7 @@ const tasks = computed(() => deriveWorkbenchTasks(state, persona.value).filter(t
 const summary = computed(() => getWorkbenchSummary(tasks.value))
 const taskPage = computed(() => getWorkbenchPendingPage(tasks.value, page.value, 20))
 const taskLabels = { 'air-customs-materials': '报关材料', 'air-supplement': '立即补录', 'air-confirm-flight': '确认航班', 'air-complete-journey': '航程补充', 'air-loss-approval': '亏损审核', 'ground-dispatch': '立即调度', 'partner-approval':'档案审批', 'credit-approval':'额度审批' }
-const messages=computed(()=>canReadModule('messages') ? state.messages.filter(row=>(isSuperAdmin() || row.recipient===persona.value.name || row.recipientRole===persona.value.role) && (!row.related || canReadTarget(row.related))).slice().reverse() : [])
+const messages=computed(()=>canReadModule('messages') ? businessNotifications(state,persona.value) : [])
 const shortcuts = computed(() => (isSuperAdmin() ? ['permissions', 'airOrders', 'groundDispatch', 'fleet'].map(key => ({ label: moduleCatalog[key].label, target: moduleCatalog[key].path })) : getWorkbenchQuickLinks(persona.value)).filter(item => item.disabled || (canReadTarget(item.target) && canSeeMenu(Object.keys(moduleCatalog).find(key => moduleCatalog[key].path === (typeof item.target === 'string' ? item.target : item.target?.path))))))
 const updatedAt = computed(() => state.workbenchProgress[persona.value.id]?.updatedAt || '尚无进度变化')
 const unavailable = computed(() => ({
