@@ -193,7 +193,7 @@ async function closeCredit(done) {
           <PartnerAttachments :files="draft.attachments" :readonly="!editing" :error="fieldErrors.attachments" />
           <el-form-item v-if="mode==='approve'" label="审批备注"><el-input v-model="approvalRemark" type="textarea" maxlength="256" /></el-form-item>
         </el-form>
-        <el-alert v-if="mode==='approve'" title="拒绝后的主状态在第003篇存在两种口径：新建＋审批拒绝、财务审批拒绝。此分支待确认，不模拟拒绝成功。" type="warning" :closable="false" class="partner-notice" />
+        <el-alert v-if="mode==='approve'" title="拒绝后的主状态在第038篇存在两种口径：新建＋审批拒绝、财务审批拒绝。此分支待确认，不模拟拒绝成功。" type="warning" :closable="false" class="partner-notice" />
         <div class="partner-actions">
           <el-button @click="go()">返回列表</el-button>
           <template v-if="editing"><el-button v-business-write="'partners'" :disabled="busy" @click="save(false)">保存</el-button><el-button v-business-write="'partners'" v-if="mode==='create' || permissions(selected).submit" type="primary" :disabled="busy" @click="save(true)">保存并提交审批</el-button></template>

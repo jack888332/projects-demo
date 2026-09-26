@@ -34,7 +34,7 @@ beforeEach(() => {
   owner = createAirDeclarationActions(state, () => session)
 })
 
-describe('第012篇报关单投影与查询', () => {
+describe('第018篇报关单投影与查询', () => {
   it('只投影既有报关服务，初始状态无写入，沿主/分单事实读取且按服务创建时间排序', () => {
     const before = snapshot(state), rows = deriveAirDeclarations(state)
     expect(rows.map(row => row.id)).toEqual(['SERVICE-C', 'SERVICE-D'])
@@ -106,7 +106,7 @@ describe('第012篇报关单投影与查询', () => {
   })
 })
 
-describe('第012篇报关材料下载与补齐通知', () => {
+describe('第018篇报关材料下载与补齐通知', () => {
   it('单个与批量下载真实非空内容，保留原始 File，操作不改变业务状态', async () => {
     const file = new File(['已上传合成文件'], 'uploaded.pdf', { type: 'application/pdf' })
     state.airOrders[0].services[1].details.attachments.push(file)
@@ -207,7 +207,7 @@ describe('第012篇报关材料下载与补齐通知', () => {
   })
 })
 
-describe('第012篇显式载入的已收指令示例', () => {
+describe('第018篇显式载入的已收指令示例', () => {
   it('不自动注入；显式载入完整直/主单及两个分单，三条报关服务，保留既有数据且可重复调用', async () => {
     const before = snapshot(state)
     expect(deriveAirDeclarations(state).some(row => row.exampleLabel)).toBe(false)

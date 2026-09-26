@@ -64,6 +64,26 @@ import { loadDriverExamples } from './driverExamples.js'
 import { createDriverFulfillmentActions } from './driverFulfillmentActions.js'
 import { createGroundServiceSeed } from './groundServiceExamples.js'
 import { createGroundServiceActions } from './groundServiceActions.js'
+import { createIntegratedOrderSeed, createGeneralWaybillSeed } from './integratedOrderExamples.js'
+import { createIntegratedOrderActions } from './integratedOrderActions.js'
+import { createGeneralWaybillActions } from './generalWaybillActions.js'
+import { createPreallocationSeed } from './serviceCoordinationExamples.js'
+import { createServiceCoordinationActions } from './serviceCoordinationActions.js'
+import { createPortalOrderSeed } from './portalOrderExamples.js'
+import { createBbcOrderActions } from './bbcOrderActions.js'
+import { createReverseOrderActions } from './reverseOrderActions.js'
+import { createPortalOrderActions } from './portalOrderActions.js'
+import { createTrunkServiceSeed } from './trunkServiceExamples.js'
+import { createTrunkServiceActions } from './trunkServiceActions.js'
+import { createCustomsSeed } from './customsExamples.js'
+import { createCustomsOrderActions } from './customsOrderActions.js'
+import { createBcExportSeed } from './bcExportExamples.js'
+import { createBcExportOrderActions } from './bcExportOrderActions.js'
+import { createBcExportServiceActions } from './bcExportServiceActions.js'
+import { createBcImportSeed } from './bcImportExamples.js'
+import { createBcImportOrderActions } from './bcImportOrderActions.js'
+import { createCcImportOrderActions } from './ccImportOrderActions.js'
+import { createManifestConfirmActions } from './manifestConfirmActions.js'
 
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
@@ -159,6 +179,20 @@ function createSeed() {
     ...createFleetRecordSeeds(),
     ...createWarehouseSeed(),
     ...createStationPalletSeed(),
+    integratedOrders: createIntegratedOrderSeed(),
+    integratedOrderSequence: 4,
+    integratedOrderEventSequence: 0,
+    integratedServiceSequence: 7,
+    integratedHouseSequence: 3,
+    generalWaybills: createGeneralWaybillSeed(),
+    generalWaybillSequence: 3,
+    generalHouseSequence: 2,
+    ...createPreallocationSeed(),
+    ...createPortalOrderSeed(),
+    ...createTrunkServiceSeed(),
+    ...createCustomsSeed(),
+    ...createBcExportSeed(),
+    ...createBcImportSeed(),
     ...createFinanceBasicSeed(),
     ...createOrderCostSeed(),
     ...createReconciliationSeed(),
@@ -265,6 +299,35 @@ const clearanceSession = computed(() => {
 })
 const airClearanceActions = createAirClearanceActions(state, () => clearanceSession.value)
 const airClearances = computed(() => deriveAirClearances(state))
+
+// 综合订单共用同一会话：客服、客服主管与业务员可维护；超级管理员与其余岗位只读。
+const orderSession = computed(() => {
+  if (isSuperAdmin()) return { role: 'superAdmin', name: '演示管理员', readAll: true }
+  const persona = WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId)
+  const role = ['service', 'supervisor', 'business'].includes(persona?.id) ? persona.id : 'viewer'
+  return { role, name: persona?.name || '', readAll: false }
+})
+const integratedOrderActions = createIntegratedOrderActions(state, () => orderSession.value)
+const generalWaybillActions = createGeneralWaybillActions(state, () => orderSession.value)
+const serviceCoordinationActions = createServiceCoordinationActions(state, () => orderSession.value)
+
+// BBC 客户订单与逆向作业共用会话：客服、业务、关务与仓库岗位按能力分别开放。
+const bbcSession = computed(() => {
+  if (isSuperAdmin()) return { role: 'superAdmin', name: '演示管理员', readAll: true }
+  const persona = WORKBENCH_PERSONAS.find(item => item.id === workbenchSession.personaId)
+  const role = ['service', 'supervisor', 'business', 'customsService', 'warehouseService', 'warehouseSupervisor'].includes(persona?.id) ? persona.id : 'viewer'
+  return { role, name: persona?.name || '', readAll: false }
+})
+const bbcOrderActions = createBbcOrderActions(state, () => bbcSession.value)
+const reverseOrderActions = createReverseOrderActions(state, () => bbcSession.value)
+const portalOrderActions = createPortalOrderActions(state, () => orderSession.value)
+const trunkServiceActions = createTrunkServiceActions(state, () => orderSession.value)
+const customsOrderActions = createCustomsOrderActions(state, () => ({ role: declarationSession.value.role, name: declarationSession.value.name }))
+const bcExportOrderActions = createBcExportOrderActions(state, () => ({ role: declarationSession.value.role, name: declarationSession.value.name }))
+const bcExportServiceActions = createBcExportServiceActions(state, () => ({ role: declarationSession.value.role, name: declarationSession.value.name }))
+const bcImportOrderActions = createBcImportOrderActions(state, () => ({ role: declarationSession.value.role, name: declarationSession.value.name }))
+const ccImportOrderActions = createCcImportOrderActions(state, () => ({ role: declarationSession.value.role, name: declarationSession.value.name }))
+const manifestConfirmActions = createManifestConfirmActions(state, () => ({ role: declarationSession.value.role, name: declarationSession.value.name }))
 
 // Store only the last progress-change timestamp, never a second task status.
 watch(() => WORKBENCH_PERSONAS.map(persona => {
@@ -474,6 +537,19 @@ export function usePrototypeData() {
     ...guardModuleActions('costs', { addCost, reviewCost }), partnerSession, ...guardModuleActions('partners', partnerActions),
     airMasterSession, airCatalog, ...guardModuleActions('airMasterData', airMasterActions),
     ...guardModuleActions('fleet', fleetActions), ...guardModuleActions('customerQuotes', transportQuoteActions),
+    orderSession, ...guardModuleActions('integratedOrders', integratedOrderActions),
+    ...guardModuleActions('generalWaybills', generalWaybillActions),
+    ...guardModuleActions('serviceCoordination', serviceCoordinationActions),
+    bbcSession, ...guardModuleActions('bbcOrders', bbcOrderActions),
+    ...guardModuleActions('reverseOrders', reverseOrderActions),
+    ...guardModuleActions('portalOrders', portalOrderActions),
+    ...guardModuleActions('trunkServices', trunkServiceActions),
+    ...guardModuleActions('customsOrders', customsOrderActions),
+    ...guardModuleActions('bcExportCustoms', bcExportOrderActions),
+    ...guardModuleActions('bcExportCustoms', bcExportServiceActions),
+    ...guardModuleActions('bcImportCustoms', bcImportOrderActions),
+    ...guardModuleActions('bcImportCustoms', ccImportOrderActions),
+    ...guardModuleActions('bcImportCustoms', manifestConfirmActions),
     ...guardModuleActions('warehouseQuotes', warehouseQuoteActions), ...guardModuleActions('airSupplierRates', airSupplierRateActions),
     capacitySession, ...guardModuleActions('airCapacity', capacityActions), ...guardModuleActions('pallet', palletActions), ensureGenericRows, addGenericRow, completeGenericRow,
   }

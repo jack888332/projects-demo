@@ -68,7 +68,7 @@ export function getPartnerPermissions(partner, role) {
     submit: known && existing && status === '新建',
     approve: finance && existing && status === '已提交',
     reject: false,
-    rejectionReason: '第003篇对拒绝后的档案状态存在“新建＋审批拒绝”和“财务审批拒绝”两种口径，待确认后开放。',
+    rejectionReason: '第038篇对拒绝后的档案状态存在“新建＋审批拒绝”和“财务审批拒绝”两种口径，待确认后开放。',
     delete: known && existing && (status === '新建' || (finance && status === '已失效')),
     deactivate: finance && existing && status === '已生效',
     activate: finance && existing && status === '已失效',

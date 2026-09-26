@@ -22,7 +22,7 @@ function validBooking(order, overrides = {}) {
 
 beforeEach(() => data.reset())
 
-describe('主订单创建：第009篇 1.3.2、1.3.3', () => {
+describe('主订单创建：第015篇 1.3.2、1.3.3', () => {
   it('预计日期不冒充已确认日期，新增联系人仅在有效提交后同步档案', () => {
     const partner = data.state.partners.find(p => p.name === '启航跨境贸易')
     const original = JSON.stringify(partner)
@@ -126,7 +126,7 @@ describe('主订单创建：第009篇 1.3.2、1.3.3', () => {
   })
 })
 
-describe('订舱权限和状态：第010篇 1.3.3', () => {
+describe('订舱权限和状态：第016篇 1.3.3', () => {
   it('客服提交 → 运营确认航班 → 操作订舱完成，原订单回显待补录', () => {
     const order = data.createAirOrder(validAir())
     expect(getBookingPermission(order, 'service').action).toBeNull()
@@ -204,7 +204,7 @@ describe('订舱权限和状态：第010篇 1.3.3', () => {
   })
 })
 
-describe('亏损边界与待确认：第010篇 1.3.3 关联处理', () => {
+describe('亏损边界与待确认：第016篇 1.3.3 关联处理', () => {
   it('未允许亏损则成本超卖价阻止；相等可提交', () => {
     expect(getBookingDecision({ sellRate: 28, chargeWeight: 100 }, { airCost: 28, allowLoss: false }).kind).toBe('ready')
     expect(getBookingDecision({ sellRate: 28, chargeWeight: 100 }, { airCost: 30, allowLoss: false }).kind).toBe('blocked')

@@ -16,7 +16,7 @@ const validDispatch = (overrides = {}) => ({ ...createDispatchDraft(), vehicleTy
 
 beforeEach(() => { data.reset(); data.selectWorkbenchPersona('hangsheng') })
 
-describe('调度字段与报价：第015篇 1.3.12、1.3.13', () => {
+describe('调度字段与报价：第025篇 1.3.12、1.3.13', () => {
   it('使用完整车型枚举，至少一行可留空的司机，完整更多及特定毛件体字段', () => {
     expect(GROUND_DATE).toBe('2026-09-08')
     expect(GROUND_VEHICLES).toHaveLength(9)
@@ -56,7 +56,7 @@ describe('调度字段与报价：第015篇 1.3.12、1.3.13', () => {
   })
 })
 
-describe('批量调度与运单生成：第015篇 1.3.15、1.3.18', () => {
+describe('批量调度与运单生成：第025篇 1.3.15、1.3.18', () => {
   it('有同省市提货点和卸货点的待调度订单可合批；非待调度或不同省市拒绝', () => {
     expect(validateBatchGroundOrders([order(firstId), order(secondId)])).toMatchObject({ ok: true, specialConfirmationRequired: false })
     expect(validateBatchGroundOrders([]).ok).toBe(false)
@@ -121,7 +121,7 @@ describe('批量调度与运单生成：第015篇 1.3.15、1.3.18', () => {
   })
 })
 
-describe('运单状态与轨迹：第016篇 1.3.5、1.3.7', () => {
+describe('运单状态与轨迹：第026篇 1.3.5、1.3.7', () => {
   it('客服可不按顺序调整节点，准确保留操作时间、备注与操作者', () => {
     const [waybill] = data.dispatchGroundOrders([firstId], [validDispatch({ remark: '两处装货请核对' })])
     data.updateGroundWaybillStatus(waybill.id, { status: '到达卸货点', time: '2026-09-09 10:20', remark: '人工补录节点' })

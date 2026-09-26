@@ -78,7 +78,7 @@ beforeEach(() => {
 })
 afterEach(() => scope?.stop())
 
-describe('第017篇司机任务详情深链', () => {
+describe('第027篇司机任务详情深链', () => {
   it.each(['BILL-1', 'D001'])('运单 id 或业务编号 %s 直接打开详情并清除默认日期', reference => {
     const view = setup(GroundWaybillsView, { waybill: reference })
     expect(view.selected.value.id).toBe('BILL-1')

@@ -11,7 +11,7 @@ const order = () => ({ id: 'AIR-1', waybillNo: '784-12345678', orderStatus: '待
   supplement: { shipper: 'DEMO SHIPPER', consignee: 'DEMO CONSIGNEE', englishGoodsName: 'DEMO GOODS', iataCode: 'DEMO-IATA', issueDate: '2026-09-10' },
 })
 
-describe('第011篇提单来源与计算', () => {
+describe('第017篇提单来源与计算', () => {
   it('主分单均不把预报毛件体当实测；已提供的独立提单数据优先', () => {
     const parent = order(), child = { id: 'CHILD-1', housebillNo: 'DEMO-HOUSE', pieces: 2, grossWeight: 8, volume: 0.2, shipper: 'HOUSE SHIPPER' }
     const main = createAirWaybillDraft(parent, null, master), house = createAirWaybillDraft(parent, child, master)
@@ -69,7 +69,7 @@ describe('第011篇提单来源与计算', () => {
   })
 })
 
-describe('第011篇发送条件与代码', () => {
+describe('第017篇发送条件与代码', () => {
   it.each(['784', '043', '131', '235'])('%s默认EAP且必选', prefix => {
     expect(getDescriptionCodeConfig(prefix + '-12345678')).toEqual({ visible: true, required: true, options: ['EAP', 'EAW'], defaultValue: 'EAP' })
   })

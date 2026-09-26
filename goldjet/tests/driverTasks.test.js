@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
 const data = usePrototypeData()
 beforeEach(() => { data.reset(); data.selectWorkbenchPersona('superAdmin'); data.loadDemoOverview() })
-describe('第018篇登录与任务', () => {
+describe('第028篇登录与任务', () => {
   it('本人任务按状态划分，全部地点和独立货量保留；管理员全量预览', () => {
     const current = driverTasks(data.state.groundWaybills, DRIVER_DEMO.phone)
     expect(current).toHaveLength(1); expect(current[0].pickupPoints).toHaveLength(2)
@@ -46,7 +46,7 @@ const image = {name:'proof.png',type:'image/png',size:8,dataUrl:'data:image/png;
 const payload = () => ({remark:'',images:[image],cargoDocuments:''})
 const current = () => driverTasks(data.state.groundWaybills,DRIVER_DEMO.phone)[0]
 async function driver() { data.selectWorkbenchPersona('driver'); await data.loginDriver({phone:DRIVER_DEMO.phone,method:'wechat'}) }
-describe('第018篇履约、单据和异常', () => {
+describe('第028篇履约、单据和异常', () => {
   it('五个节点串联，提卸货凭证自动进入同一运单；终态移动到历史并汇总订单', async () => {
     await driver(); const bill=current(), order=data.state.groundOrders.find(row=>row.id===bill.orderId)
     for(const node of DRIVER_NODES) data.confirmDriverNode(bill.id,node.from,payload())

@@ -23,7 +23,7 @@ beforeEach(() => {
   owner = createAirWaybillActions(state, () => session, () => now, { receiver: async () => ({ ok: true }) })
 })
 
-describe('第011篇提单编辑owner', () => {
+describe('第017篇提单编辑owner', () => {
   it('暂存独立提单数据，预计/入仓/订舱不被覆盖；主单提交只前进主订单', () => {
     const original = copy(state.airOrders[0])
     owner.saveAirWaybill('AIR-1', '', { ...draftFor(), pieces: 25, grossWeight: 110, volume: 1.5, rate: 2 })
@@ -70,7 +70,7 @@ describe('第011篇提单编辑owner', () => {
   })
 })
 
-describe('第011篇翌飞本地模拟owner', () => {
+describe('第017篇翌飞本地模拟owner', () => {
   it('顺序始终主单后分单，并使用共享DescriptionCode与响应式状态', async () => {
     const calls = []
     let resume

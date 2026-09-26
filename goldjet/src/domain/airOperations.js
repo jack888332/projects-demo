@@ -67,7 +67,7 @@ export function getAirCredit(customer, partners) {
   if (!partner) return { kind: 'blocked', message: '请选择有效的客户档案', partner: null }
   if (!Number.isFinite(partner.availableCredit) || !Number.isFinite(partner.creditLimit)) return { kind: 'unconfirmed', message: '该客户授信信息待确认', partner }
   if (partner.availableCredit < 0) return { kind: 'blocked', message: '客户可用授信额度低于 0，禁止下单', partner }
-  if (partner.availableCredit === 0) return { kind: 'unconfirmed', message: '可用额度为 0：第003篇禁止下单，第009篇仅禁止负数，该边界待确认；请先审批增加额度。', partner }
+  if (partner.availableCredit === 0) return { kind: 'unconfirmed', message: '可用额度为 0：第038篇禁止下单，第015篇仅禁止负数，该边界待确认；请先审批增加额度。', partner }
   if (partner.creditLimit > 0 && partner.availableCredit / partner.creditLimit < 0.2) return { kind: 'warning', message: '此客户额度不足', partner }
   return { kind: 'ready', message: '', partner }
 }

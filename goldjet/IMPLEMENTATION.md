@@ -1,8 +1,10 @@
 # Goldjet 逐篇实现与主流程覆盖
 
-权威来源：`projects-doc/product-caliber/goldjet/segmented-prd`。按篇核对字段、操作、状态与相邻篇共享对象；菜单、通用列表和专用文件存在均不代表完成。PRD 保持只读。
+权威来源：[Goldjet 分篇 PRD 主档](../../projects-doc/product-caliber/goldjet/segmented-prd/PRD.高捷物流系统.第01册.需求框架/PRD.高捷物流系统.第001篇.概览与索引.369FCA625E.md)。按篇核对字段、操作、状态与相邻篇共享对象；菜单、通用列表和专用文件存在均不代表完成。PRD 保持只读。
 
 实现状态与核对状态分别记录。下表记录实现范围，实际通过的路径及浏览器验证限制见“当前核对记录”，未检查篇章不沿用其他篇章的结果。
+
+PRD 共 68 篇、9 册，关务管理独立为第03册。当前落点和实现边界中的篇号已按固定文档 ID 更新；本次仅同步引用与说明，未修改或重新验证原型，新增及修订需求不沿用原实现或测试结论。
 
 ## 逐篇落点
 
@@ -22,14 +24,14 @@
 | GJ-012 | 报关单 | `/fulfillment/declarations`、`/fulfillment/declarations/:serviceId/source`、`/workspace`、`/foundation/messages`、直单补录页 | 已接8项查询、默认10条分页、完整已定义服务字段、材料单个/批量原文件下载、补齐通知与建单客服待办/深链；分单独立来源支持不同建单人及移单，保留历史与原权限；接单、状态迁移及材料上传/更新受090、102缺口限制，未接新指令生成和待办完成 |
 | GJ-013 | 清关派送 | `/fulfillment/clearance`、补录与分单服务 owner | 已接补录指令、8项查询、完整列表/详情、原附件单个/批量下载及接单留痕；入仓/提单毛件体独立投影，海外部客服本地角色限制；分批提送、扣量、完成汇总和航司PDF输出受089、098、125～127限制 |
 | GJ-014 | 在途跟踪 | `/fulfillment/tracking`、主订单详情、`airTracking.js` | 已接精确查询、完整只读字段、订舱/服务轨迹、时间倒序/最新两条/展开收起/异常标红、明确关联的运输运单页签；角色与数据隔离，主分单服务不合成状态；附加查询项、节点/聚合与部分字段来源受103、128～130限制 |
-| GJ-015 | 用车订单 | `/fulfillment/ground-dispatch`、`/fulfillment/ground-monthly` | 已接手工建单/编辑、多联系人/多地址、成功回写联系人、未调度关闭与日志；修改调度保留原运单及本地邮件；精确字段查询、运输/中转分列、潜在关联、只读费用及月报完成数；API交接/WMS、取消调度/已调度关闭、财务写入及未决月报指标未覆盖 |
+| GJ-015 | 用车订单；[航晟陆运月报][ground-monthly-prd] | `/fulfillment/ground-dispatch`、`/fulfillment/ground-monthly` | 已接手工建单/编辑、多联系人/多地址、成功回写联系人、未调度关闭与日志；修改调度保留原运单及本地邮件；精确字段查询、运输/中转分列、潜在关联、只读费用及月报完成数；API交接/WMS、取消调度/已调度关闭、财务写入及未决月报指标未覆盖 |
 | GJ-016 | 用车运单 | `/fulfillment/ground-waybills` | 运输/中转分列、封条精确搜索、完整列表/详情及4页签；节点补录、异常上报/明确情形取消、普通单据CRUD/图片、杂费驳回；账单按运单ID只读。司机端、WMS接收/预警、取消调度/返空费、自动计费、财务写入、杂费通过及未决异常恢复未覆盖 |
 | GJ-017 | 车队管理 | `/fulfillment/fleet?tab=drivers/vehicles/incidents/repairs/fuel`（分别取值） | 司机及车辆完整档案、图片、双向当前分配、筛选/到期/派生状态与任务深链；三类台账查询/详情/完整草稿、维修确定金额预览、司机/车辆关联。提交/删除、油耗派生值/月报、通知及未决字段保留限制，不计为全篇完成 |
 | GJ-018 | 司机端 | `/fulfillment/driver`、`DriverTasksView.vue`、`DriverTaskOperations.vue` | 已接本地司机登录、当前/历史任务、详情、5节点确认、图片单据、异常、轨迹、账户、二维码及地图替代入口；共享同一运输运单，超级管理员可全量只读预览。短信/微信/GPS/高德APP、历史期限冲突、多点ETA、异常可见范围、杂费入账及正式文案仍受 GJ-PRD-108、153～157限制 |
-| GJ-019 | 第019篇地面服务小程序；第018篇共享登录；第035篇地面操作权限 | `/fulfillment/ground-service`、`GroundServiceView.vue`、`groundService.js`、`groundServiceActions.js` | 九类操作入口、按角色/操作项授权、扫码/手输/图片、单证改单、批量退货退件链路、货站到达、托书上传、普货退货和司机交单；外部回传及 GJ-PRD-158～162 未决口径不计为完整业务接入 |
+| GJ-019 | 第043篇地面服务小程序；第042篇共享登录；第064篇地面操作权限 | `/fulfillment/ground-service`、`GroundServiceView.vue`、`groundService.js`、`groundServiceActions.js` | 九类操作入口、按角色/操作项授权、扫码/手输/图片、单证改单、批量退货退件链路、货站到达、托书上传、普货退货和司机交单；外部回传及 GJ-PRD-158～162 未决口径不计为完整业务接入 |
 | GJ-020-01～05 | 仓库订单 | `/fulfillment/warehouse-orders` 六个页签、空运建单入口 | 已接29字段建单/编辑、列表详情、显式上游接收与入库、托盘/服务/只读账单、退货CSV、运输双看板和月报；出库终态、重称、自动计费、标签及163～171未决分支受限 |
 | GJ-021-01～04 | 货站打板 | `/fulfillment/station-pallet` 四个页签、配板和消息入口 | 已接13字段建单、显式上游接收/防重、列表详情/受限删除/关联账单、10字段常规报价、同源计划、已有板纸修改及本地通知；首次上传、状态/计费、正式Excel、复杂报价及119～122、172～176未决分支受限 |
-| GJ-022-01～05 | 财务基础与结算 | `/finance/exchange-rates`、`/finance/cost-items`、`/finance/department-costs`、`/finance/invoice-entities`、`/finance/bank-accounts` | 已接五类基础资料的完整已定义字段、查询/分页与确定维护路径；成本初始状态、部门映射新建/Excel、客户级开票资料新建/删除、历史引用与特殊值边界受177～184限制。结算总览是023～028的跨篇导航，不计为本篇已打通财务全链 |
+| GJ-022-01～05 | 财务基础与结算 | `/finance/exchange-rates`、`/finance/cost-items`、`/finance/department-costs`、`/finance/invoice-entities`、`/finance/bank-accounts` | 已接五类基础资料的完整已定义字段、查询/分页与确定维护路径；成本初始状态、部门映射新建/Excel、客户级开票资料新建/删除、历史引用与特殊值边界受177～184限制。结算总览是订单成本至销项发票的跨篇导航，不计为本篇已打通财务全链 |
 | GJ-023-01～05 | 订单成本 | `/finance/costs` 五个页签；`orderCosts`、`orderCostActions` | 已完成订单入口、完整成本字段、应收新增/已知应付维护、六状态两级审批/拒绝重提、调整单保存提交/业务审批、汇总/明细及CSV；工作台和本地通知联动。新增应付单位、调整单财务生效及185～193边界受限，不计为全篇无阻断 |
 | GJ-024-01～04 | 对账 | `/finance/reconciliation`；`reconciliation`、`reconciliationActions` | 已接应收/应付列表、待对账、明细查询；财务已审成本引用、按勾选/查询组单、保存/保存并确认/独立确认、分币种原币合计、备注/附件及明细CSV。194～200所涉删除、周期、标准模板、邮件及权限/查询歧义受限；调整单仍受188限制 |
 | GJ-025-01～04 | 收付款申请 | `/finance/payment-requests`；`financeApplications`、`financeApplicationActions` | 已接已确认应收对账明细→部分金额申请→保存/提交→财务审批/拒绝重提/删除释放，账户快照、真实附件、CSV及待办/消息。付款六状态只读样本、完整详情及发票字段可查看；付款来源/发票/审批链受037、038、106、201、203阻断，不计为全篇完成 |
@@ -42,7 +44,27 @@
 | GJ-032 | 大屏 | `/foundation/bigscreen`；`operationsScreen.js`、ECharts | 日/月/年概览、计费重优先序、航司前10图表及可读表格、七类服务及历史比较/毛利字段。仅管理员查看；未知指标保留待确认，归期/服务集合/历史快照/毛利受220～221限制 |
 | GJ-033 | DDP 跨模块 | `/foundation/ddp-flows`；`ddpFlows.js` | 业务环节导航、明确ID关联的空运/用车/运单/仓库/货站/成本/对账/申请深链，仓单交接字段、预配误差试算、中转输入和结算入口；没有第二状态引擎。222及既有036/080/140/141/142等阻断外部交接与自动费用闭环 |
 | GJ-034 | 数据字典 | 共享实体、枚举、映射 | 部分落于空运与地面领域；逐篇补齐，不另建 CRUD 页 |
-| GJ-035 / GJ-ACCESS-01～03 | 用户确认的原型权限能力；第035篇访问边界 | `/foundation/permissions`、全局导航、共享会话与数据 owner | 已接超级管理员全模块/演示数据只读与权限配置；原有角色按模块开关菜单、页面、数据、业务操作。自定义角色、逐按钮授权、多角色叠加、组织/字段权限未实现，生产规则仍待确认 |
+| GJ-035 / GJ-ACCESS-01～03 | 用户确认的原型权限能力；第064篇访问边界 | `/foundation/permissions`、全局导航、共享会话与数据 owner | 已接超级管理员全模块/演示数据只读与权限配置；原有角色按模块开关菜单、页面、数据、业务操作。自定义角色、逐按钮授权、多角色叠加、组织/字段权限未实现，生产规则仍待确认 |
+| GJ-ORD-01 | 第013篇 综合订单管理 | `/fulfillment/integrated-orders`、`IntegratedOrdersView.vue`、`IntegratedOrderEditor.vue`、`integratedOrders.js`、`integratedOrderActions.js` | 已接跨业务建单、类型/模式联动、一主多分与六类货物模板、六类服务配置与下发、状态协作、服务汇总与四页签详情、附件可见性；服务单不跨模块生成作业单，拒接/人工完成、已接单导航口径与 E 业务代码未决 |
+| GJ-ORD-02 | 第014篇 综合总运单与分单资料 | `/fulfillment/general-waybills`、`GeneralWaybillsView.vue`、`generalWaybills.js`、`generalWaybillActions.js` | 已接总运单查询/新建/查看/作废、普货与跨境电商资料、普货分单管理和计费重、订单补录回写；总运单号与提单号关系、分单计费重归属及总运单自身作废条件待确认 |
+| GJ-ORD-03 | 第018篇 服务协同管理 | `/fulfillment/service-coordination`、`ServiceCoordinationView.vue`、`serviceCoordination.js`、`serviceCoordinationActions.js` | 已接八项服务汇总、截单预警、查询导出、订单查看、操作日志与预配发送执行（本地模拟发送/回执/取消/终止）；交运无来源、预配建单时点与费用口径未决 |
+| GJ-ORD-04 | 第016篇 BBC客户订单管理 | `/fulfillment/bbc-orders`、`BbcOrdersView.vue`、`bbcCustomerOrders.js`、`bbcOrderActions.js` | 已接四页签与查询、三单自动申报与库存校验、WMS 下发条件、取消/恢复/作废/修改/下快递、回执查询与导出；海关与 WMS 为本地模拟，取消或条件与状态命名受228限制 |
+| GJ-ORD-05 | 第017篇 逆向订单与增值服务 | `/fulfillment/reverse-orders`、`ReverseOrdersView.vue`、`reverseOrders.js`、`reverseOrderActions.js`、`portalOrderExamples.js` | 已接空运/BC/CC 退运建单、BBC 客退消退数量与结果回写、退货申请、退供与库存退运预占释放、增值服务作业全流程；原订单状态映射与累计退货上限受227、229限制 |
+| GJ-ORD-06 | 第015篇 客户门户订单管理 | `/fulfillment/portal-orders`、`PortalOrdersView.vue`、`portalOrders.js`、`portalOrderActions.js` | 已接订单池、BC/CC 四列表、小订单处置、导入与导出、需求单、报告确认；Excel 解析与失败数据、恢复后再锁库受230、231限制 |
+| GJ-ORD-07 | 第023篇 空运-干线服务 | `/fulfillment/trunk-services`、`TrunkServicesView.vue`、`trunkServices.js`、`trunkServiceActions.js` | 已接委外/我司列表、筛选、订舱、执行信息编辑、干线到达与待接单取消；两组订舱约束叠加口径受232限制 |
+| GJ-CUS-01 | 第032篇 关务查询与统计 | `/fulfillment/customs-statistics`、`CustomsStatisticsView.vue`、`customsStatistics.js`、`customsExamples.js` | 已接报关数据查询、部门汇总、成员工作量与南沙统计；`customsExamples.js` 成为028～031共享关务数据源；日期归期、零分母、跨币种与总监角色边界未决 |
+| GJ-CUS-02 | 第028篇 普货关务作业（受理与单证操作） | `/fulfillment/customs-orders`、`CustomsOrdersView.vue`、`customsOperations.js`、`customsOrderActions.js` | 已接服务订单受理与流转、详情六页签、审核资料、单证制作、报关单八类操作；改删单/退运/落装/改配与移动查验未接，强调为后续切片 |
+| GJ-CUS-03 | 第028篇 报关单预录（进口整合申报） | `/fulfillment/customs-orders/:serviceId/preentry/:declarationId?`、`CustomsDeclarationPreentryView.vue`、`customsPreentry.js`、`saveCustomsPreentry` | 已接基本信息与商品信息预录、字段联动、成交方式运费控制、商品 CSV 导入导出与原子失败、四类单证只读预览、保存草稿与提交待复审；涉检/集装箱/随附单证/其他模式/印章/正式模板未接 |
+| GJ-CUS-04 | 第029篇 BC出口关务（订单与申报） | `/fulfillment/bc-export-customs`、`BcExportCustomsView.vue`、`bcExportOrders.js`、`bcExportOrderActions.js` | 已接订单列表、批量申报全链路、删除与异常处理、导入与历史、打印表单与导出、详情回执；海关报文本地模拟 |
+| GJ-CUS-05 | 第029篇 BC出口服务单受理与详情 | `BcExportServicesPanel.vue`、`bcExportServices.js`、`bcExportServiceActions.js` | 已接服务单列表与统计、五类受理动作、详情四页签、委外与附件、应收应付；指定人流转等按 B018/B019/B045 待确认 |
+| GJ-CUS-06 | 第030篇 BC进口订单与申报（首切片） | `/fulfillment/bc-import-customs`、`BcImportCustomsView.vue`、`bcImportOrders.js`、`bcImportOrderActions.js` | 已接BC进口两列表、下发/绑定/提单与自动申报、五类申报与删除、转CC、解绑、补充清关、导出与回执；CC订单、舱单/确报/派送/进出区未接 |
+| GJ-CUS-07 | 第030篇 CC进口订单与附件申报 | `CcImportOrdersPanel.vue`、`ccImportOrders.js`、`ccImportOrderActions.js` | 已接CC进口两列表、六类附件加工、附件/快件申报、更提单、转BC、作废/退运、收件人重复校验、回执与详情；订单编辑/服务单/舱单/确报/派送/进出区未接 |
+| GJ-CUS-08 | 第030篇 进口关务服务单 | `BcExportServicesPanel.vue`、`bcExportServices.js`、`bcExportServiceActions.js` | 已接BC进口服务单列表与统计、五类受理动作、详情四页签、委外与附件、应收应付；D 029/030 共用面板，指定人流转等按待确认保留 |
+| GJ-CUS-09 | 第030篇 原始舱单申报与载货确报 | “舱单与确报”页签、`ManifestConfirmPanel.vue`、`manifestAndConfirmation.js`、`manifestConfirmActions.js` | 已接原始舱单与载货确报列表/筛选、新增修改查看、保存与保存并申报、同步失败重新提交、商品 CSV 模板导入、确报删除与录入车辆信息、详情与回执日志；正式模板、状态口径与失败重提按待确认保留 |
+
+GJ-015 与 GJ-031 的陆运月报统一依据运营支撑的[航晟陆运月报][ground-monthly-prd]（`CF2AF4B8B2 / 1.6.1`），用车订单只保留入口摘要。此归属调整不改变已记录的原型实现、验证结果和 GJ-PRD-136、218 等未决边界。
+
+[ground-monthly-prd]: ../../projects-doc/product-caliber/goldjet/segmented-prd/PRD.高捷物流系统.第08册.运营支撑/PRD.高捷物流系统.第070篇.报表管理.CF2AF4B8B2.md#doc-CF2AF4B8B2-section-336aafdb8518
 
 ## 主流程断点
 
@@ -56,41 +78,94 @@
 | GJ-F06 / BBC 进口与特殊业务 | 无可执行全链 | 入出区、调拨与特殊服务 |
 | GJ-F08 / 税金与财务 | 已完成合成订单→成本保存→提交→客服主管审批→财务会计审批→待对账→组单保存→确认→收款部分金额申请→提交→财务通过/拒绝重提；应付既有已审成本→对账保存并确认；已审原行→调整单→业务审批及拒绝回流 | 押金/税金属性、应付新增、调整单最终生效；对账删除调整回流、标准模板/邮件；付款申请来源/发票/两级审批；申请→核销→额度/余额回写；真实金蝶同步 |
 | GJ-F09 / 异常处理 | 字段失败原子校验；≤30,000元逐级亏损通过；航班修改回退服务与待办 | 超过30,000元审批、拒绝、最终服务迁移、作废、异常关闭与费用 |
-| GJ-021 / 货站打板 | 第008篇配板→同源计划查看；本地上游消息→防重/接收→订单详情；已有板纸修改→本地通知→空运只读回看 | 补充计划/正式Excel、接收确认、货站到达/托书回写、首次板纸关联、完成状态与自动计费、自动预警；未形成全链完成结果 |
-| GJ-022 / 财务基础 | 财务会计汇率维护；成本改名→第007篇候选/列表同源回显；已有客户→开票明细维护；本公司新增银行账户→同组织基本户切换→原账户启停 | 成本新建初始状态、部门层级/导入映射、客户资料自动生成/百望同步、基础资料→023～028费用/开票/核销实际消费；不以维护成功代替结算成功 |
+| GJ-021 / 货站打板 | 第020篇配板→同源计划查看；本地上游消息→防重/接收→订单详情；已有板纸修改→本地通知→空运只读回看 | 补充计划/正式Excel、接收确认、货站到达/托书回写、首次板纸关联、完成状态与自动计费、自动预警；未形成全链完成结果 |
+| GJ-022 / 财务基础 | 财务会计汇率维护；成本改名→第019篇候选/列表同源回显；已有客户→开票明细维护；本公司新增银行账户→同组织基本户切换→原账户启停 | 成本新建初始状态、部门层级/导入映射、客户资料自动生成/百望同步、基础资料→费用、开票及核销的实际消费；不以维护成功代替结算成功 |
 
 ## 当前核对记录
 
-- 2026-09-19，GJ-026～033：使用 `skill-for-prototype` 的 `adapt` 模式，按篇推进，沿用Vue/Element Plus及同一内存owner。新增ECharts 6.1.0用于第032篇真实图表；图表从共享订单派生，CSV下载位于UI工具层，domain不访问DOM。未修改PRD正文或Skill；新增问题209～222，未决合计221项（直接冲突59、规则缺口104、待确认57、表达规范1）。
+以下为各日期的历史核对记录，篇号、测试数量、当时问题数量和推进游标均保留记录时口径；当前需求入口与篇号以主档为准。
+
+- 2026-09-26，GJ-CUS-09：实现第030篇 §8 原始舱单申报与 §9 载货确报，作为进口关务页“舱单与确报”页签；新增 `manifestAndConfirmation.js`、`manifestConfirmActions.js`、`ManifestConfirmPanel.vue`，`bcImportExamples.js` 增加 3 张舱单与 3 张确报种子，`usePrototypeData.js` 接入同一内存 owner；无新增依赖，PRD 正文未改，新增问题239、240。
+- 需求侧范围：第030篇 §8～§9。原始舱单修改仅待报关、发送失败、海关退单；保存并申报、同步失败重新提交、商品 CSV 模板导入（问题235同口径）；载货确报保存/保存并提交/删除/录入车辆信息；同步状态筛选、查看/编辑弹窗替代新标签页为原型呈现选择；陆运通同步与海关回执均为本地模拟。
+- 原型落点与 owner：`state.originalManifests`/`state.cargoConfirmations` 与进口订单同由 `createBcImportSeed` 与 `usePrototypeData.js` 单一 owner 管理，刷新/恢复重建 seed；面板按报关会话角色控制读写，超级管理员与其余岗位只读。
+- 核对证据：`npx vitest run tests/manifestConfirm.test.js` 10项通过（含面板与页面 SFC 编译、筛选与校验、保存/申报/重新提交、修改资格、CSV 导入原子失败、确报状态机与岗位边界）；全量 `npx vitest run` 93个文件1248项中91个文件1226项通过，仅 `airPalletPages`、`transportQuotePages` 两个既有失败文件；面板、页面与领域/数据文件 HTTP 200；`git diff --check` 通过。未执行浏览器点击、生产构建、真实接口与完整响应式矩阵。
+- 2026-09-26，GJ-CUS-08：把 `BcExportServicesPanel` 抽象为按 `businessTypes`、`serviceLabel`、`moduleKey` 复用的共用面板（029 与 030 共用同一实现与数据 owner），在进口关务页新增“进口关务服务单”页签并补充两张 BC进口服务单种子；无新增依赖，PRD 正文未改，无新增问题编号（沿用 CUSTOMS-B018/B019/B024/B045）。
+- 需求侧范围：第030篇 §7。服务单只汇聚 BC/CC进口关务作业；终止限制对应订单继续报关、完成服务后详情只读；统计窗口与指定人流转按既有待确认保留。
+- 原型落点与 owner：复用 `state.customsServiceOrders` 单一 owner，`customsServiceOrders` 现为 20 条（普货进口/出口、BC出口/进口、CC进口）；面板按业务类型过滤，不新建第二套服务单。
+- 核对证据：`npx vitest run tests/bcImportServices.test.js` 5项通过（含共用面板复用断言与两个 SFC 编译、BC进口种子与统计、五类受理动作、详情字段与附件/费用）；全量 `npx vitest run` 92个文件1238项中90个文件1216项通过，仅两个既有失败文件；进口页与共用面板 HTTP 200。未执行浏览器点击、生产构建、真实接口与完整响应式矩阵。
+- 2026-09-25，GJ-CUS-07：补齐第030篇 CC进口切片；新增 `ccImportOrders.js`、`ccImportOrderActions.js` 与 `CcImportOrdersPanel.vue`，扩展种子至 5 张 CC 订单；无新增依赖，新增问题238。
+- 需求侧范围：第030篇 §5～§6 的附件加工与申报路径。B类/AC类附件规则、同提单校验、缺附件阻断与整组申报按来源实现；附件失败重试、过期重建与线下递交不一致按问题238保留；回执与附件下载为原型 CSV，正式接口与压缩包待确认。
+- 原型落点与 owner：CC 面板挂入 `bcImportCustoms` 页面页签；`state.ccImportOrders` 由 `usePrototypeData.js` 单一 owner 持有，刷新/恢复重建 seed；CC 转 BC 与 BC 转 CC 共享同一 owner 并在转换后显示待确认税金。
+- 核对证据：`npx vitest run tests/ccImportOrders.test.js tests/bcImportOrders.test.js` 共16项通过（含两个新增 SFC 编译）；全量 `npx vitest run` 91个文件1233项中89个文件1211项通过，仅两个既有失败文件；面板与领域/数据文件 HTTP 200。未执行浏览器点击、生产构建、真实接口与完整响应式矩阵。
+- 2026-09-25，GJ-CUS-06：实现第030篇首切片；新增 `bcImportOrders.js`、`bcImportOrderActions.js`、`bcImportExamples.js` 与页面，无新增依赖，新增问题237。
+- 需求侧范围：第030篇 §3～§4 的 BC进口路径。下发/绑定/提单/自动申报按 B025/B026 待确认口径保守处理；BC转CC后预估税金不归零而显示待确认；回执下载与提货证明为原型 CSV/文本，正式模板待确认。
+- 原型落点与 owner：新增 `bcImportCustoms` 目录项与路由；`state.bcImportOrders/ccImportOrders` 由 `usePrototypeData.js` 单一 owner 持有，刷新/恢复重建 seed；演示数据 10 张 BC 订单与 1 张 CC 订单覆盖各申报与异常路径。
+- 核对证据：`npx vitest run tests/bcImportOrders.test.js` 8项通过（含新增 SFC 编译、筛选与下发资格、绑定/提单/自动申报、五类申报状态迁移、转CC与备案校验、清关顺序与回执CSV）；全量 `npx vitest run` 90个文件1225项中88个文件1203项通过，仅两个既有失败文件；新页面与领域/数据文件 HTTP 200。未执行浏览器点击、生产构建、真实接口与完整响应式矩阵。
+- 2026-09-25，GJ-CUS-05：补齐第029篇服务单切片；新增 `bcExportServices.js`、`bcExportServiceActions.js` 与面板，复用共享关务服务单 owner，无新增依赖；指定人流转、统计窗口与手工结果按待确认保留。
+- 需求侧范围：第029篇 §11～§14。服务单只收 BC出口关务；FWD/XQD 编号映射、终止后订单限制与应收应付来源均按来源投影，不新建第二套关务对象。
+- 原型落点与 owner：面板挂入 `bcExportCustoms` 页面页签；`state.customsServiceOrders` 由 `usePrototypeData.js` 单一 owner 持有，BC出口服务单新增两条并补齐既有记录的渠道、附件、应收应付与日志。
+- 核对证据：`npx vitest run tests/bcExportServices.test.js` 7项通过（含面板与页面 SFC 编译、筛选与统计、五类受理动作、附件校验与记录、应收应付与委外）；全量 `npx vitest run` 89个文件1217项中87个文件1195项通过，仅两个既有失败文件；面板与领域/数据文件 HTTP 200。未执行浏览器点击、生产构建、真实接口与完整响应式矩阵。
+- 2026-09-25，GJ-CUS-04：按同一流程实现第029篇订单与申报切片；新增 `bcExportOrders.js`、`bcExportOrderActions.js`、`bcExportExamples.js` 与页面，无新增依赖，新增问题236。
+- 需求侧范围：第029篇 §1～§4、§6、§7、§10 与 §2 的申报资格。服务单受理与详情（§11～12）归后续切片；海关报文、回执与接口为本地模拟，打印为浏览器打印或原型表格。
+- 原型落点与 owner：新增 `bcExportCustoms` 目录项与路由；`state.bcExportOrders/bcExportImportHistory` 由 `usePrototypeData.js` 单一 owner 持有，刷新/恢复重建 seed；演示数据 7 张订单覆盖各申报与异常路径。
+- 核对证据：`npx vitest run tests/bcExportOrders.test.js` 6项通过（含新增 SFC 编译、筛选资格、全申报链路、删除与异常、导入过滤与历史）；全量 `npx vitest run` 88个文件1210项中86个文件1188项通过，仅两个既有失败文件；新页面与领域/数据文件 HTTP 200。未执行浏览器点击、生产构建、真实接口与完整响应式矩阵。
+- 2026-09-25，GJ-CUS-03：报关单预录切片由并行工作流实现，本轮统一验证并纳入交付记录；无重复实现，新增问题235。
+- 需求侧范围：第028篇 §5.1.1、§5.1.3 与 §4.2～4.5 的进口整合申报路径。涉检信息、集装箱、随附单证、概要/一次录入/出口/转关模式、印章与正式 Excel/打印模板不在本切片；CUSTOMS-B008 疑似映射与 B009 法定数量/单位编辑资格在界面显示为待确认。
+- 原型落点与 owner：预录页面作为 `customsOrders` 的子路由，复用 `state.customsServiceOrders/customsDeclarations` 单一 owner；保存草稿不生成单据记录、提交后原子转为待复审并回写总价。
+- 核对证据：`npx vitest run tests/customsPreentry.test.js` 6项通过（含 SFC 编译、CSV 表头精确匹配与原子失败、保存/提交状态机、四类预览与 B008 标记）；与 `tests/customsOperations.test.js`、`tests/customsStatistics.test.js` 合并 22 项通过；全量 `npx vitest run` 87个文件1204项中85个文件1182项通过，仅两个既有失败文件；预录页面与领域文件 HTTP 200。未执行浏览器点击、生产构建、真实接口与完整响应式矩阵。
+- 2026-09-25，GJ-CUS-02：按 `pm-workbench` 与 `skill-for-prototype` 的 `adapt` 模式完成第028篇受理与单证操作切片；扩展 `customsExamples.js`（服务单作业字段、报关单状态与作业草稿、商品行），新增 `customsOperations.js` 与 `customsOrderActions.js`；无新增依赖，新增问题233、234。
+- 需求侧范围：第028篇 §1～§4 的已明确定义部分。作废与报关状态管理引用 CUSTOMS-B004/B005；审核补件引用 GJ-DSL-001；改单/删单/退运/落装/改配、复审界面细节与移动端查验不实现并在界面显式标注；进口整合申报预录由 GJ-CUS-03 承接。
+- 原型落点与 owner：新增 `customsOrders` 目录项与路由；服务单、报关单与核放单由 `usePrototypeData.js` 单一 owner 持有，刷新/恢复重建 seed；单据编号按 208+YYDDMM+流水、服务单号沿用既有合成编码。
+- 核对证据：`npx vitest run tests/customsOperations.test.js tests/customsStatistics.test.js` 共16项通过（含两个新增 SFC 编译）；全量 `npx vitest run` 86个文件1198项中84个文件1176项通过，仅两个既有失败文件；新页面与领域/数据文件 HTTP 200。未执行浏览器点击、生产构建、真实接口与完整响应式矩阵；单一窗口、海关回执与邮件均为本地模拟。
+- 2026-09-25，GJ-CUS-01：按同一流程补齐第032篇；新增 `customsExamples.js` 作为关务服务单/报关单/核放单共享合成数据源（028～031 复用），`customsStatistics.js` 承载四项统计口径，页面只读；无新增依赖，不新增问题编号（引用 CUSTOMS-B042/B043 与总监角色演示边界）。
+- 需求侧范围：第032篇 §1～§5。只实现无歧义分支：统计按服务完成时间、报关单按申报日期归期，跨币种金额按币种分列不换算，零分母显示待确认，取消/终止不计入完成率分母并在页内提示；打印调用浏览器打印。
+- 原型落点与 owner：新增 `customsStatistics` 目录项与路由；`state.customsServiceOrders/customsDeclarations/customsSealDocuments` 由 `usePrototypeData.js` 单一 owner 持有，刷新/恢复重建 seed；演示数据跨 2026-07～09。
+- 核对证据：`npx vitest run tests/customsStatistics.test.js` 6项通过（含新增 SFC 编译与去重、分币种、零分母、月度与占比口径）；全量 `npx vitest run` 85个文件1188项中83个文件1166项通过，仅两个既有失败文件；新页面与领域/数据文件 HTTP 200。未执行浏览器点击、生产构建、真实接口与完整响应式矩阵。
+- 2026-09-25，GJ-ORD-06～07：按同一流程补齐第015、023篇；015 复用门户共享数据源，新增订单池/小订单/需求单/报告确认动作与页面；023 新增委外与我司空运列表、订舱与执行信息。无新增依赖，新增问题230～232；门户与综合订单的服务生成冲突引用既有 GJ-WORD-CROSS-C01，不重复登记。
+- 需求侧范围：第015篇 §2～§6、第023篇 §1。只实现无歧义分支：Excel 解析以粘贴文本替代、恢复不自动重新锁库、客户侧动作由演示账号代执行、D4 约束不叠加到 023 订舱页。
+- 原型落点与 owner：新增 `portalOrders`、`trunkServices` 两个目录项与路由；`state.portalSmallOrders/portalPoolOrders/portalRequirements/portalReports/portalStock` 与 `state.trunkServices` 由 `usePrototypeData.js` 单一 owner 持有，刷新/恢复重建 seed；演示日期 2026-09-08，导入模板为原型 CSV。
+- 核对证据：`npx vitest run tests/portalOrders.test.js tests/trunkServices.test.js` 共15项通过（含2个新增 SFC 编译）；全量 `npx vitest run` 84个文件1182项中82个文件1160项通过，`airPalletPages`、`transportQuotePages` 为既有失败且单独运行同样失败；两个新页面与领域/数据文件 HTTP 200。未执行浏览器点击、生产构建、真实接口与完整响应式矩阵。
+- 2026-09-25，GJ-ORD-04～05：按同一流程补齐第016、017篇；新建 `portalOrderExamples.js` 作为门户小订单、需求单、报告与演示库存的共享合成数据源（015 后续复用），`BbcReturnQuantityDialog` 由 BBC 客户订单与逆向订单复用；无新增依赖，新增问题227～229。
+- 需求侧范围：第016篇 §1～§4、第017篇 §1～§6。只实现无歧义分支：门户 BBC 取消入口缺失沿用 015/016 待确认边界，累计退货上限不自行扣减，取消或条件按已明确的排除项保守处理，增值服务计费与金蝶同步不实现。
+- 原型落点与 owner：新增 `bbcOrders`、`reverseOrders` 两个目录项与路由；`state.bbcCustomerOrders`、`state.portalSmallOrders`、`state.portalRequirements`、`state.portalReports`、`state.portalStock`、`state.reverseOrders`、`state.valueAddedServices` 由 `usePrototypeData.js` 单一 owner 持有，刷新/恢复重建 seed；演示日期 2026-09-08。
+- 核对证据：`npx vitest run tests/bbcCustomerOrders.test.js tests/reverseOrders.test.js` 共15项通过（含3个新增 SFC 编译）；全量 `npx vitest run` 82个文件1167项中80个文件1145项通过，`airPalletPages`、`transportQuotePages` 为既有失败且单独运行同样失败；两个新页面、退货数量组件与领域/数据文件 HTTP 200。未执行浏览器点击、生产构建、真实接口与完整响应式矩阵。
+- 2026-09-25，GJ-ORD-01～03（前一批）：按 `pm-workbench` 与 `skill-for-prototype` 的 `adapt` 模式补齐第013、014、018篇，复用中央内存 owner、Element Plus、`v-business-write` 权限指令与既有测试设施，无新增依赖；PRD 正文未改，新增问题223～226。
+
+- 需求侧范围：第013篇 §2～§6、第014篇 §1.1～§1.4、第018篇 §1～§5。只实现无歧义分支；拒接、人工完成、跨模块作业单生成、交运来源、E 业务代码、分单计费重归属等未决项保留禁用或显式提示。
+- 原型落点与 owner：新增 `integratedOrders`、`generalWaybills`、`serviceCoordination` 三个目录项与路由；`state.integratedOrders`、`state.generalWaybills`、`state.preallocationRecords` 由 `usePrototypeData.js` 单一 owner 持有，刷新/恢复重建 seed；演示日期 2026-09-08，客户、客户分单、集装箱与预配记录均为固定合成数据。
+- 核对证据：`npx vitest run tests/integratedOrders.test.js tests/generalWaybills.test.js tests/serviceCoordination.test.js` 共23项通过（含3个新增 SFC 编译与写入不变量）；全量 `npx vitest run` 80个文件1152项中78个文件1130项通过，`airPalletPages`、`transportQuotePages` 为既有失败且单独运行同样失败；开发服务三个新页面、编辑组件与三个领域文件 HTTP 200。未执行浏览器点击链路（本会话无浏览器运行时与 Playwright）、生产构建、真实接口与完整响应式矩阵；不把编译与单元检查表述为浏览器链路已验证。
+
+
+- 2026-09-19，GJ-026～033：使用 `skill-for-prototype` 的 `adapt` 模式，按篇推进，沿用Vue/Element Plus及同一内存owner。新增ECharts 6.1.0用于第044篇真实图表；图表从共享订单派生，CSV下载位于UI工具层，domain不访问DOM。未修改PRD正文或Skill；新增问题209～222，未决合计221项（直接冲突59、规则缺口104、待确认57、表达规范1）。
 - GJ-026/027：来源申请使用 `applicationId:lineId` 防止不同批次复用同一成本行时冲突；未知余额和汇率保持未知，不从申请约定汇率擅推业务汇率。报销三类源单及历史付款/冲抵为隔离合成样本，1000借支=800报销+200退款只做试算。财务按已绑定公司/组织过滤，无绑定不返回源记录；管理员只读全量。页签/路由切换、刷新离开有草稿提示，角色/权限/恢复后清除旧详情。
 - GJ-028：补录owner再次校验财务会计岗位、公司、当前新建/不需开票状态、未作废未关联、同结算单位/购买方/税号及CNY等额，成功只关联两张隔离合成单据；重复补录不写入。开票草稿、购买方/销售方、货物及来源金额录入不占用对账余额。税务文件、邮件及接口未接。
 - GJ-029/030：模板是只读源数据投影，不新增模板CRUD或自动选用规则；字段无法唯一映射时显示来源待确认。通知中心与工作台读取同一消息聚合，详情含渠道、收件、抄送及完整内容；收到通知不自动获得目标单据权限。定时预览不会投递或改变状态；过期车辆下界、日历阈值及幂等规则仍受152、187、217限制。
 - GJ-031/032：新增“财务主管”仅开放明确财务报表入口及工作台/消息，不承接会计写权限。三个空运报表未指定岗位、运营大屏及DDP汇总未明确跨模块数据范围，暂仅管理员查看。日/月/年是固定演示日期的当前记录核对，不自动生成历史快照；报表计费重使用明确的max(体积×166.66,毛重)，不沿用计费业务向上取整。服务统计和未知历史百分比/毛利不以0代替。
 - GJ-033：关联依赖明确 `airOrderId`、`orderId`，不按同客户或相近编号串单。空运001可跳转同一仓单和已关联打板单；没有调度/结算记录时不伪造。试算覆盖小于3%、大于3%、其他条件不满足、恰好3%、申报0和非法输入；它不发送预配、人工确认或WMS指令。出库终态、海关放行回执、扫描匹配及自动费用仍未闭环。
 - GJ-026～033定向验证：`financeExtensions`、`financeExtensionPages`、`accessControl`、`accessPages`、`workbenchTasks`、`workbenchOwner`、`financeApplications`、`financeApplicationPages`、`reconciliation`、`reconciliationPages`、`orderCosts`共11个测试文件182项通过，包括12个本轮SFC编译及直接调用方回归。不以编译代替浏览器结果。
-- 浏览器脚本 `tests/chapters26to33.browser.cjs` 核对分阶段查询/重置、报销冲抵失衡与离开确认、管理员禁止补录/会计成功补录、模板来源、定时提醒详情、报表角色拒绝、大屏Canvas非空、DDP边界及仓单深链；桌面1440×1000、手机390×1000证据在已忽略的 `test-results/chapters26to33/`。`tests/financeApplications.browser.cjs`再次执行已确认对账1200→收款600→拒绝/重提/通过，并新增已审申请→第026篇待核销→录入预览，保存仍受209阻断。
+- 浏览器脚本 `tests/chapters26to33.browser.cjs` 核对分阶段查询/重置、报销冲抵失衡与离开确认、管理员禁止补录/会计成功补录、模板来源、定时提醒详情、报表角色拒绝、大屏Canvas非空、DDP边界及仓单深链；桌面1440×1000、手机390×1000证据在已忽略的 `test-results/chapters26to33/`。`tests/financeApplications.browser.cjs`再次执行已确认对账1200→收款600→拒绝/重提/通过，并新增已审申请→第034篇待核销→录入预览，保存仍受209阻断。
 - 未执行生产构建、全量测试、完整权限/响应式矩阵或外部接口。依赖审计报告既有Vitest 4.1.10及其mocker两项中危开发依赖告警（GHSA-82fw-gwwq-j7x9），本轮未升级；新增ECharts不在告警项中。没有把受限预览、静态样表或跨模块入口称为全链路完成。
 
-- 2026-09-19，GJ-025：按 `skill-for-prototype` 的 `adapt` 模式，完整读取第025篇及第022/030/034/035篇直接依赖；新增分析问题201～208，未改PRD正文或Skill。延用Vue/Element Plus、内存owner与现有测试环境，不新增依赖。
+- 2026-09-19，GJ-025：按 `skill-for-prototype` 的 `adapt` 模式，完整读取第033篇及第030/042/039/040篇直接依赖；新增分析问题201～208，未改PRD正文或Skill。延用Vue/Element Plus、内存owner与现有测试环境，不新增依赖。
 - GJ-025-01（§1.1.3、§1.3.10～1.3.15）：从已确认应收对账单投影候选，保存时重读源成本状态、原币金额和快照；只允许同结算单位、同币种、同公司共同有效范围，重复源行/过期余额/零值/非正源金额被阻断。支持当前页勾选和全部已应用查询结果创建，新增50行、审批10行分页；逐行税额保留2位后求和，不把人民币金额混入原币申请。
 - GJ-025-02（§1.3.2～1.3.9）：收款新建→提交→财务审批通过/拒绝，拒绝重提不重复占用，新建或拒绝删除释放本申请金额。创建、后续操作及确认仅开放明确的财务会计身份；超级管理员查看/导出但不写业务。模块权限只能收紧，数据owner再次校验；角色、权限、reset变化使旧确认失效。审批通过仅结束申请，不生成核销或释放授信额度。
-- GJ-025-03（§1.3.12～1.3.15、第030篇§1.4.6）：账户选择复用本公司银行主数据，局部保存同步银行/户名，整单保存形成快照；选填备注、真实文本/图片/PDF附件、未保存移除、保存后查看/下载。列表完整查询、金额及日期闭区间、币种/状态精确、批次号模糊，选中和查询范围CSV含BOM并转义公式前缀/引号/换行；未提交查询不改变列表。提交生成财务待办与本地消息深链，结果通知提交人，无真实微信发送；18:00未审批提醒因阈值缺口未实现。
+- GJ-025-03（§1.3.12～1.3.15、第042篇§1.4.6）：账户选择复用本公司银行主数据，局部保存同步银行/户名，整单保存形成快照；选填备注、真实文本/图片/PDF附件、未保存移除、保存后查看/下载。列表完整查询、金额及日期闭区间、币种/状态精确、批次号模糊，选中和查询范围CSV含BOM并转义公式前缀/引号/换行；未提交查询不改变列表。提交生成财务待办与本地消息深链，结果通知提交人，无真实微信发送；18:00未审批提醒因阈值缺口未实现。
 - GJ-025-04（§1.2）：付款六状态列表、查询/选中CSV、明细与审批详情、无票财务通过筛选、发票补录详情及全部已定义发票/附件字段只读展示。六条独立合成样本有`demoOnly`标识，使用前一日编号，不占用源成本、不进入待办、不写发票。201所涉待付款来源为空且创建禁用；037/038/106/203冲突未选择任何一种解释。付款新增可保存表单、逐级审批、发票保存/删除/补录均未完成，不能把只读展示视为业务闭环。
 - GJ-025演示假设与owner：`state.financeApplications`统一持有申请、源行引用/快照、账户快照、通知和固定时钟；不复制可维护成本或对账单。金额占用按所有有效申请行派生，展示样本排除；刷新/恢复重建seed，附件只留内存。采用独立页面承载创建/审批/详情，沿用当前页选择、切页/查询/角色/方向清空；导出为原型明细CSV，不声明正式Excel模板。申请单号只开放当前日期的收款编号，跨公司/两类申请流水见204；所有未决边界见201～208及既有106/107/188/195。
 - GJ-025定向核对：`npx vitest run tests/financeApplications.test.js tests/financeApplicationPages.test.js tests/reconciliation.test.js tests/reconciliationPages.test.js tests/orderCosts.test.js tests/financeBasics.test.js tests/accessControl.test.js tests/workbenchTasks.test.js`，8文件116项通过，含4个受影响SFC编译、52行组单、行税舍入/分次占用、拒绝/重提/删除、源快照校验、角色门禁及收紧、账户快照、附件字节和CSV转义。
-- GJ-025浏览器：`tests/financeApplications.browser.cjs`实际执行客服第024篇1200 CNY源行保存并确认→财务会计600 CNY收款申请→账户保存→文本附件→提交→工作台进入审批→拒绝→重提→通过；结果600/33.96/566.04，余款600再次保存后删除，余额释放。真实附件下载字节一致，CSV只含有效申请且安全保留引号/换行；分阶段查询、消息4次事件、付款发票禁用及管理员只读均核对。1440×1000、820×1000及390×1000截图回看，窄屏金额输入实际修改并保持草稿，无页面级横向溢出及控制台错误。证据在忽略目录`test-results/chapter25/`。未执行全量测试、生产构建、完整响应式矩阵、真实财务/通知接口。
-- GJ-025回归：`tests/reconciliation.browser.cjs`再次通过，保留第023篇两级审批→第024篇应收/应付组单、确认、附件和导出链路。问题清单当前207项（直接冲突54、规则缺口95、待确认57、表达规范1），按标题重新统计一致；两个仓库`git diff --check`通过，未提交Git。
+- GJ-025浏览器：`tests/financeApplications.browser.cjs`实际执行客服第032篇1200 CNY源行保存并确认→财务会计600 CNY收款申请→账户保存→文本附件→提交→工作台进入审批→拒绝→重提→通过；结果600/33.96/566.04，余款600再次保存后删除，余额释放。真实附件下载字节一致，CSV只含有效申请且安全保留引号/换行；分阶段查询、消息4次事件、付款发票禁用及管理员只读均核对。1440×1000、820×1000及390×1000截图回看，窄屏金额输入实际修改并保持草稿，无页面级横向溢出及控制台错误。证据在忽略目录`test-results/chapter25/`。未执行全量测试、生产构建、完整响应式矩阵、真实财务/通知接口。
+- GJ-025回归：`tests/reconciliation.browser.cjs`再次通过，保留第031篇两级审批→第032篇应收/应付组单、确认、附件和导出链路。问题清单当前207项（直接冲突54、规则缺口95、待确认57、表达规范1），按标题重新统计一致；两个仓库`git diff --check`通过，未提交Git。
 
-- 2026-09-19，GJ-024：按 `skill-for-prototype` 的 `adapt` 流程，读取第024篇全文、第029篇模板及第022/034/035篇直接依赖；只追加分析问题194～200，不修改权威PRD或Skill。沿用Vue/Element Plus、共享内存owner、既有浏览器验证环境，无新增依赖。
+- 2026-09-19，GJ-024：按 `skill-for-prototype` 的 `adapt` 流程，读取第032篇全文、第037篇模板及第030/039/040篇直接依赖；只追加分析问题194～200，不修改权威PRD或Skill。沿用Vue/Element Plus、共享内存owner、既有浏览器验证环境，无新增依赖。
 - GJ-024-01：应收/应付各三个页签，完整承接已定义查询/列表/对账头/明细字段；条件先输入后查询、重置同时恢复结果，列表单号模糊、明细单号精确，日期范围包含首尾日期。周期及199中三项冲突映射保留禁用条件，不静默选用一种解释。
 - GJ-024-02：唯一来源是 `state.costs` 中已完成订单的财务审批通过行；`state.reconciliation` 仅持有对账单、不可变展示快照和 `sourceCostId`，不复制可维护费用。按当前页勾选或全部已应用查询结果组单，同一结算单位；跨公司暂阻断。保存前重读准入和快照，防重复引用、过期提交及多对象部分写入。新建引用也暂时锁定，正式占用/释放规则见194。
 - GJ-024-03：独立新建草稿、200字备注、文本/图片/PDF文件读取与原字节下载；保存生成 `BL+YYMMDD+5位流水`，保存并确认直接进入已确认。客服可独立确认；业务和明确“财务”身份可新增保存/保存并确认，不把财务会计或财务人员自动并入。超级管理员全量只读，模块权限只能收紧。金额按原币分组汇总，不与折人民币金额混用。
 - GJ-024-04：50条分页、查询结果全量CSV下载、成本来源深链、已确认详情及审计信息。邮件、标准模板和删除入口保留禁用及原因；已确认结果提供同owner明细投影，025尚未接入，不以投影存在声称收付款全链完成。
-- GJ-024演示假设：默认应收列表；分页勾选仅当前页，切页/查询/方向/角色/权限变化清空，按查询条件创建跨全部匹配行。独立页面承载草稿/详情；明细文件采用UTF-8 BOM CSV，不冒充第029篇模板；附件不持久化、刷新恢复seed。新增一张独立已完成合成订单、六条明确财务已审成本、应收新建和应付已确认各一单；不推进在途订单，不覆盖第023篇六状态样例。
-- GJ-024浏览器：`tests/reconciliation.browser.cjs` 从第023篇新建成本执行提交→主管通过→财务会计通过→客服进入待对账；异结算单位组单被拒，同单位查询包含4行、CNY4000及USD200；未提交筛选不改变结果，取消离开/取消保存保留草稿，保存后源行退出待对账，独立确认后只读。应付按勾选创建800 CNY并保存确认。真实文本附件上传/拒绝HTML/下载字节一致；精确单号查询、CSV解析4行及金额币种一致。覆盖1440×1000、820×1000草稿连续性、390×1000管理员只读详情，截图在忽略目录 `test-results/chapter24/`；不代表完整响应式矩阵。
+- GJ-024演示假设：默认应收列表；分页勾选仅当前页，切页/查询/方向/角色/权限变化清空，按查询条件创建跨全部匹配行。独立页面承载草稿/详情；明细文件采用UTF-8 BOM CSV，不冒充第037篇模板；附件不持久化、刷新恢复seed。新增一张独立已完成合成订单、六条明确财务已审成本、应收新建和应付已确认各一单；不推进在途订单，不覆盖第031篇六状态样例。
+- GJ-024浏览器：`tests/reconciliation.browser.cjs` 从第031篇新建成本执行提交→主管通过→财务会计通过→客服进入待对账；异结算单位组单被拒，同单位查询包含4行、CNY4000及USD200；未提交筛选不改变结果，取消离开/取消保存保留草稿，保存后源行退出待对账，独立确认后只读。应付按勾选创建800 CNY并保存确认。真实文本附件上传/拒绝HTML/下载字节一致；精确单号查询、CSV解析4行及金额币种一致。覆盖1440×1000、820×1000草稿连续性、390×1000管理员只读详情，截图在忽略目录 `test-results/chapter24/`；不代表完整响应式矩阵。
 - GJ-024定向核对：`npm test -- tests/reconciliation.test.js tests/reconciliationPages.test.js tests/orderCosts.test.js tests/orderCostPages.test.js tests/financeBasics.test.js tests/accessControl.test.js tests/workbenchTasks.test.js tests/groundOrders.test.js tests/groundOperations.test.js tests/warehouseViews.test.js tests/stationPallet.test.js`，11文件136项通过；包含SFC编译、两级审批交接、55行组单、原币汇总、状态/角色门禁、重复/过期/跨主体保护、附件字节及CSV转义。另回归 `tests/orderCosts.browser.cjs` 通过；只更新新增合成样本导致的全局总数预期，原订单筛选仍为5行。`git diff --check`通过，未执行全量测试或生产构建。
 
-- 2026-09-19，GJ-023：使用 `skill-for-prototype` 的 `adapt` 流程；完整核对第023篇及第022、030、034、035篇直接依赖。仅在需求分析清单追加185～193，不修改PRD正文，不修改Skill。
+- 2026-09-19，GJ-023：使用 `skill-for-prototype` 的 `adapt` 流程；完整核对第031篇及第030、042、039、040篇直接依赖。仅在需求分析清单追加185～193，不修改PRD正文，不修改Skill。
 
 | 要求 ID | 来源与实现落点 | 实现状态、核对与剩余范围 |
 | --- | --- | --- |
@@ -98,19 +173,19 @@
 | GJ-023-02 | §1.2.8～1.2.11；`orderCostActions`、工作台与消息投影 | 六状态、主管/财务按环节展示、子单/属性筛选、整单/行备注、按行/批量原子审批、拒绝重提。普通成本财务通过记录业务审批日作为记账日期，生成本地待同步记录；实际点击两级审批通过，无真实接口调用 |
 | GJ-023-03 | §1.3；调整单页签、共用字段和原行快照 | 财务已审行选取、14位单号、完整调整字段、主体责任人、附件条件、保存/保存并提交/编辑/删除、队列优先及业务审批/财务拒绝。原行不被覆盖，调整金额不进入汇总；多行组单和财务最终通过受188限制，种类10/11受189限制 |
 | GJ-023-04 | §1.4.1～1.4.3；汇总/明细页签、`OrderCostFilters`、`costCsv` | 分阶段查询、50条分页、日期区间、全字段详情及只读汇总，按勾选或当前查询导出UTF-8 BOM CSV。浏览器下载后核对两种范围、引号/换行和原始附件字节；CSV格式为原型假设，不是正式模板 |
-| GJ-023-05 | 第035篇 §6、第030篇 §1.4.4；权限、工作台、消息 | 客服维护、业务新增提交、客服主管业务审批、财务会计财务审批；不把财务人员/业务主管称谓自动合并。超级管理员全量只读，授权只能收紧，货站仍不能进入成本总表。提交/逐级/拒绝和全部行通过的本地通知、审批待办及深链已接入；18:00定时提醒未实现 |
+| GJ-023-05 | 第040篇 §6、第042篇 §1.4.4；权限、工作台、消息 | 客服维护、业务新增提交、客服主管业务审批、财务会计财务审批；不把财务人员/业务主管称谓自动合并。超级管理员全量只读，授权只能收紧，货站仍不能进入成本总表。提交/逐级/拒绝和全部行通过的本地通知、审批待办及深链已接入；18:00定时提醒未实现 |
 
 - 所有者与假设：原成本仍在 `state.costs`，新增行标记 `managementVersion:23`；`state.orderCostBook` 管理独立的已完成合成订单、调整单、审批备注和模拟事件，不保存第二份成本汇总。旧4条不完整费用及仓库/货站样本仍由原消费者读取，不擅自迁移为六状态成本。现有运行订单只有明确完成、业务日期及主体时才纳入入口，不修改未完成订单状态。
-- 演示样本：2张独立已完成订单、6条不同状态费用；公司/人员/合作方绑定、业务类型关系和CNY=1均为固定合成输入。按创建月份消费第022篇唯一有效直接汇率，并登记历史引用。固定日期2026-09-08；刷新或恢复重建，重复“准备结算演示数据”不覆盖操作。真实主体/日历、舍入、价格默认及调整后金额处理不由样本反推。
+- 演示样本：2张独立已完成订单、6条不同状态费用；公司/人员/合作方绑定、业务类型关系和CNY=1均为固定合成输入。按创建月份消费第030篇唯一有效直接汇率，并登记历史引用。固定日期2026-09-08；刷新或恢复重建，重复“准备结算演示数据”不覆盖操作。真实主体/日历、舍入、价格默认及调整后金额处理不由样本反推。
 - 本轮核对：`npm test -- tests/orderCosts.test.js tests/orderCostPages.test.js tests/financeBasics.test.js tests/accessControl.test.js tests/workbenchTasks.test.js tests/groundOrders.test.js tests/groundOperations.test.js tests/warehouseViews.test.js tests/stationPallet.test.js`，9文件105项通过，含7个受影响SFC编译。新增 `tests/orderCosts.browser.cjs` 复用现有Playwright运行时，桌面1440×1000、820×1000录入和390×844只读概要核对通过；截图位于忽略目录 `test-results/chapter23/`，已回看修正窄屏碎字及截图时机。
-- 浏览器证据：应收含附件保存→溢价5%提示→提交→两级审批→本地同步；已审原行→调整单提交→优先进入审批→业务通过→财务通过阻断/拒绝；已知应付编辑→重提；管理员业务只读；分阶段查询及勾选/查询导出通过。运行入口 `http://localhost:10530/#/finance/costs`。未执行全量测试、生产构建、完整键盘/响应式矩阵、真实微信或金蝶接口；第024篇及以后的结算链路未随本轮实现。
+- 浏览器证据：应收含附件保存→溢价5%提示→提交→两级审批→本地同步；已审原行→调整单提交→优先进入审批→业务通过→财务通过阻断/拒绝；已知应付编辑→重提；管理员业务只读；分阶段查询及勾选/查询导出通过。运行入口 `http://localhost:10530/#/finance/costs`。未执行全量测试、生产构建、完整键盘/响应式矩阵、真实微信或金蝶接口；第032篇及以后的结算链路未随本轮实现。
 
-- 2026-09-19，GJ-022：按 `pm-workbench` 与 `skill-for-prototype` 的 `adapt` 流程继续；第022篇及第034、035篇直接依赖为事实来源。需求侧仅向自洽性问题清单追加177～184及025检查证据，不改PRD正文。
+- 2026-09-19，GJ-022：按 `pm-workbench` 与 `skill-for-prototype` 的 `adapt` 流程继续；第030篇及第039、040篇直接依赖为事实来源。需求侧仅向自洽性问题清单追加177～184及025检查证据，不改PRD正文。
 
 | 要求 ID | 来源与实现落点 | 已实现及已核对结果 |
 | --- | --- | --- |
 | GJ-022-01 | §1.2；`FinanceRatesView`、`FinanceCurrencySelect`、`financeBasicActions` | 三项分阶段查询、完整汇率字段与审计、月份限制、批量原子保存、四位小数、活跃组合唯一、编辑锁定和软删除留痕；无引用正值异币种路径已浏览器验证，177边界阻断 |
-| GJ-022-02 | §1.3；`FinanceCostItemsView`、共用 `state.financeCostItems` | 代码顺序、名称/状态查询、跨所有状态名称去重、改名及启停、业务类型引用拦截；成本名称修改后第007篇实时回显。新增表单与校验完整，初始状态未定义时不保存，178待用户确认 |
+| GJ-022-02 | §1.3；`FinanceCostItemsView`、共用 `state.financeCostItems` | 代码顺序、名称/状态查询、跨所有状态名称去重、改名及启停、业务类型引用拦截；成本名称修改后第013篇实时回显。新增表单与校验完整，初始状态未定义时不保存，178待用户确认 |
 | GJ-022-03 | §1.4；`FinanceDepartmentCostsView` | 四项模糊查询、七项列表字段、完整新增候选、授权部门、已有关系删除后隐藏；179～180未决时新增保存、正式Excel导入与模板下载禁用，不以合成层级推断正式规则 |
 | GJ-022-04 | §1.5；`FinanceInvoiceEntitiesView`、`partnerActions` | 客户两项查询/审计/状态、客户信用码独立展示、完整七字段开票明细新增调整删除、同客户名称唯一、最多一个默认；客户级新增分别呈现两种信用码但不保存，银行联系必填冲突、客户级删除与历史引用按181～183受限。客户档案删除新增引用保护 |
 | GJ-022-05 | §1.6；`FinanceBankAccountsView` | 六项查询、八项列表字段、五项必填维护；数字字符串账号保留前导零、公司范围隔离、同组织基本户原子替换且至少保留一个、基本户不可停用、普通账户启停。重复账号、停用转基本户、历史引用按184阻断 |
@@ -118,23 +193,23 @@
 - GJ-022复用与假设：五页沿用中央内存 owner、Element Plus、分页和共享币种；成本资料复用既有 `state.financeCostItems`，不保留第二份成本表。汇率、映射、开票与银行状态归 `state.financeBasics`。追加的成本层级、公司/组织/部门绑定、已有开票资料、账户、历史引用及虚构编号都是确定性演示配置；演示期间2026-09，与全局固定2026-09-08一致。刷新/恢复重建，真实组织授权来源仍归107。
 - GJ-022岗位：独立财务会计、财务基础管理员、信息部和“财务”演示身份连接相应基础维护模块；业务人员继续保留既有权限并接部门成本与开票单位。023的财务审批、024的对账按各篇明确职责单独授权，不自动向新岗位开放其他财务模块，也不把“财务人员”自动合并为“财务会计”；超级管理员全部可见、业务只读。模块级权限仅能收紧；角色、权限、数据恢复或记录变化后旧确认失效。
 - GJ-022检查：`npm test -- tests/financeBasics.test.js tests/financeBasicPages.test.js tests/accessControl.test.js tests/workbenchTasks.test.js tests/workbenchOwner.test.js tests/airSupplierRates.test.js tests/airSupplierRateOwner.test.js tests/airSupplierRatePages.test.js tests/partnerOwner.test.js tests/driverTasks.test.js tests/groundWaybills.test.js tests/stationPallet.test.js`，12文件165项通过，含8个SFC编译。`tmp/finance-rates.cjs`、`finance-costs.cjs`、`finance-mappings.cjs`、`finance-invoices.cjs`、`finance-banks.cjs` 和 `finance-boundaries.cjs` 浏览器冒烟通过；默认桌面1440×1000、补查390×844编辑及五页列表溢出，关键截图已回看。权限收紧→数据拒绝→恢复→工作台入口，以及成本改名→报价回显已验证。未执行全量测试、生产构建、完整键盘/权限/响应式矩阵或真实金蝶/百望/银行接口。
-- GJ-022需求检查：177～184新增8项，未决183项（直接冲突46、规则缺口85、待确认51、表达规范1）；第022篇界面概述检查为19处既有 `legacy-business-result-header`、0警告，归025，格式检查未通过。
+- GJ-022需求检查：177～184新增8项，未决183项（直接冲突46、规则缺口85、待确认51、表达规范1）；第030篇界面概述检查为19处既有 `legacy-business-result-header`、0警告，归025，格式检查未通过。
 
-- 2026-09-18，GJ-021：按 `pm-workbench` 和 `skill-for-prototype` 继续原型 `adapt`，以第021篇为事实来源，完整核对第008、030、034、035篇的直接依赖；需求侧只更新自洽性问题清单，不改PRD正文或裁定未决规则。
+- 2026-09-18，GJ-021：按 `pm-workbench` 和 `skill-for-prototype` 继续原型 `adapt`，以第023篇为事实来源，完整核对第014、042、039、040篇的直接依赖；需求侧只更新自洽性问题清单，不改PRD正文或裁定未决规则。
 
 | 要求 ID | 来源与实现落点 | 已实现及已核对结果 |
 | --- | --- | --- |
 | GJ-021-01 | §1.1.6～1.1.7、§1.2.6～1.2.7、§1.2.12～1.2.20；`StationPalletView`、`StationOrderEditor`、`stationPalletActions` | 13字段建单、唯一演示编号、不去重客户单号、列表5筛选/9字段/10条分页、详情/日志/关联账单；显式上游消息接收及重复失败；仅本地待入站样例可删。桌面及390×844建单、字段回显、删除、草稿保护和权限收紧/恢复已核对 |
 | GJ-021-02 | §1.2.8～1.2.11；`StationQuotes`、`stationQuotes` | 10字段常规报价增改删、查询/详情、更新时间倒序、同日起止和500字备注；复杂方式及被费用引用后的改删受限。桌面新增/修改/确认删除、窄屏保存与草稿保留已核对；客户引用删除保护经聚焦检查 |
 | GJ-021-03 | §1.1.4、§1.2.1～1.2.2；`AirPalletView`、`StationPlans`、`stationPapers` | 从配板入口进入同源航班计划和订单明细；本人航线/货站/超级管理员投影，未建第二套货量。浏览器配板42件/186.5kg/1.28m³并在计划回显，正式Excel禁用；卸下后的计划消失经聚焦检查 |
-| GJ-021-04 | §1.2.3～1.2.5、§1.2.21～1.2.22及第030篇 §1.2.6；`StationPapers`、共用图片组件、现有消息页 | 显式已收板纸详情、图片读取/解码/预览/删除重传、1～9张/单张严格小于6MB、航班锁定、修改记录与并发版本保护；修改保留完成时间，不动状态/费用，本地通知按显式接收人形成。图片修改→空运消息深链只读回看、6MB拒绝、首次上传阻断及窄屏已核对 |
+| GJ-021-04 | §1.2.3～1.2.5、§1.2.21～1.2.22及第042篇 §1.2.6；`StationPapers`、共用图片组件、现有消息页 | 显式已收板纸详情、图片读取/解码/预览/删除重传、1～9张/单张严格小于6MB、航班锁定、修改记录与并发版本保护；修改保留完成时间，不动状态/费用，本地通知按显式接收人形成。图片修改→空运消息深链只读回看、6MB拒绝、首次上传阻断及窄屏已核对 |
 
 - GJ-021所有者与复用：保留 Vue/Element Plus 和 `usePrototypeData.js` 唯一产品数据 owner；新增打板对象及动作集中在 station 文件，计划读取 `palletAllocations`，账单读取 `costs`，通知写入 `messages`。复用角色权限、分页、图片解码、币种和日期校验；共用图片组件仅增加具名严格大小及校验参数，原消费者默认行为不变。货站角色只维护打板，费用仅在订单内按明确ID只读，不能进入费用总表；超级管理员仍只读业务数据。
 - GJ-021假设与边界：默认桌面1440×1000，补查390×844订单/报价/板纸；日期、DEMO编号、税率、客户关系、上游载荷、板纸PNG、明确关联及接收人、60 CNY已收费用均为合成配置，刷新/恢复重建。新订单状态留空并显示待确认；上游未提供的财务组织不继承手工默认。没有自动上游发送、货站到达/托书回写、新板纸关联或自动费用；未覆盖正式Excel、复杂计费、赶单预警、真实扫描/微信/WMS。JPG/PNG/BMP是复用附件适配器的原型格式限制，不是PRD新增约束。
 - GJ-021检查：`npm test -- tests/stationPallet.test.js tests/accessControl.test.js tests/workbenchTasks.test.js tests/workbenchOwner.test.js tests/airPallets.test.js tests/groundWaybills.test.js tests/groundService.test.js tests/driverTasks.test.js tests/partnerOwner.test.js` 共9文件116项通过；8个受影响SFC编译通过。`tmp/station-first.cjs`、`station-quotes.cjs`、`station-plans.cjs`、`station-papers.cjs`、`station-boundaries.cjs` 浏览器冒烟通过；另复测 `tmp/ground-service-first.cjs` 共用图片消费者。桌面和窄屏截图已回看，窄屏无页面级横向溢出，未捕获页面或控制台错误；没有运行全量测试、生产构建、真实接口或完整权限/响应式矩阵。
-- GJ-021需求检查：新增172～176，未决175项（直接冲突43、规则缺口82、待确认49、表达规范1），分类数量已核对；第021篇界面检查报告4处既有 `legacy-business-result-header`、0警告，归025，格式检查未通过。PRD正文未改。
+- GJ-021需求检查：新增172～176，未决175项（直接冲突43、规则缺口82、待确认49、表达规范1），分类数量已核对；第023篇界面检查报告4处既有 `legacy-business-result-header`、0警告，归025，格式检查未通过。PRD正文未改。
 
-- 2026-09-18，GJ-020：按 `pm-workbench` 协调原型 `adapt` 与需求定向审查，使用 `skill-for-prototype` 保持既有框架和唯一内存 owner。完整读取第020篇及第009、034、035篇直接依赖，原型分片实现，需求侧只补问题清单163～171和025既有格式结果，未改PRD正文。
+- 2026-09-18，GJ-020：按 `pm-workbench` 协调原型 `adapt` 与需求定向审查，使用 `skill-for-prototype` 保持既有框架和唯一内存 owner。完整读取第022篇及第015、039、040篇直接依赖，原型分片实现，需求侧只补问题清单163～171和025既有格式结果，未改PRD正文。
 
 | 要求 ID | 来源与实现落点 | 已实现及已核对结果 |
 | --- | --- | --- |
@@ -147,47 +222,47 @@
 - GJ-020所有者与假设：AG01/02 保持 Vue/Element Plus 及 `usePrototypeData.js` 作为唯一业务数据 owner，仓单写入收敛到 `warehouseOrderActions.js`，其他页面只投影；AG03 延续桌面浏览器并检查390×844仓库编辑和托盘列表；AG05 演示日期2026-09-08、仓库代码WH001、账户/地址/已审批费用为合成值，刷新/恢复重建；AG06 上游/WMS操作只是显式本地事件，没有外部发送或成功回执。退货沿用 `groundServiceRecords`，运输看板沿用 `groundOrders/groundWaybills`，不另存第二套记录。移除无消费者的旧线性仓库流程常量及对应旧测试，由仓库专用检查替代。
 - GJ-020边界：不得以空运单号推断入仓号，未接自动上游建单与重复回传映射；已有手工实际量不由首次WMS反馈覆盖，重称替换范围未决时阻断。未实现最终出库、自动费用、航空标签、真实地图/WMS及结算；待出库编辑和已取消服务编辑不开放。月报不把我司转仓当作中转，不混加币种，跨月重复入库归属不确定时提示。CSV格式为可替换的原型输出假设，不是正式业务模板。
 - GJ-020聚焦检查：仓库订单/读模型、地面服务、工作台及 owner、空运容量/配板/建单/服务编辑共9个文件141项通过，8个受影响SFC编译通过；不包含全量测试或生产构建。`tmp/warehouse-first.cjs`、`warehouse-wms.cjs`、`warehouse-views.cjs`、`warehouse-boundaries.cjs` 的桌面冒烟均通过，覆盖工作台快捷建单、新建/编辑、上游接收/入库/指令校验/取消、实际服务、草稿保护、CSV真实下载、看板/月报与角色边界；390×844编辑和托盘列表无页面级横向溢出。上述只证明浏览器内模拟，不代表真实WMS或完整权限/键盘/响应式矩阵已验证。
-- GJ-020需求检查：问题清单170项（直接冲突43、规则缺口79、待确认47、表达规范1）；第020篇界面检查仍有8处既有 `legacy-business-result-header`，归025，格式检查未通过。问题清单链接通过，PRD正文未改动。
+- GJ-020需求检查：问题清单170项（直接冲突43、规则缺口79、待确认47、表达规范1）；第022篇界面检查仍有8处既有 `legacy-business-result-header`，归025，格式检查未通过。问题清单链接通过，PRD正文未改动。
 
 - 2026-09-18，GJ-019：使用 `pm-workbench` 与 `skill-for-prototype` 完成地面服务小程序专用入口 `/fulfillment/ground-service`，替换通用占位页。新增 `groundService.js`、`groundServiceActions.js`、`groundServiceExamples.js`、`GroundServiceView.vue`、`GroundServiceScanner.vue` 和共用 `MiniProgramLogin.vue`；共享 `usePrototypeData.js` 管理操作记录、显式业务单号登记、图片、包裹码和本地通知。支持九类操作入口、操作项权限、扫码/手输/相册识别失败反馈、单证上传、批量电商退货→退件入库→退件出库、出库扫描、货站到达、托书上传、普货退货和司机交单；超级管理员只读查看，仓库/货站/司机演示账户按岗位和操作项隔离写入。
 - GJ-019边界：验证码、微信授权、扫码/相册识别、WMS/空运/仓库回传和消息均为浏览器内确定性模拟；未接真实小程序、摄像头、条码识别或外部系统。空白包裹占位行不参与提交，无效包裹整批阻断；重复记录按显式ID/版本保护。回单与单证别名、提货号映射、内部/外部订单来源、批量部分成功、货站到达改单通知撤回等未决口径已写入 GJ-PRD-158～162，未反向修改PRD正文。
 - GJ-019聚焦检查：`npm test -- --run tests/groundService.test.js tests/driverTasks.test.js` 27项通过；全量 `npm test -- --run` 65个文件969项通过；`npm run build -- --outDir .tmp-build --emptyOutDir` 构建成功，仅保留既有依赖注释及大包警告。SFC编译覆盖地面服务页、扫码组件、共用登录组件和司机端。
 - GJ-019浏览器：`tmp/ground-service-first.cjs` 完成仓库角色登录、扫码模拟、单据照片真实读取、图片必填错误、创建、改单及操作历史，1440×1000与390×844无页面级横向溢出；`tmp/ground-service-permissions-batch.cjs` 完成超级管理员按操作项配置、角色切换、批量包裹录入、空白占位行与提交、窄屏溢出核对，未捕获控制台错误。证据为浏览器内合成演示，不代表真实硬件或外部系统已验证。
-- 2026-09-18，GJ-ACCESS：按 `skill-for-prototype` 的共享能力改造，保留现有框架与内存数据。来源为用户当前“补充角色权限配置、超级管理员能看界面和演示数据”及第035篇查看/操作/数据范围独立判定。权限由 `accessControl.js` 统一保存，业务数据仍由 `usePrototypeData.js` 管理；默认浏览器身份为超级管理员，单元检查的 `reset()` 仍保留原服务岗位基线。
+- 2026-09-18，GJ-ACCESS：按 `skill-for-prototype` 的共享能力改造，保留现有框架与内存数据。来源为用户当前“补充角色权限配置、超级管理员能看界面和演示数据”及第040篇查看/操作/数据范围独立判定。权限由 `accessControl.js` 统一保存，业务数据仍由 `usePrototypeData.js` 管理；默认浏览器身份为超级管理员，单元检查的 `reset()` 仍保留原服务岗位基线。
 - GJ-ACCESS-01：超级管理员可查看全部模块和当前演示记录；打开应用及顶部恢复会载入现有报关、在途、运单合成样例。全量查看与业务办理分开，权限管理可写，业务命令仍须切换原有岗位并通过既有校验；未补造清关完成、台账提交或财务结果。
 - GJ-ACCESS-02：角色搜索、业务域筛选、菜单/页面/数据/操作四项模块配置、未保存保护、保存、恢复默认与变更记录已接入。超级管理员访问固定，不可自锁；普通角色不能修改授权。配置仅收紧或恢复原有能力，不扩张岗位业务权；尚未配置的角色沿用原型现状，不据此声称生产授权已完整。
 - GJ-ACCESS-03：菜单投影与路由内容分别控制；关闭数据查看阻断该模块内容和文件读取，相关待办/消息入口同步过滤。业务按钮显式声明所属模块，写入在共享数据 owner 再次校验；权限变更或角色切换卸载旧业务表单。移除财务工作台自动切换角色，避免导航改变当前身份。未实现逐按钮、跨组织或字段级配置。
 - GJ-ACCESS核对：16个聚焦文件247项通过，含42个受影响SFC编译、权限配置原子性/防自锁/恢复、只读不写入、撤销数据读取后的下载与深链拒绝及恢复后原岗位通知成功。同步更新直接消费者检查适配新增会话字段，并修正既有工作台检查遗漏已开放“中转订单”的断言。未运行全量测试或生产构建。
 - GJ-ACCESS浏览器：`tmp/permissions-smoke.cjs` 完成超级管理员车队查看、配置保存、普通岗位菜单/页面/数据/操作限制及恢复；`tmp/permissions-routes.cjs` 巡检35个目录路由和8个子入口，身份保持超级管理员，材料只读弹窗可查看，未发现控制台错误/警告。1440×1000、390×844截图保存在忽略目录 `tmp/permissions/` 并已回看；不是43条完整业务链或真实服务端鉴权证明。
 - GJ-ACCESS需求衔接：补充问题清单103、104的本轮确认与保留边界，不新增重复问题，未修改PRD正文。历史逐篇检查中的单岗位可见结论不包含本轮新增的超级管理员查看例外；当前原型以本条和用户确认优先。
-- 当前逐篇游标：第025篇收款的上述确定路径已实现并核对；付款新增/审批/发票写入及201～208未决分支不计为完成。下一篇为第026篇收付款核销；第009～024篇既有未决/未实现分支保留。
-- 2026-09-18，GJ-018：使用 `pm-workbench` 协调原型 `adapt` 和需求定向审查。完整读取第018篇及第016、030、034、035篇直接依赖；只修改原型、问题清单与覆盖记录，未修改PRD正文。先闭环司机本地登录→当前/历史任务→详情→节点确认→单据/异常→同一后台运单回看，再补账户、二维码和地图浏览器替代入口。业务运单仍由 `usePrototypeData.js` 唯一管理，司机会话独立保存演示登录偏好。
+- 当时逐篇游标（本条历史记录）：第033篇收款的上述确定路径已实现并核对；付款新增/审批/发票写入及201～208未决分支不计为完成。下一篇为第034篇收付款核销；第015～020篇、第022～023篇、第025～032篇既有未决/未实现分支保留。
+- 2026-09-18，GJ-018：使用 `pm-workbench` 协调原型 `adapt` 和需求定向审查。完整读取第028篇及第026、042、039、040篇直接依赖；只修改原型、问题清单与覆盖记录，未修改PRD正文。先闭环司机本地登录→当前/历史任务→详情→节点确认→单据/异常→同一后台运单回看，再补账户、二维码和地图浏览器替代入口。业务运单仍由 `usePrototypeData.js` 唯一管理，司机会话独立保存演示登录偏好。
 - GJ-018实现：新增 `driverTasks.js`、`driverActions.js`、`driverFulfillmentActions.js`、`driverSessionStorage.js`、`driverConfig.js`、`driverExamples.js`、`DriverTasksView.vue` 和 `DriverTaskOperations.vue`。超级管理员可查看全部司机演示运单但不能代办；司机仅能按调度联系方式登录并写本人运单。五个节点、提卸货凭证、普通单据、异常上报和轨迹均写回共享 `groundWaybills`，客服后台可回看同一记录。
 - GJ-018边界：图形校验、固定验证码、微信授权、定位/地图、短信、帮助/隐私/条款和账户头像均为浏览器内模拟；真实服务端鉴权、短信/微信绑定、GPS/高德APP唤醒未验证。杂费单据、异常可见范围、历史单据3/7天、取消运单上报、多点ETA和账户“最新运单”口径不静默选择，受 GJ-PRD-108、153～157限制并在界面提示。
 - GJ-018聚焦检查：10个文件148项通过，覆盖登录/记住登录/退出、任务投影、节点串联、图片和杂费校验、异常期间履约、权限、单据/异常同一owner及SFC编译；另执行 `vite build --outDir .tmp-build --emptyOutDir` 成功（仅有既有依赖注释和大包警告）。未执行全量测试、完整键盘矩阵或真实外部服务。
 - GJ-018浏览器：`tmp/driver-login-smoke.cjs` 完成司机角色切换、固定验证码登录、本人任务、详情多点和390×844无横向溢出；`tmp/driver-flow-smoke.cjs` 完成微信模拟、五节点、异常不阻断、提卸货图片、历史归档及客服后台轨迹/单据回看，390×844无横向溢出；`tmp/driver-account-smoke.cjs` 完成二维码实际生成、地图地址替代、账户/帮助、记住登录、退出、不记住登录、异常图片失败、草稿保护及杂费禁用，390×844和1440×1000截图已回看。上述均为浏览器内模拟，不代表真实短信、微信、GPS或高德唤醒。
-- GJ-017档案：新增 `fleetVehicles.js`、车辆页和模块页签；复用证件组件、列表分页和既有运单。车辆基础资料、司机分配、行驶证及投保字段完整呈现；编辑按PRD不开放车况，原值保留。当前分配只存司机 `vehicle`，车辆司机列表派生反向投影；两侧修改均同步且不回写历史运单。客服按已关闭043和第035篇恢复司机/车辆维护，陆运报表主管不获得档案权限。
+- GJ-017档案：新增 `fleetVehicles.js`、车辆页和模块页签；复用证件组件、列表分页和既有运单。车辆基础资料、司机分配、行驶证及投保字段完整呈现；编辑按PRD不开放车况，原值保留。当前分配只存司机 `vehicle`，车辆司机列表派生反向投影；两侧修改均同步且不回写历史运单。客服按已关闭043和第040篇恢复司机/车辆维护，陆运报表主管不获得档案权限。
 - GJ-017查询及任务：司机姓名/手机号精确查；车辆车牌/司机关键字、车型、监管、登记/年审日期按年/月/日查询，日期改精度清空草稿而不提前应用；类型筛选因两套名称冲突禁用。列表按车牌拼音排序、日历月到期高亮；任务和状态取现有运单，已卸货后处于异常中仍保留终态任务归属。司机优先按证件唯一关联；无证件时仅允许唯一姓名，同名/同证件歧义不任取任务并提示。业绩、入仓对象及车牌/身份历史处理仍受023、046、047、146限制。
 - GJ-017台账：新增 `fleetRecords.js`、共用台账表格及录入/详情视图。违章完整地点三级联动、司机、日期、原因、责任和金额；维修可添加/移除草稿科目，按十进制精确乘法和逐行求和预览，无需舍入时才给金额；油耗完整车辆/油卡/日期/里程/油量/油价/充值/支付/经手人/元数据，编辑锁定车牌。客服可看违章，维修/油耗仅主管；车辆详情同样隔离。各台账一条明确标注的合成既有记录供查询，非提交结果；按业务日期升序是可替换呈现选择，PRD没有指定方向。
 - GJ-017未决边界：144监管/车辆类型空值，145候选名称/尺寸/车牌格式/位置，146历史身份与离职分配，147台账删除权限，148维修/油耗重复车牌校验，149维修列表编辑范围，150油耗及舍入/月报，151事故日期长度，152到期通知边界。先记入问题清单，未决提交在UI和owner均阻断；没有写入财务、猜测油卡余额或伪造月报/消息发送。有限行政区候选沿用地面建单的合成配置；维修厂仅采用明确的“风驰”。
 - GJ-017聚焦检查：8个文件104项通过（`fleetRecords`、`fleetVehicles`、`fleetDrivers`、`fleetPages`、`fleetNavigation`、`workbenchOwner`、`groundOperations`、`groundWaybills`）。覆盖权限、唯一owner、候选/日期/图片、分配双向同步、历史不误写、身份歧义、终态投影、金额精度、台账阻断、草稿和SFC编译；未执行全量测试或生产构建。
 - GJ-017浏览器：`tmp/chapter017-vehicles-smoke.cjs` 完成客服新增车辆、合成行驶证真实上传/解码/放大/删除取消、车辆→司机及司机→车辆分配、详情回显、继续编辑/放弃修改和运单深链；`tmp/chapter017-records-smoke.cjs` 完成违章分阶段筛选、全部必填录入后冲突阻断、司机违章详情、维修多科目1100.00预览/取消后仍700.00、油耗字段/车牌锁定/月报未生成提示、车辆维修关联及切换角色后隔离。1440×1000与390×844截图回看，页面无横向溢出、控制台无error；不是完整键盘、权限或多浏览器矩阵。
-- GJ-017需求检查：新增144～152并扩展047的车辆任务证据，当前151项（直接冲突37、规则缺口69、待确认44、表达规范1），数量核对通过。第017篇界面检查18处既有旧表头均归025，未记为通过；问题清单与两份覆盖文档链接通过，两个仓库差异检查通过。
+- GJ-017需求检查：新增144～152并扩展047的车辆任务证据，当前151项（直接冲突37、规则缺口69、待确认44、表达规范1），数量核对通过。第027篇界面检查18处既有旧表头均归025，未记为通过；问题清单与两份覆盖文档链接通过，两个仓库差异检查通过。
 - 2026-09-18，GJ-016：使用 `pm-workbench` 联动原型 `adapt` 与需求定向审查；需求正文只读，写入仅限问题清单及原型/覆盖记录。依次闭环查询与节点、异常、单据及中转样例。唯一产品状态仍在 `usePrototypeData.js`，异常/单据为各运单子记录，共用 `GroundImagesField.vue` 与已有图片校验；不创建并行运单或费用owner。
-- GJ-016字段与权限：运输/中转列表、11项筛选、封条与分单号、日期空值、异常空白及精确深链；重复业务订单号不任取一笔。4个详情页签、基本信息展开收起、账户轨迹；只有航晟客服可以状态补录、异常及单据写入。已卸货后的异常不重新打开状态管理。第016篇明确待提货才可修改调度，已同步第015篇UI和写入口；其他状态及API回传仍受限制。
+- GJ-016字段与权限：运输/中转列表、11项筛选、封条与分单号、日期空值、异常空白及精确深链；重复业务订单号不任取一笔。4个详情页签、基本信息展开收起、账户轨迹；只有航晟客服可以状态补录、异常及单据写入。已卸货后的异常不重新打开状态管理。第026篇明确待提货才可修改调度，已同步第025篇UI和写入口；其他状态及API回传仍受限制。
 - GJ-016异常：上报类别、备注、图片、操作者/时间；异常中置顶、同类时间倒序；仅单条且无后续轨迹时取消并恢复原节点。异常期间可继续运输，但多异常/期间推进后的取消受034限制；订单汇总受035限制，保留原状态并显示待确认，不在月报虚报完成。异常已关闭记录保留关闭账户、时间和备注。
 - GJ-016单据：普通单据新增、编辑、删除、可选图片（9张/6MB/JPG、PNG、BMP）、解码/损坏校验、放大、图片移除、草稿保护与更新时间升序。杂费金额与科目字段条件显示；审批含通过、驳回、通过并修改金额及备注，明确驳回路径可执行，通过/改金额通过和客服杂费新增受140限制。返空费候选受139限制；费用列表只读取明确waybillId，新增应付与财务联动未覆盖，不把入库凭据当作随货资料或运输节点。
 - GJ-016演示与检查：日期沿用2026-09-08；中转 `DEMO-TRANSFER-016`、封条 `SEAL-DEMO-016`、WMS双轨迹及司机杂费为可选合成已收记录，不声称外部接口成功；重复加载不覆盖，刷新/reset清除。8个聚焦文件107项通过（`groundWaybills`、`groundOrderPage`、`groundOrders`、`groundOperations`、`workbenchOwner`、`airTracking`、`fleetNavigation`、`fleetDrivers`）；覆盖共享状态、权限、终态、异常恢复、文件边界、单据原子失败、费用不误写及SFC编译。
 - GJ-016浏览器：三个 `tmp/chapter016-*-smoke.cjs` 入口覆盖查询与节点、异常图片/恢复/继续推进、单据CRUD/取消保护、杂费驳回与通过阻断、中转封条精确查找/WMS轨迹；再运行chapter015主流程冒烟完成建单→调度→修改调度→卸货→月报。1440×1000与390×844截图回看，无稳定布局溢出及控制台错误/警告；证据在忽略目录 `tmp/chapter016/`，不是完整权限、键盘或响应式矩阵。
-- GJ-016需求检查：新增139～143并用本篇明确规则收窄137。当前142项（直接冲突33、规则缺口66、待确认42、表达规范1），数量核对通过；第016篇仍有8处既有旧表头，归025，格式检查未通过。正文未改，链接与差异检查见本次结果。自动计费/手工应付/调整单、取消与返空费、WMS接收及截单预警、GPS/预计到达和司机端仍未覆盖；没有运行全量测试或生产构建。
+- GJ-016需求检查：新增139～143并用本篇明确规则收窄137。当前142项（直接冲突33、规则缺口66、待确认42、表达规范1），数量核对通过；第026篇仍有8处既有旧表头，归025，格式检查未通过。正文未改，链接与差异检查见本次结果。自动计费/手工应付/调整单、取消与返空费、WMS接收及截单预警、GPS/预计到达和司机端仍未覆盖；没有运行全量测试或生产构建。
 - 2026-09-18，GJ-015：按 `pm-workbench` 和原型Skill的纵向切片先闭环手工建单→修改→调度→运单，再补修改调度/关联订单及月报。复用 `usePrototypeData.js` 的 `groundOrders`、`groundWaybills`、`partners`，不新增第二套产品状态。四个航晟客户关联ID、有限行政区样本、账户ID与客服部抄送邮箱为集中可替换的合成配置；日期沿用2026-09-08固定时钟。刷新/reset回到种子。
 - GJ-015字段与动作：手工单单号/委托方/业务类型、六项货量尺寸、多联系人三字段、提送两日期（日期或时分）、多省市区地址/联系人/电话、逐提货点特种/尾板要求、备注。错误定位并禁用提交；完整新联系人仅成功后写入档案。手工未调度全量编辑、已调度/异常中仅备注，未调度关闭不记费；API编辑和已调度关闭禁用。订单记录包括操作者合成账户、时间、事件、完整字段前后值，不伪造种子历史。
-- GJ-015调度与查询：保留原单笔/跨页批量调度，修改限手工订单中无异常的待提货运单（第016篇补查后收紧），复用同一表单并保留运单ID；更新热词、调度时间、日志与按单本地邮件，不生成返空费。调度记录货量按第015篇投影，不覆盖第016篇预计分配值。三种精确查询字段独立选择，重复客户单号不任取一笔；运输/中转分列、中转默认全部且无新建入口。潜在订单详情日期+省市、50条/更新时间正序；调度页取完整地址也相同的确定子集、10条/倒序并可复制未取消车牌。订单费用只读明确ID关联，不凭重复单号猜关联。
+- GJ-015调度与查询：保留原单笔/跨页批量调度，修改限手工订单中无异常的待提货运单（第026篇补查后收紧），复用同一表单并保留运单ID；更新热词、调度时间、日志与按单本地邮件，不生成返空费。调度记录货量按第025篇投影，不覆盖第026篇预计分配值。三种精确查询字段独立选择，重复客户单号不任取一笔；运输/中转分列、中转默认全部且无新建入口。潜在订单详情日期+省市、50条/更新时间正序；调度页取完整地址也相同的确定子集、10条/倒序并可复制未取消车牌。订单费用只读明确ID关联，不凭重复单号猜关联。
 - GJ-015月报与边界：新增与普通航晟主管分离的“航晟陆运主管”合成角色，只有该角色可读取陆运月报。完成数量按订单完成状态及明确完成时间归月，不按创建或普通更新时间推测；缺时点时不计假值。调度归月、金额审批/币种及盈利保留待确认。手工订单号和系统用车号分开保存，不能视为019已解决；监管类型、多点不同车要求、API/WMS交接、取消及费用、18点提醒、真实邮件均未补定或未接入。
 - GJ-015聚焦检查：`groundOrders`、`groundOrderPage`、`groundOperations`、`workbenchOwner`、`airTracking`、`partnerOwner`，6个 `tests/*.test.js` 文件67项通过。覆盖创建/失败原子性、同省市、联系人/小数/日期、编辑和关闭资格、只改备注、防重复单号任取、调度保留ID/完成时间/邮件、列表投影及陆运月报权限；未执行全量测试或生产构建。
 - GJ-015浏览器：航晟客服新建两提货点订单，异省市阻断，修正后在390×844填写备注并提交；桌面修改取消选择继续编辑后保存、修改前后日志、派车及修改车牌、邮件两次本地记录、同一运单卸货、切换陆运主管后月报完成数=1均通过。运输/中转标签切换、新建入口差异及原型菜单已核对。1440×1000和390×844截图回看，无页面级横向溢出、控制台错误或警告；临时证据在 `tmp/chapter015/`，不代表完整键盘/权限/响应式矩阵。
-- GJ-015需求检查：先新增131～138，问题清单当前137项（直接冲突31、规则缺口63、待确认42、表达规范1），数量与链接已核对。第015篇界面检查仍有6处既有旧表头，沿用025，不记为通过。PRD正文保持只读，两个仓库差异检查通过。
-- 2026-09-18，GJ-014：复用共享内存 owner，仅新增只读投影，没有第二套可写跟踪订单。来源为第014篇 §1.1.1、§1.3.1～2，第034篇 §9.5与第035篇空运访问职责。39项只读信息覆盖订单/货物、运输/交单、航班/联系人；另呈现实际时间、状态和轨迹内容。字段缺失留空且保留零值，提单货量不读预计值/未保存草稿，航班按 `MU9001/10.SEP` 展示。航班货站与已绑定航线人员直接读取来源；运费卖价、截单日期和未绑定的岗位联系人/交单信息待130确认。
+- GJ-015需求检查：先新增131～138，问题清单当前137项（直接冲突31、规则缺口63、待确认42、表达规范1），数量与链接已核对。第025篇界面检查仍有6处既有旧表头，沿用025，不记为通过。PRD正文保持只读，两个仓库差异检查通过。
+- 2026-09-18，GJ-014：复用共享内存 owner，仅新增只读投影，没有第二套可写跟踪订单。来源为第020篇 §1.1.1、§1.3.1～2，第039篇 §9.5与第040篇空运访问职责。39项只读信息覆盖订单/货物、运输/交单、航班/联系人；另呈现实际时间、状态和轨迹内容。字段缺失留空且保留零值，提单货量不读预计值/未保存草稿，航班按 `MU9001/10.SEP` 展示。航班货站与已绑定航线人员直接读取来源；运费卖价、截单日期和未绑定的岗位联系人/交单信息待130确认。
 - GJ-014交互与边界：主订单详情可进入同一单号的精确查询；待输入与已应用条件分开，空号拒绝、不匹配或不可见均无结果，重复可见匹配不任取一条。仅当前空运客服本人主订单可见，关联分单也要求本人创建；切换身份/恢复数据清空查询与展开。未定义的节点形状不冒充完成/未选，仅有明确否值才画方形。各独立轨迹区默认两条，可展开收起；秒参与排序、显示到分钟，无有效时间的原事件留空置后。指令生成、资料重发与接单按实际含义展示，不反推物理履约状态；未补造缺失的历史事件。
 - GJ-014运输关联：只读 `groundOrders[].airOrderId` 的明确主订单关联，再经 `groundWaybills[].orderId` 取得各车字段/轨迹，不按同客户、相似编号或日期匹配。新增可选合成已收记录 `GJ-DEMO-TRACKING-014`，复用现有运单生成函数产生两车；再次载入不覆盖，恢复数据清除。样例已收轨迹不代表接口调用或空运服务自动下发用车订单已实现，GPS/真实外部回执未接。
 - GJ-014聚焦检查：`airTracking`、`airTrackingPage`、`groundOperations`、`airSupplementPages`、`airClearances`、`workbenchOwner`，6个 `tests/*.test.js` 文件81项通过。覆盖日期格式、状态形状、查询与权限、空值/零值、分单隔离、补录/清关接单的共享来源、运输更新、示例幂等与恢复、页面查询/展开/深链和SFC编译。未执行全量测试或生产构建。
@@ -195,12 +270,12 @@
 - GJ-014需求问题：先登记128～130并补充103的轨迹数据范围；按Skill保持产品事实与临时投影选择分离，未修改权威PRD。界面概述检查报告4处既有旧表头，归025，不能记为通过。问题清单当前129项，分类数量已核对；问题清单链接与两个仓库差异检查通过。
 - 2026-09-18，GJ-013：唯一业务来源为 `airOrders[].services` / `airChildren[].serviceRecords`；没有新增可写清关订单副本。按来源订单建单时间倒序，分单保留独立标识；无实际入仓/提单数据时显示未提供，不用预计值或父单总量替代。同步修正清关指令上游的“提单货量”读取，补录、分单及待服务修改均使用各自提单数据。
 - GJ-013原型边界：海外部客服依据本篇明确职责操作合成指令，不将“清关派送客服”自动作为其别名，不推导组织数据权限。活动指令只记录一次当前接单人和本机操作时间，不改变订单/服务状态；重复接单、改派及其他资格待126确认。提货/送达选择展示当前操作时间，但数量维度、扣减和保存未开放；未模拟CCD回执、客户签收或服务完成。PDF输出保持098限制，不生成伪业务文件。
-- GJ-013聚焦检查：`airClearances`、`airClearancePage`、`airDeclarations`、`airDeclarationDialog`、`airDeclarationPage`、`airDeclarationWorkbench`、`airSupplementDomain`、`airServiceEditing`、`airSupplementPages`、`airSupplementIntegration`、`airChildIntegration`、`workbenchTasks`、`workbenchOwner`，13个 `tests/*.test.js` 文件183项通过。包含分单保存→补录生成清关服务→接单/下载及材料公共读取函数的第012篇直接消费者；无全量测试或生产构建。
+- GJ-013聚焦检查：`airClearances`、`airClearancePage`、`airDeclarations`、`airDeclarationDialog`、`airDeclarationPage`、`airDeclarationWorkbench`、`airSupplementDomain`、`airServiceEditing`、`airSupplementPages`、`airSupplementIntegration`、`airChildIntegration`、`workbenchTasks`、`workbenchOwner`，13个 `tests/*.test.js` 文件183项通过。包含分单保存→补录生成清关服务→接单/下载及材料公共读取函数的第018篇直接消费者；无全量测试或生产构建。
 - GJ-013浏览器：从主订单001列表详情进入补录，填写发收货人与清关派送地址/电话/联系人/备注；TXT被拒绝，两份真实合成JPG上传后提交成功。侧栏进入清关派送时普通客服不可见，切换海外部客服后查询待提交/应用/重置、详情完整字段、接单取消/确认与状态保持均通过；提送结果保存及三个PDF按钮明确禁用。单个及批量下载文件名、原字节一致，JPG可解码。切换报关角色后记录隐藏，再切回接单留痕仍在。桌面1440×1000与窄屏390×844截图已回看，无页面级横向溢出，表格区域横向滚动，弹窗操作可达，控制台无错误/警告。临时证据位于已忽略的 `tmp/chapter013/`；未执行完整权限、键盘或响应式矩阵。
 - GJ-013需求问题：按用户要求先统一记入 `projects-doc/product-caliber/goldjet/analysis/PRD自洽性问题.md`，新增125～127，并补充103的角色名称/数据范围证据；沿用089和098，未改写权威PRD规则。界面概述检查仍报告本篇3处既有旧表头，归025，不能记为检查通过。
 - 2026-09-16，GJ-012续核：按现有实现补齐分单来源独立路由、跨建单人查看与移单后服务/待办保留，兼容历史通知链接；原主单权限不变。取消或来源失效时保留材料与通知历史、阻止新增补齐通知；载入示例校验业务编号冲突，恢复数据后可重新定位服务深链。来源页展示分单、货物计费、本次报关服务、材料及通知字段。
 - GJ-012聚焦检查分组通过：`airDeclarations` 28项，`airDeclarationPage`/`airDeclarationDialog` 25项，`airDeclarationWorkbench`/`airSupplementPages` 43项，`workbenchTasks`/`workbenchOwner`/`airChildIntegration`/`airSupplementIntegration` 34项；均为 `tests/*.test.js`，共9个文件130项，无重复累计。覆盖真实共享owner、字段与筛选、批量原子性、原文件内容、通知预览/确认/过期保护、角色与重置、移单及旧链接。页面setup适配与SFC编译不作为浏览器证据。
-- GJ-012验证限制：报关列表、分单来源、补录页及路由的Vite开发编译响应均为HTTP 200；两个仓库差异检查通过。浏览器工具返回 `unsupported Codex auth method: apikey`，本轮未完成浏览器点击、实际下载或宽窄屏视觉核对。第012篇界面概述检查仍报告2处既有旧表头（GJ-PRD-025）；问题清单补充086的取消后材料待办边界，仍为102项，PRD正文未改动。材料上传/更新、新报关指令、接单/状态迁移及待办完成仍受090、102限制。未运行生产构建、全量测试或真实接口，未提交Git。
+- GJ-012验证限制：报关列表、分单来源、补录页及路由的Vite开发编译响应均为HTTP 200；两个仓库差异检查通过。浏览器工具返回 `unsupported Codex auth method: apikey`，本轮未完成浏览器点击、实际下载或宽窄屏视觉核对。第018篇界面概述检查仍报告2处既有旧表头（GJ-PRD-025）；问题清单补充086的取消后材料待办边界，仍为102项，PRD正文未改动。材料上传/更新、新报关指令、接单/状态迁移及待办完成仍受090、102限制。未运行生产构建、全量测试或真实接口，未提交Git。
 - 2026-09-16，GJ-011最终聚焦组合：`npm test -- --run tests/airWaybills.test.js tests/airWaybillActions.test.js tests/airWaybillContact.test.js tests/airWaybillTemplates.test.js tests/airWaybillEditPage.test.js tests/airWaybillPages.test.js tests/airWaybillIntegration.test.js tests/airSupplementIntegration.test.js tests/airPalletIntegration.test.js tests/workbenchTasks.test.js tests/workbenchOwner.test.js`，11个文件115项通过。覆盖主分单实际中央owner全链、独立毛件体、字段/权限/原子校验、计算、发送顺序及120秒边界、角色/reset过期回执、配板保护、联系人、真实File内容、页面查询/选择/草稿与SFC编译。
 - GJ-011浏览器：由订单001详情进入补录，新增分单DEMO00000011并完成预计42件/186.5kg/1.28m³对账；“进入提单”分别维护主分单42件/190kg/1.3m³，预计值不变。结构化发货人和打印内容保存为常用联系人；主单运价28得计费重217.0kg、计费总价6076.00，尺寸100×50×50×4汇总1.00m³，杂费10.5×2=21.00。主分单切换时取消离开保留输入，分别暂存后主单提交为已出提单。
 - GJ-011发送浏览器：单选分单时提示先成功发送主运单；整票可见“主单发送中/分单待发送”后均成功；2分钟内再次发送禁用，虚拟时间前进121秒后整票重发成功。再次模拟主单异常，分单本次跳过、既有成功回执保留；对接页投影同一主异常/分成功记录，不再提供无条件成功的重试按钮。DescriptionCode各前缀及恰好120秒边界由聚焦检查覆盖，未逐个浏览器演示。
@@ -211,7 +286,7 @@
 - GJ-010浏览器：运营从工作台进入，人员绑定默认东方航空且未填订舱航司的订单仍按产品命中；订单003补齐航程、成本24/指导价28，取消后继续编辑保留草稿，确认后服务中，操作完成后主单待补录/服务已完成。订单001改期09-10→09-11，主单待补录保留、服务回中，操作待办重新出现并可完成，客服收到含航班、货站、日期、截单、装板前后值的本地消息。
 - GJ-010浏览器：航晟客服填写订单002全部订舱字段，在390×844提交后直接待补录/服务已完成；表单单列滚动、底部提交可达，无页面级横向溢出。订单011成本120、卖价28、计费重138，未勾允许亏损时禁止保存；勾选后12737.40元申请依次由总监、副总、事业部总经理通过，后级提前查看无审批按钮，待办及申请理由消息逐级出现；最终主单待补录，服务待审核且明确提示未决。
 - GJ-010浏览器：通过子订单实际创建3件/12kg/0.12m³、卖价28/卡车价2/分泡0.5的来源，合成主单026后深链进入订舱。展示合成要求、来源与保存的报价；四个品名只显示前三和省略号，点击展开含第四项，标题保留完整悬停文本。送货时间显示来源待确认，未将期望到货时间替代。桌面详情截图与窄屏表单截图已核对；未执行完整权限、键盘或响应式矩阵。
-- GJ-010需求检查：问题清单新增091～094并校准016，共94项。第010篇界面概述检查仍报告两处既有旧表头（GJ-PRD-025）；PRD正文未修改。未运行生产构建、全量测试或真实接口检查。
+- GJ-010需求检查：问题清单新增091～094并校准016，共94项。第016篇界面概述检查仍报告两处既有旧表头（GJ-PRD-025）；PRD正文未修改。未运行生产构建、全量测试或真实接口检查。
 - GJ-009浏览器：直单补录路径已验证；普通主单填写英文品名和发收货人，分单填写42件/186.5 kg/1.28 m³及提货地区、时间、地点、联系人等字段，保存暂存后移单、重新引入，合计与主单一致后提交。主单变为待出提单、分单变为子订单完成；随后代码EAP改为EAW保存成功。
 - GJ-009服务修改浏览器：待服务中转进入独立修改，关闭时选择继续编辑后保存；服务编号与待服务状态保持，显示已修改1次，库区B回显。这里的“取消后继续编辑”为放弃关闭弹窗，不代表服务取消已实现。
 - GJ-009子单主链浏览器：空运客服新建3件/12 kg/0.12 m³、卖价28、分泡0.5的独立子单，在390×844取消后继续编辑并暂存，再提交为子订单完成；选中后重新选择港口、航司及产品，合成主单并生成待服务订舱。李明确认航班、王晴完成订舱后，周倩补录英文品名、收发货人及中转字段，主单进入待出提单。另将普通主单运费卖价28改为29，详情与变更记录回显一致。
@@ -232,7 +307,7 @@
 - GJ-005 浏览器：航晟客服从导航进入，10行新增中填写1行后显式删空行，复制到第二行被重复校验阻止，修改车型后两行全部提交并回显；客户固定费切单价后保存，原固定费清空；客户/税率/币种/特种车锁定，取消后继续编辑，报价ID前缀查询不误命中；报价详情只读；两条报价删除取消保留、确认后同时移除。1440×900 桌面详情和390×844带草稿新增截图核对，窄屏页面宽390、底部提交可达；控制台无error。Excel、调度取价、客户新增全路径及完整响应式矩阵未执行浏览器检查。
 - 先前合作方、空运、用车与工作台聚焦组合：7 个文件、93 项通过；随后新增的跨部门授信投影检查与直接调用方组合：3 个文件、28 项通过。两次包含重复项，不相加作为用例总数。
 - `GJ-004` 及其直接消费者：`npx vitest run tests/airMasterOwner.test.js tests/airMasterData.test.js tests/airPages.test.js tests/airOperations.test.js tests/partnerOwner.test.js tests/workbenchOwner.test.js`，6 个文件、76 项通过；覆盖主数据维护原子性、动态候选、引用保护、角色隔离和 13 个受影响 SFC 编译。新主数据页的开发编译响应为 HTTP 200。
-- 前期合作方浏览器核对曾因认证受阻，尚未补验；空运主数据已由下列第004篇核对补齐本次范围。
+- 前期合作方浏览器核对曾因认证受阻，尚未补验；空运主数据已由下列第012篇核对补齐本次范围。
 - 2026-09-16，GJ-004：`npm test -- --run tests/airMasterData.test.js tests/airMasterOwner.test.js tests/airMasterPages.test.js`，随后新增页面场景单独复跑，域层/owner 25 项和页面 22 项通过。覆盖四类增改、引用字段预校验、只读防写、字段规范化、批量原子性、异步确认上下文、来源消失、查询分页、选择清理及草稿保护。
 - GJ-004 浏览器：航线专员新增航司、两家供应商保存及详情回显、取消后继续编辑、修改已引用代码即时拒绝；国家/城市带码的新空港保存；航班七天班期和截单天数 -2 保存回显；新板型引用新航司、批量删除取消及成功。桌面 1440×900、窄屏 390×844 航班编辑截图核对，草稿保留、底部保存可达，页面宽度 390，无控制台 error。全部权限组合与完整键盘矩阵未执行浏览器检查。
 - 2026-09-15，GJ-017 及直接消费路由：`npx vitest run tests/fleetDrivers.test.js tests/fleetNavigation.test.js tests/fleetPages.test.js`，3 个文件、56 项通过。覆盖保存原子性、字段和图片内容校验、真实页面脚本、草稿保护、权限、深链、过期链接反馈及 SFC 编译；组件中的 FileReader/Image 适配桩不是浏览器证据。
@@ -242,34 +317,34 @@
 
 ## 已确认的实现边界
 
-- 第002篇与第030篇已定义的总监→事业部副总→事业部总经理逐级亏损审批已实现，只由当前节点处理；大于30,000元的公司总经理触发人与发起人有歧义，仍阻断。最终只改变明确的主单待补录状态，服务保留待审核并标记待确认，不虚构拒绝与重提结果。
+- 第065篇与第066篇已定义的总监→事业部副总→事业部总经理逐级亏损审批已实现，只由当前节点处理；大于30,000元的公司总经理触发人与发起人有歧义，仍阻断。最终只改变明确的主单待补录状态，服务保留待审核并标记待确认，不虚构拒绝与重提结果。
 - 空运同步的运输委托方应为“高捷物流集团-空运事业部”，原空运客户另存来源字段；接收校验失败不得静默取整或截断。
 - 提货服务按服务指令 ID 防重，不按可重复的客户订单号永久去重。多运单如何汇总一项空运提货服务状态仍待明确。
 - 仓储按本篇独立节点建模；用车到仓不能替代仓库称重入库。
 - GJ-017 司机资料由 `usePrototypeData` 内存 owner 唯一保存，刷新恢复固定 seed；证件为本地文件对象，不发送外部接口。`fleetOperations.js` 的合成 PNG 由程序绘制，不含真实身份信息，可集中替换；证件号只作基本格式演示，不证明官方校验。
-- 资质证有效日期只开放已填写的共同有效路径；空值提交、从业类别“其他”、完成状态和应收范围见问题清单 GJ-PRD-023、044～047。客服维护权限已按关闭043及第035篇开放。
+- 资质证有效日期只开放已填写的共同有效路径；空值提交、从业类别“其他”、完成状态和应收范围见问题清单 GJ-PRD-023、044～047。客服维护权限已按关闭043及第064篇开放。
 - 当前分配车辆现从独立车辆档案选择，与车辆司机多选双向同步；不以调度历史候选冒充车辆主数据，不自动回写历史运单。档案身份变更、离职及台账的限制见144～152。
-- 第005篇的 `state.transportQuotes` 是手工报价唯一 owner，引用合作方ID；旧调度 `PRICE_ROUTES` 仍是明确标注的合成演示配置，不从新增报价表取价。两者未贯通，不将相近车型强行映射或将保存报价等同计费生效。既有运单成本未被报价维护改写。
-- 第006篇的 `state.warehouseQuotes` 是仓库报价唯一 owner，使用同一客户档案ID，刷新/恢复重建4条固定报价；客户删除受报价引用保护。报价启停只变更人工标记，日期状态集中派生；过期与未到生效日均不能手工启用。第020篇已接仓库订单和只读费用，仍未新增无来源的取价、税费、汇率、免租天数或重算公式。
-- 第006篇采用列表上方内联编辑区及独立只读详情；从脏草稿切换可保存后继续、不保存或关闭确认继续编辑。客户/科目为原型本地精确筛选，不当作已确认的查询字段规格。确认期间切换角色或重置数据，旧请求不能作用于新对象。相同字段与状态规则由domain/owner共用，未新增依赖或第二数据所有者（AG-01～06）。
-- 第007篇的 `state.airSupplierRates` 为唯一价格owner，引用同一供应商档案并阻止删除被引用供应商；`state.financeCostItems` 已由第022篇成本维护复用，改名后候选及列表同源回显；历史引用停用受179限制，不改变第007篇原有取价或状态口径。刷新/恢复重建6条固定报价；更新时间使用确定性时钟，同分钟用更新序号排序。
-- 新增默认“已生效”按用户当前确认实现，已登记问题清单§9，PRD正文待获准同步；不扩张为未来日期、过期延期或自动取价规则。三类复杂报价缺少只读字段来源/算法，弹窗展示完整字段和明确限制，不凭空生成可保存的明细；现有订单成本和订舱金额未改写。新增供应商快捷入口尚未接入对应角色建档流程，明确禁用。PRD未定义整条价格删除，不增加该操作。
-- 第008篇由同一中央owner管理`capacityProducts`和`palletAllocations`，动态引用原航班/板型及主订单；恢复时重建产品、清空配板。配板记录只保存分配关系和配板毛件体，不复制主订单状态；分批守恒且不更改订单实际毛件体。运营、操作均可处理本人绑定航线，配板备注仅由运营维护。
+- 第037篇的 `state.transportQuotes` 是手工报价唯一 owner，引用合作方ID；旧调度 `PRICE_ROUTES` 仍是明确标注的合成演示配置，不从新增报价表取价。两者未贯通，不将相近车型强行映射或将保存报价等同计费生效。既有运单成本未被报价维护改写。
+- 第033篇的 `state.warehouseQuotes` 是仓库报价唯一 owner，使用同一客户档案ID，刷新/恢复重建4条固定报价；客户删除受报价引用保护。报价启停只变更人工标记，日期状态集中派生；过期与未到生效日均不能手工启用。第034篇已接仓库订单和只读费用，仍未新增无来源的取价、税费、汇率、免租天数或重算公式。
+- 第033篇采用列表上方内联编辑区及独立只读详情；从脏草稿切换可保存后继续、不保存或关闭确认继续编辑。客户/科目为原型本地精确筛选，不当作已确认的查询字段规格。确认期间切换角色或重置数据，旧请求不能作用于新对象。相同字段与状态规则由domain/owner共用，未新增依赖或第二数据所有者（AG-01～06）。
+- 第019篇的 `state.airSupplierRates` 为唯一价格owner，引用同一供应商档案并阻止删除被引用供应商；`state.financeCostItems` 已由第045篇成本维护复用，改名后候选及列表同源回显；历史引用停用受179限制，不改变第019篇原有取价或状态口径。刷新/恢复重建6条固定报价；更新时间使用确定性时钟，同分钟用更新序号排序。
+- 新增默认“已生效”按用户当前确认实现，已登记问题清单§10，PRD正文待获准同步；不扩张为未来日期、过期延期或自动取价规则。三类复杂报价缺少只读字段来源/算法，弹窗展示完整字段和明确限制，不凭空生成可保存的明细；现有订单成本和订舱金额未改写。新增供应商快捷入口尚未接入对应角色建档流程，明确禁用。PRD未定义整条价格删除，不增加该操作。
+- 第020篇由同一中央owner管理`capacityProducts`和`palletAllocations`，动态引用原航班/板型及主订单；恢复时重建产品、清空配板。配板记录只保存分配关系和配板毛件体，不复制主订单状态；分批守恒且不更改订单实际毛件体。运营、操作均可处理本人绑定航线，配板备注仅由运营维护。
 - 舱位主列表10条、明细20条；实时查询首次显示09-08至09-15是可逆演示日期选择，配板无日期筛选时枚举本人产品期限。单次查询超过20,000个航班日期候选时提示缩小范围，仅为原型渲染保护，不是产品容量上限。
 - 航司按航班只读带出；板类型筛选冲突、删除、跨人员产品编辑、已有业务引用后的容量/期限/人员修改、同日起止或相接期限均有明确局部限制。数量/基重保持选填，未填不当零。实时容量按预计→入仓→入货站阶段取值，不回退掩盖已知阶段缺值。
 - 配板三套毛件体仅使用完整且一致的已提供来源，不拼接部分值；按航班日期匹配，具体单板分配尚未实现。分批须已配总体积超过已知容量且人员确认一批运不完，不设“远大于”倍数；只开放原航班日期单次拆分/撤回，分批存在时先撤回再卸下/重配。跨航班、重复分批、上游实测变化、多产品负责人不唯一、托盘货分类等按问题清单局部限制，不作为已确认禁止规则。
 - 配板利润保留PRD航司差异：CA不计算；CZ/MH罚金来源及负剩余基重未闭合，金额不展示为零；未列航司规则待确认。TK同币种、完整提单重量及价格输入时按已定义公式计算，缺值明确提示；当前提单与币种完整输入链尚未接入，未执行利润浏览器数值验证。
-- 第009篇继续使用`state.airOrders`及`state.airChildren`保存主子关系，既有服务与子单`serviceRecords`由同一owner管理。主单补录承接英文品名、唛头、申报价值、发收货人、签发日期、采购/销售/发票号、代码及航司只读信息；分单补充币种、条款、费率、目的港、仓库要求、预计毛件体和服务。随服务带出的航班、提单及毛件体不可由表单改写。未填写的可选价格保留空值。
+- 第021篇继续使用`state.airOrders`及`state.airChildren`保存主子关系，既有服务与子单`serviceRecords`由同一owner管理。主单补录承接英文品名、唛头、申报价值、发收货人、签发日期、采购/销售/发票号、代码及航司只读信息；分单补充币种、条款、费率、目的港、仓库要求、预计毛件体和服务。随服务带出的航班、提单及毛件体不可由表单改写。未填写的可选价格保留空值。
 - 普通主单下分单暂存不生成服务；提交补录前按预计件数、毛重、体积逐项核对合计，成功后主单待出提单、暂存分单完成并生成所选服务。完成分单编辑冲突与已有实测数据的来源边界见 GJ-PRD-078、081，当前不开放相应路径；补录后通过独立入口修改报价或EAP/EAW代码，不重新提交整张补录。
 - 独立子单支持暂存、提交、复制及无服务记录的删除；已完成独立子单仅开放三项报价修改。当前合成范围为同客户、未归属主单、无批次、仅预计毛件体且具备报价汇总条件的完成子单；重新选择港口、航司及产品后生成待订舱主单，运费/后段卡车卖价按各自权重汇总。订舱与补录保持来源子单及既有服务，不将来源子单改写成普通新建分单。跨客户归属、实测数据、部分卡车价格缺失等保留明确局部限制；不擅加同业务员条件。
 - 空运客服、客服主管或本人合成主单的航晟客服可修改已关联主单下的待服务提货、仓储、中转、货站安检和清关派送信息；非主管仍校验主单及分单创建人。保存保留服务编号与状态，更新原字段并新增本地重发记录。订舱仍从订舱页维护。服务中或已结束不可借此入口编辑；服务取消、异常费用、重新勾选生成新服务未实现，取消状态和已完成服务入口见 GJ-PRD-028。
-- 清关派送材料使用实际本地文件对象，按第013篇限定RAR/ZIP/Word/Excel/PDF/JPG、单个不超过20 MB，保存前可移除并重选；只保存于内存，不发送外部系统。报关格式、材料映射及缺失材料时的发送条件见 GJ-PRD-090，报关服务生成明确阻断；不得将清关附件规则套给报关。清关完成事件跨篇冲突见089，尚无履约状态推进。
-- 第009篇仍未覆盖批次创建/分次发送/合并、客服派单与接拒、主单复制和对客发送、作废申请/审批、服务取消与费用闭环、真实下游服务交接。预配默认选择仅回显，未创建或发送预配记录，其生成时点冲突见 GJ-PRD-080。第011篇已接提单模板原文件维护与本地发送，业务模板配置、传真及发送撤销仍未接入；这些缺口不计作已完成。
+- 清关派送材料使用实际本地文件对象，按空运清关派送管理（6708987F95）限定RAR/ZIP/Word/Excel/PDF/JPG、单个不超过20 MB，保存前可移除并重选；只保存于内存，不发送外部系统。报关格式、材料映射及缺失材料时的发送条件见 GJ-PRD-090，报关服务生成明确阻断；不得将清关附件规则套给报关。清关完成事件跨篇冲突见089，尚无履约状态推进。
+- 第021篇仍未覆盖批次创建/分次发送/合并、客服派单与接拒、主单复制和对客发送、作废申请/审批、服务取消与费用闭环、真实下游服务交接。预配默认选择仅回显，未创建或发送预配记录，其生成时点冲突见 GJ-PRD-080。第023篇已接提单模板原文件维护与本地发送，业务模板配置、传真及发送撤销仍未接入；这些缺口不计作已完成。
 - 分单号未填时生成明确标识的合成编号，不冒充PRD正式编号规则；随机文件、杂费和付费方式只呈现已定义默认值或待确认候选。新增冲突及待确认项集中记录于 GJ-PRD-078～090，PRD正文未改动；实现缺口与需求缺口分别记录，不把未实现功能报为PRD缺陷。
-- 第010篇仍由中央内存保存同一订单和订舱服务，`airBookingActions.js`集中处理写入，`bookingSession`只为订舱映射航晟角色，不扩张普通空运建单权限。绑定航司仅控制筛选候选和默认选择，不作授权条件；列表同状态时间升序与待订舱排序位置是可替换的演示选择。
+- 第022篇仍由中央内存保存同一订单和订舱服务，`airBookingActions.js`集中处理写入，`bookingSession`只为订舱映射航晟角色，不扩张普通空运建单权限。绑定航司仅控制筛选候选和默认选择，不作授权条件；列表同状态时间升序与待订舱排序位置是可替换的演示选择。
 - 仅已完成服务改航班回到服务中；修改普通备注或非亏损成本不回退。主单和既有补录信息保留，待出提单重新完成后不强制降级；重新补录及作废重制边界见091。已配板关联保护仍生效。
 - 合成来源页面复用既有主子关系与保存的聚合报价；每个子单品名按分号取前三、保留完整悬停与点击展开，未知送货时间不以期望到货时间替代。后续来源变更重算与计重基准见092～093；实际毛件体允许区间仍未定义，未实现标红或伪造允许上下限。
 - 订舱通知只覆盖明确触发：运营确认通知操作，操作完成且主单待订舱→待补录时通知客服，运营改航程通知客服；成本单改和航晟直接完成的通知暂不推定（094）。客户邮件及真实企业微信均未发送。默认提单号仍为合成演示编号，未接入真实提单号池。
-- 第011篇以同一主单/分单的`waybillDocument`保存编辑内容，`waybill`保存提单实测毛件体，`waybillTransmission`保存最近本地发送回执；列表、编辑、对接页直接投影，不复制状态。已有配板时变更实测毛件体先阻断，未改货量的资料仍可暂存。出单后及发送后编辑因边界待确认而局部限制；分单提交按011明文推进主订单，不私设分单出单状态。
+- 第023篇以同一主单/分单的`waybillDocument`保存编辑内容，`waybill`保存提单实测毛件体，`waybillTransmission`保存最近本地发送回执；列表、编辑、对接页直接投影，不复制状态。已有配板时变更实测毛件体先阻断，未改货量的资料仍可暂存。出单后及发送后编辑因边界待确认而局部限制；分单提交按提单篇明文推进主订单，不私设分单出单状态。
 - 联系人、模板原File对象及虚拟发送时钟由中央内存管理，刷新/恢复清空。主分单联系人共用当前演示联系人集合，跨人员共享/隔离口径尚未定义，不声称已验证组织级权限。模板管理只开放产品/技术角色；同航司同类型重复文件的版本/替换和配置完成规则未明确，不直接覆盖或标成已完成。
 - 发送前置、先主后分与成功后防重按已定义规则执行；虚拟时钟固定从2026-09-08 14:30开始，可显式前进121秒。M/自动判级、总价、DescriptionCode中性提单手工内容、异常重试及120秒等值边界不猜测。失败回执可观察，主失败时子单本次跳过且保留之前回执；混合子状态不拼造一个产品状态。业务模板预览/下载、真实翌飞/CCSP接口、报关后续、司机交单及费用均未覆盖。

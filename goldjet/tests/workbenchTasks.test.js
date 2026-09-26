@@ -14,7 +14,7 @@ const ground = (overrides = {}) => ({
   createdAt: '2026-09-08 10:00', dispatchStatus: '未调度', ...overrides,
 })
 
-describe('第002篇工作台：角色待办由业务事实派生', () => {
+describe('第041篇工作台：角色待办由业务事实派生', () => {
   it('产品绑定与下单客服独立，未绑定及其他运营不可见', () => {
     const state = { airOrders: [air({ owner: '李明', product: 'UNKNOWN' })] }
     expect(deriveWorkbenchTasks(state, 'operator')).toEqual([])
@@ -91,7 +91,7 @@ describe('第002篇工作台：角色待办由业务事实派生', () => {
   })
 })
 
-describe('第010篇订舱变更与逐级亏损审批工作台', () => {
+describe('第016篇订舱变更与逐级亏损审批工作台', () => {
   const stages = () => [
     { role: 'director', label: '航线总监', status: '待审核', actor: '', decidedAt: '' },
     { role: 'deputyGeneral', label: '事业部副总经理', status: '未开始', actor: '', decidedAt: '' },
@@ -179,7 +179,7 @@ describe('第010篇订舱变更与逐级亏损审批工作台', () => {
   })
 })
 
-describe('第002篇工作台：统计、分页和真实入口', () => {
+describe('第041篇工作台：统计、分页和真实入口', () => {
   it('进度按未处理 / 全部已触发任务计算，空列表为零', () => {
     expect(getWorkbenchSummary([{ completed: true }, { completed: false }, { completed: false }])).toEqual({ total: 3, pending: 2, completed: 1, ratio: 2 / 3 })
     expect(getWorkbenchSummary([])).toEqual({ total: 0, pending: 0, completed: 0, ratio: 0 })

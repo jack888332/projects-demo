@@ -2,6 +2,17 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import { genericModuleKeys, moduleCatalog } from '../domain/catalog.js'
 
 const coreRoutes = [
+  { key: 'integratedOrders', component: () => import('../views/IntegratedOrdersView.vue') },
+  { key: 'generalWaybills', component: () => import('../views/GeneralWaybillsView.vue') },
+  { key: 'serviceCoordination', component: () => import('../views/ServiceCoordinationView.vue') },
+  { key: 'bbcOrders', component: () => import('../views/BbcOrdersView.vue') },
+  { key: 'reverseOrders', component: () => import('../views/ReverseOrdersView.vue') },
+  { key: 'portalOrders', component: () => import('../views/PortalOrdersView.vue') },
+  { key: 'trunkServices', component: () => import('../views/TrunkServicesView.vue') },
+  { key: 'customsStatistics', component: () => import('../views/CustomsStatisticsView.vue') },
+  { key: 'customsOrders', component: () => import('../views/CustomsOrdersView.vue') },
+  { key: 'bcExportCustoms', component: () => import('../views/BcExportCustomsView.vue') },
+  { key: 'bcImportCustoms', component: () => import('../views/BcImportCustomsView.vue') },
   { key: 'ddpFlows', component: () => import('../views/DdpFlowsView.vue') },
   { key: 'bigscreen', component: () => import('../views/OperationsScreenView.vue') },
   { key: 'reports', component: () => import('../views/ReportsView.vue') },
@@ -64,6 +75,7 @@ export const router = createRouter({
   routes: [
     { path: '/', redirect: '/workspace' },
     { path: '/fulfillment/ground-monthly', component: () => import('../views/GroundMonthlyView.vue'), meta: { moduleKey: 'groundDispatch', title: '航晟陆运月报', domain: 'fulfillment' } },
+    { path: '/fulfillment/customs-orders/:serviceId/preentry/:declarationId?', component: () => import('../views/CustomsDeclarationPreentryView.vue'), meta: { moduleKey: 'customsOrders', title: '报关单预录', domain: 'fulfillment' } },
     { path: '/fulfillment/airway-bills/:orderId', component: () => import('../views/AirWaybillEditView.vue'), meta: { moduleKey: 'airwayBills', title: '提单编辑', domain: 'fulfillment' } },
     { path: '/fulfillment/airway-bill-templates', component: () => import('../views/AirWaybillTemplatesView.vue'), meta: { moduleKey: 'airwayBills', title: '提单模板管理', domain: 'fulfillment' } },
     { path: '/fulfillment/declarations/:serviceId/source', component: () => import('../views/AirDeclarationSourceView.vue'), meta: { moduleKey: 'declarations', title: '分单报关来源', domain: 'fulfillment' } },

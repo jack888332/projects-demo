@@ -25,7 +25,7 @@ beforeEach(() => {
   actions = createAirBookingActions(state, () => session, () => deriveAirCatalog(state.airMaster))
 })
 
-describe('第010篇亏损输入与分级边界', () => {
+describe('第016篇亏损输入与分级边界', () => {
   it.each([null, undefined, '', '  ', true, false, [], {}])('缺失或非数字卖价 %j 不能被强转成零', value => {
     expect(getBookingDecision({ sellRate: value, chargeWeight: 100 }, { airCost: 50, allowLoss: true }).kind).toBe('unconfirmed')
   })
@@ -55,7 +55,7 @@ describe('第010篇亏损输入与分级边界', () => {
   })
 })
 
-describe('第010篇订舱单所有者与消息', () => {
+describe('第016篇订舱单所有者与消息', () => {
   it('确认后通知对应操作员，完成后同一服务和主单前进并通知客服', () => {
     actions.saveAirBooking('AIR-001', validDraft())
     expect(orderOf()).toMatchObject({ orderStatus: '待订舱', bookingStatus: '服务中' })
@@ -116,7 +116,7 @@ describe('第010篇订舱单所有者与消息', () => {
   })
 })
 
-describe('第002/030篇亏损审批衔接', () => {
+describe('第041/042篇亏损审批衔接', () => {
   it('确认前保持原单，首级申请消息带订单、提单及理由', () => {
     const before = copy(state)
     expect(() => actions.saveAirBooking('AIR-001', validDraft({ airCost: 30, allowLoss: true }))).toThrow('需航线总监审核')

@@ -7,6 +7,17 @@ import {
 
 export const moduleCatalog = {
   statementTemplates: {label:'对账单模板',path:'/finance/statement-templates',domain:'finance',group:'结算业务',icon:Tickets},
+  integratedOrders: { label: '综合订单', path: '/fulfillment/integrated-orders', domain: 'fulfillment', group: '综合订单', icon: Tickets },
+  generalWaybills: { label: '总运单与分单', path: '/fulfillment/general-waybills', domain: 'fulfillment', group: '综合订单', icon: Document },
+  serviceCoordination: { label: '服务协同', path: '/fulfillment/service-coordination', domain: 'fulfillment', group: '综合订单', icon: Connection },
+  bbcOrders: { label: 'BBC客户订单', path: '/fulfillment/bbc-orders', domain: 'fulfillment', group: '综合订单', icon: Box },
+  reverseOrders: { label: '逆向订单与增值服务', path: '/fulfillment/reverse-orders', domain: 'fulfillment', group: '综合订单', icon: Briefcase },
+  portalOrders: { label: '客户门户订单', path: '/fulfillment/portal-orders', domain: 'fulfillment', group: '综合订单', icon: ChatDotSquare },
+  trunkServices: { label: '空运干线服务', path: '/fulfillment/trunk-services', domain: 'fulfillment', group: '综合订单', icon: Promotion },
+  customsStatistics: { label: '关务查询与统计', path: '/fulfillment/customs-statistics', domain: 'fulfillment', group: '关务管理', icon: DataAnalysis },
+  customsOrders: { label: '普货关务', path: '/fulfillment/customs-orders', domain: 'fulfillment', group: '关务管理', icon: OfficeBuilding },
+  bcExportCustoms: { label: 'BC出口关务', path: '/fulfillment/bc-export-customs', domain: 'fulfillment', group: '关务管理', icon: DocumentChecked },
+  bcImportCustoms: { label: 'BC与CC进口关务', path: '/fulfillment/bc-import-customs', domain: 'fulfillment', group: '关务管理', icon: Promotion },
   permissions: { label: '角色权限', path: '/foundation/permissions', domain: 'foundation', group: '系统管理', icon: UserFilled },
   dashboard: { label: '运营总览', path: '/workspace', domain: 'workspace', icon: Grid },
   airOrders: { label: '空运订单', path: '/fulfillment/air-orders', domain: 'fulfillment', group: '空运履约', icon: Promotion },
@@ -67,7 +78,7 @@ export const navigationByDomain = Object.fromEntries(domains.map((domain) => {
 export const genericModuleKeys = Object.keys(moduleCatalog).filter((key) => ![
   'reconciliation', 'paymentRequests', 'writeoffs', 'reimbursements', 'invoices', 'statementTemplates', 'reports', 'bigscreen', 'ddpFlows',
   'permissions', 'driver', 'groundService', 'stationPallet', 'exchangeRates', 'costItems', 'departmentCosts', 'invoiceEntities', 'bankAccounts',
-  'dashboard', 'financeWorkspace', 'airOrders', 'airChildren', 'booking', 'airwayBills', 'declarations', 'clearance', 'tracking', 'groundDispatch', 'groundWaybills', 'fleet', 'warehouseOrders', 'costs', 'partners', 'airMasterData', 'customerQuotes', 'warehouseQuotes', 'airSupplierRates', 'airCapacity', 'pallet', 'messages', 'integrations',
+  'dashboard', 'financeWorkspace', 'airOrders', 'airChildren', 'booking', 'airwayBills', 'declarations', 'clearance', 'tracking', 'groundDispatch', 'groundWaybills', 'fleet', 'warehouseOrders', 'costs', 'partners', 'airMasterData', 'customerQuotes', 'warehouseQuotes', 'airSupplierRates', 'airCapacity', 'pallet', 'messages', 'integrations', 'integratedOrders', 'generalWaybills', 'serviceCoordination', 'bbcOrders', 'reverseOrders', 'portalOrders', 'trunkServices', 'customsStatistics', 'customsOrders', 'bcExportCustoms', 'bcImportCustoms',
 ].includes(key))
 
 export function getModuleByPath(path) {
